@@ -39,4 +39,6 @@ In the chest's GUI, hover any icon for a short description:
 ./gradlew runClient      # dev client
 ```
 
+Builds are versioned `X.Y.Z-dev` locally and `X.Y.Z-dev.<commit>` in CI; only the Release workflow produces a plain `X.Y.Z` jar, so a test build can't be mistaken for a release.
+
 JEI and REI are optional compile-only dependencies. Uncomment the `localRuntime` line in `build.gradle` to run the dev client with JEI.

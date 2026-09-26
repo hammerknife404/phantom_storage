@@ -39,6 +39,8 @@ jobs:
 
       - name: Build and test
         run: ./gradlew build --stacktrace
+        env:
+          RELEASE: 'true'
 
       - uses: softprops/action-gh-release@v3
         with:

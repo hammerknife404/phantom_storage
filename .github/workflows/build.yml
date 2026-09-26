@@ -28,5 +28,5 @@ jobs:
 
       - uses: actions/upload-artifact@v5
         with:
-          name: phantomstorage-jar
+          name: phantomstorage-dev-jar
           path: build/libs/*.jar
