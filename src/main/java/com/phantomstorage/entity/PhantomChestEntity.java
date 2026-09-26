@@ -272,11 +272,6 @@ public class PhantomChestEntity extends TamableAnimal {
         return false;
     }
 
-    @Override
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
     // ---- TamableAnimal/Animal obligations: no breeding, food, or offspring --------------------
 
     @Override
