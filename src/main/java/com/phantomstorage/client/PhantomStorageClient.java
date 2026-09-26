@@ -1,7 +1,10 @@
 package com.phantomstorage.client;
 
+import com.mojang.blaze3d.platform.Window;
 import com.phantomstorage.PhantomStorage;
+import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.registry.ModRegistries;
+import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
@@ -13,6 +16,10 @@ public final class PhantomStorageClient {
     public PhantomStorageClient(IEventBus modBus) {
         modBus.addListener(PhantomStorageClient::onRegisterRenderers);
         modBus.addListener(PhantomStorageClient::onRegisterScreens);
+        PhantomLayout.setClientSelector(() -> {
+            Window window = Minecraft.getInstance().getWindow();
+            return PhantomLayout.choose(window.getGuiScaledWidth(), window.getGuiScaledHeight());
+        });
     }
 
     private static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {

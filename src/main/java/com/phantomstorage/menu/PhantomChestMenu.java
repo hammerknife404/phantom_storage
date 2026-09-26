@@ -29,21 +29,6 @@ import net.minecraft.world.level.Level;
  * All state is server-authoritative; the client copy is a dummy container fed by vanilla sync.
  */
 public class PhantomChestMenu extends AbstractContainerMenu {
-    // Layout (pixels, relative to the GUI's top-left). Shared with the screen.
-    public static final int GUI_WIDTH = 292;
-    public static final int GUI_HEIGHT = 266;
-    public static final int STORAGE_X = 8;
-    public static final int STORAGE_Y = 16;
-    public static final int CRAFT_X = 232;
-    public static final int CRAFT_Y = 16;
-    public static final int RESULT_X = 250;
-    public static final int RESULT_Y = 84;
-    public static final int VOID_X = 232;
-    public static final int VOID_Y = 122;
-    public static final int PLAYER_INV_X = 35;
-    public static final int PLAYER_INV_Y = 184;
-    public static final int HOTBAR_Y = 242;
-
     // Slot index ranges (end-exclusive).
     public static final int STORAGE_START = 0;
     public static final int STORAGE_END = STORAGE_START + PhantomInventory.SIZE;
@@ -61,6 +46,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     public static final int VOID_DELAY_TICKS = 5;
 
     private final Player player;
+    private final PhantomLayout layout;
     private final Container storage;
     @Nullable
     private final PhantomChestEntity chest;
@@ -71,14 +57,20 @@ public class PhantomChestMenu extends AbstractContainerMenu {
 
     /** Client constructor. */
     public PhantomChestMenu(int windowId, Inventory playerInventory) {
-        this(windowId, playerInventory, new SimpleContainer(PhantomInventory.SIZE), null);
+        this(windowId, playerInventory, new SimpleContainer(PhantomInventory.SIZE), null, PhantomLayout.forClient());
     }
 
     /** Server constructor: {@code storage} is the owner's attached inventory. */
     public PhantomChestMenu(int windowId, Inventory playerInventory, Container storage, @Nullable PhantomChestEntity chest) {
+        this(windowId, playerInventory, storage, chest, PhantomLayout.TALL);
+    }
+
+    private PhantomChestMenu(int windowId, Inventory playerInventory, Container storage,
+                             @Nullable PhantomChestEntity chest, PhantomLayout layout) {
         super(ModRegistries.PHANTOM_CHEST_MENU.get(), windowId);
         checkContainerSize(storage, PhantomInventory.SIZE);
         this.player = playerInventory.player;
+        this.layout = layout;
         this.storage = storage;
         this.chest = chest;
         Arrays.fill(this.voidExpiry, -1L);
@@ -86,35 +78,39 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         for (int row = 0; row < PhantomInventory.ROWS; row++) {
             for (int col = 0; col < PhantomInventory.COLUMNS; col++) {
                 this.addSlot(new Slot(storage, col + row * PhantomInventory.COLUMNS,
-                        STORAGE_X + col * 18, STORAGE_Y + row * 18));
+                        layout.storageX() + col * 18, layout.storageY() + row * 18));
             }
         }
 
-        this.addSlot(new ResultSlot(this.player, this.craftSlots, this.resultSlots, 0, RESULT_X, RESULT_Y));
+        this.addSlot(new ResultSlot(this.player, this.craftSlots, this.resultSlots, 0, layout.resultX(), layout.resultY()));
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new Slot(this.craftSlots, col + row * 3, CRAFT_X + col * 18, CRAFT_Y + row * 18));
+                this.addSlot(new Slot(this.craftSlots, col + row * 3, layout.craftX() + col * 18, layout.craftY() + row * 18));
             }
         }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new VoidSlot(this.voidSlots, col + row * 3, VOID_X + col * 18, VOID_Y + row * 18));
+                this.addSlot(new VoidSlot(this.voidSlots, col + row * 3, layout.voidX() + col * 18, layout.voidY() + row * 18));
             }
         }
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, PLAYER_INV_X + col * 18, PLAYER_INV_Y + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, layout.invX() + col * 18, layout.invY() + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, PLAYER_INV_X + col * 18, HOTBAR_Y));
+            this.addSlot(new Slot(playerInventory, col, layout.invX() + col * 18, layout.hotbarY()));
         }
 
         if (chest != null) {
             chest.onMenuOpened();
         }
+    }
+
+    public PhantomLayout getLayout() {
+        return this.layout;
     }
 
     @Override

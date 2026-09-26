@@ -1,6 +1,7 @@
 package com.phantomstorage.client;
 
 import com.phantomstorage.menu.PhantomChestMenu;
+import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.menu.VoidSlot;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -9,8 +10,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
 /**
- * Drawn entirely with fills (no background texture to keep in sync with the layout constants).
- * Height is kept at 266px so it fits a 1080p screen at GUI scale 4.
+ * Drawn entirely with fills, so it follows whichever {@link PhantomLayout} the menu was opened with
+ * (no background textures to keep in sync).
  */
 public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu> {
     private static final int PANEL = 0xFFC8C3D4;
@@ -28,10 +29,13 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     private static final Component VOID = Component.translatable("container.phantomstorage.void");
     private static final Component VOID_TOOLTIP = Component.translatable("tooltip.phantomstorage.void_slot");
 
+    private final PhantomLayout layout;
+
     public PhantomChestScreen(PhantomChestMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = PhantomChestMenu.GUI_WIDTH;
-        this.imageHeight = PhantomChestMenu.GUI_HEIGHT;
+        this.layout = menu.getLayout();
+        this.imageWidth = this.layout.width();
+        this.imageHeight = this.layout.height();
         this.titleLabelX = 8;
         this.titleLabelY = 5;
     }
@@ -58,14 +62,21 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
                 drawSlot(graphics, sx, sy, 18, 18, slot instanceof VoidSlot ? VOID_FILL : SLOT_FILL);
             }
         }
-        drawDownArrow(graphics, x + PhantomChestMenu.RESULT_X + 8, y + PhantomChestMenu.CRAFT_Y + 3 * 18 + 1);
+        if (this.layout.wide()) {
+            drawRightArrow(graphics, x + this.layout.craftX() + 3 * 18 + 1, y + this.layout.resultY() + 8);
+        } else {
+            drawDownArrow(graphics, x + this.layout.resultX() + 8, y + this.layout.craftY() + 3 * 18 + 1);
+        }
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, LABEL, false);
-        graphics.drawString(this.font, CRAFTING, PhantomChestMenu.CRAFT_X, this.titleLabelY, LABEL, false);
-        graphics.drawString(this.font, VOID, PhantomChestMenu.VOID_X, PhantomChestMenu.VOID_Y - 11, VOID_LABEL, false);
+        graphics.drawString(this.font, CRAFTING, this.layout.craftLabelX(), this.layout.craftLabelY(), LABEL, false);
+        graphics.drawString(this.font, VOID, this.layout.voidLabelX(), this.layout.voidLabelY(), VOID_LABEL, false);
+        if (this.layout.invLabelX() >= 0) {
+            graphics.drawString(this.font, this.playerInventoryTitle, this.layout.invLabelX(), this.layout.invLabelY(), LABEL, false);
+        }
     }
 
     @Override
@@ -96,6 +107,14 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         g.fill(cx - 1, top, cx + 1, top + 4, SHADOW);
         for (int i = 0; i < 4; i++) {
             g.fill(cx - 4 + i, top + 4 + i, cx + 4 - i, top + 5 + i, SHADOW);
+        }
+    }
+
+    /** A small right-pointing arrow centred on {@code cy}, from the crafting grid to the result slot. */
+    private static void drawRightArrow(GuiGraphics g, int left, int cy) {
+        g.fill(left + 1, cy - 1, left + 7, cy + 1, SHADOW);
+        for (int i = 0; i < 4; i++) {
+            g.fill(left + 7 + i, cy - 4 + i, left + 8 + i, cy + 4 - i, SHADOW);
         }
     }
 }

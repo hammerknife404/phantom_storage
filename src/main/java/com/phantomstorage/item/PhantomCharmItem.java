@@ -14,7 +14,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
-/** Summons the owner's Phantom Chest. Never relocates or duplicates an existing one. */
+/**
+ * Use: summons the owner's Phantom Chest. Sneak-use: dismisses it.
+ * Never relocates or duplicates an existing chest.
+ */
 public class PhantomCharmItem extends Item {
     public static final int COOLDOWN_TICKS = 5 * 20;
 
@@ -34,12 +37,17 @@ public class PhantomCharmItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
         if (ChestManager.getActive(serverPlayer.getUUID()) != null) {
-            serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.already_active"), true);
+            // Sneak-use dismisses; a plain use never relocates or re-summons an active chest.
+            if (!serverPlayer.isShiftKeyDown()) {
+                serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.already_active"), true);
+                return InteractionResultHolder.fail(stack);
+            }
+            ChestManager.dismiss(serverPlayer, false);
+            serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.dismissed"), true);
+        } else if (!ChestManager.summon(serverPlayer)) {
             return InteractionResultHolder.fail(stack);
         }
-        if (!ChestManager.summon(serverPlayer)) {
-            return InteractionResultHolder.fail(stack);
-        }
+        // Cooldown covers both summon and dismiss, so the pair can't be spammed.
         serverPlayer.getCooldowns().addCooldown(this, COOLDOWN_TICKS);
         serverPlayer.awardStat(Stats.ITEM_USED.get(this));
         return InteractionResultHolder.success(stack);

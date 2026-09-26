@@ -1,13 +1,14 @@
 {
   "item.phantomstorage.phantom_charm": "Phantom Charm",
-  "item.phantomstorage.phantom_charm.tooltip": "Use to summon your Phantom Chest",
+  "item.phantomstorage.phantom_charm.tooltip": "Use to summon your Phantom Chest, sneak-use to dismiss it",
   "entity.phantomstorage.phantom_chest": "Phantom Chest",
   "container.phantomstorage.phantom_chest": "Phantom Chest",
   "container.phantomstorage.crafting": "Crafting",
   "container.phantomstorage.void": "Void",
-  "tooltip.phantomstorage.void_slot": "Items placed here are destroyed",
+  "tooltip.phantomstorage.void_slot": "Items inserted here are destroyed",
   "message.phantomstorage.already_active": "Your Phantom Chest is already summoned",
   "message.phantomstorage.not_owner": "This Phantom Chest belongs to someone else",
+  "message.phantomstorage.dismissed": "Phantom Chest dismissed",
   "message.phantomstorage.stay": "Phantom Chest will stay here",
   "message.phantomstorage.follow": "Phantom Chest will follow you"
 }

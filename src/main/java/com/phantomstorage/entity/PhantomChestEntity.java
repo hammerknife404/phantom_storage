@@ -185,6 +185,11 @@ public class PhantomChestEntity extends TamableAnimal {
         }
     }
 
+    /** Server-side: the owner currently has this chest's menu open. */
+    public boolean isBeingViewed() {
+        return this.openCount > 0;
+    }
+
     public boolean isOpen() {
         return this.entityData.get(DATA_OPEN);
     }
