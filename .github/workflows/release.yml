@@ -57,8 +57,8 @@ jobs:
 
             | Action | Result |
             |---|---|
-            | Use Phantom Charm | Summon your chest (5 s cooldown) |
-            | Sneak + use Phantom Charm | Dismiss your chest |
+            | Right-click Phantom Charm | Summon your chest, or recall it to your side if it's out (5 s cooldown) |
+            | Shift + right-click Phantom Charm | Dismiss your chest (same cooldown) |
             | Right-click chest | Open storage |
             | Sneak + right-click chest | Toggle stay / follow |
             | Look at chest ~½ s (idle) | Chest comes within reach |
