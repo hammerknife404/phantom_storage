@@ -9,7 +9,7 @@
   "key": {
     "M": { "item": "minecraft:phantom_membrane" },
     "E": { "item": "minecraft:ender_chest" },
-    "S": { "item": "minecraft:soul_sand" }
+    "S": { "item": "minecraft:soul_torch" }
   },
   "result": {
     "id": "phantomstorage:phantom_charm",

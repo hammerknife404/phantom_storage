@@ -44,7 +44,6 @@ class PhantomLayoutTest {
         grid(rects, "hotbar", l.invX(), l.hotbarY(), 9, 1);
         rects.add(new Rect("result", l.resultX() - 5, l.resultY() - 5, 26, 26));
         rects.add(new Rect("trash", l.trashX(), l.trashY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
-        rects.add(new Rect("sort", l.sortX(), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
         rects.add(new Rect("recipes", l.recipesX(), l.recipesY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
         return rects;
     }
@@ -100,6 +99,32 @@ class PhantomLayoutTest {
         for (Rect label : labels(layout.value)) {
             for (Rect slot : slotFrames(layout.value)) {
                 assertFalse(label.overlaps(slot), layout + ": " + label + " overlaps " + slot);
+            }
+        }
+    }
+
+    /** The sort icon follows the title with padding, for any title length, without touching anything. */
+    @ParameterizedTest(name = "{0} / {1}")
+    @CsvSource({
+            "TALL, Phantom Chest", "WIDE, Phantom Chest",
+            "TALL, A Very Long Custom Name For My Chest", "WIDE, A Very Long Custom Name For My Chest",
+            "TALL, ''", "WIDE, ''",
+    })
+    void sortIconFollowsTitle(Layout layout, String title) {
+        PhantomLayout l = layout.value;
+        int titleWidth = Math.min(title.length() * CHAR_WIDTH, l.maxTitleWidth());
+        Rect sort = new Rect("sort", l.sortXAfterTitle(titleWidth), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE);
+        Rect drawnTitle = new Rect("title", PhantomLayout.TITLE_X, PhantomLayout.TITLE_Y, titleWidth, FONT_HEIGHT);
+
+        assertTrue(sort.x() >= drawnTitle.x() + drawnTitle.w() + PhantomLayout.SORT_GAP, "sort icon lost its padding");
+        assertTrue(sort.x() <= l.sortX(), "sort icon went past its limit");
+        assertTrue(sort.y() >= BORDER && sort.x() + sort.w() <= l.width() - BORDER, "sort icon leaves the panel");
+        for (Rect other : slotFrames(l)) {
+            assertFalse(sort.overlaps(other), layout + ": " + sort + " overlaps " + other);
+        }
+        for (Rect label : labels(l)) {
+            if (!label.name().equals("Phantom Chest")) {
+                assertFalse(sort.overlaps(label), layout + ": " + sort + " overlaps " + label);
             }
         }
     }
