@@ -34,7 +34,7 @@ class PhantomLayoutTest {
         }
     }
 
-    /** Every drawn slot frame plus the trash button, matching PhantomChestScreen#renderBg. */
+    /** Every drawn slot frame plus the icon buttons, matching PhantomChestScreen#renderBg. */
     private static List<Rect> slotFrames(PhantomLayout l) {
         List<Rect> rects = new ArrayList<>();
         grid(rects, "storage", l.storageX(), l.storageY(), 12, 9);
@@ -43,7 +43,9 @@ class PhantomLayoutTest {
         grid(rects, "inv", l.invX(), l.invY(), 9, 3);
         grid(rects, "hotbar", l.invX(), l.hotbarY(), 9, 1);
         rects.add(new Rect("result", l.resultX() - 5, l.resultY() - 5, 26, 26));
-        rects.add(new Rect("trash", l.trashX(), l.trashY(), PhantomLayout.TRASH_SIZE, PhantomLayout.TRASH_SIZE));
+        rects.add(new Rect("trash", l.trashX(), l.trashY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        rects.add(new Rect("sort", l.sortX(), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        rects.add(new Rect("recipes", l.recipesX(), l.recipesY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
         return rects;
     }
 

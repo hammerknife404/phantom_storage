@@ -1,16 +1,22 @@
 package com.phantomstorage.compat.jei;
 
 import com.phantomstorage.PhantomStorage;
+import com.phantomstorage.client.PhantomChestScreen;
 import com.phantomstorage.menu.PhantomChestMenu;
+import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.registry.ModRegistries;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.gui.handlers.IGuiClickableArea;
+import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeTransferRegistration;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.MenuType;
@@ -35,6 +41,19 @@ public final class PhantomStorageJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
         registration.addRecipeTransferHandler(new CraftingTransferInfo());
+    }
+
+    /** Makes the screen's "+" icon open JEI's crafting recipes (position depends on the layout). */
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        registration.addGuiContainerHandler(PhantomChestScreen.class, new IGuiContainerHandler<PhantomChestScreen>() {
+            @Override
+            public Collection<IGuiClickableArea> getGuiClickableAreas(PhantomChestScreen screen, double guiMouseX, double guiMouseY) {
+                PhantomLayout layout = screen.getMenu().getLayout();
+                return List.of(IGuiClickableArea.createBasic(layout.recipesX(), layout.recipesY(),
+                        PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE, RecipeTypes.CRAFTING));
+            }
+        });
     }
 
     private static final class CraftingTransferInfo

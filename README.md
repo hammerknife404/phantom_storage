@@ -12,12 +12,20 @@ A NeoForge 1.21.1 mod: a summonable, ghostly flying chest that follows you like 
 | Sneak + right-click chest | Toggle stay / follow |
 | Look at chest ~½ s (while idle) | Chest comes within reach |
 
+In the chest's GUI, hover any icon for a short description:
+
+| Icon | Does |
+|---|---|
+| Sort (bars, above storage) | Merges stacks and orders storage by item |
+| Trash (by the void grid) | Destroys everything in the void slots |
+| `+` (by the crafting output, JEI/REI only) | Opens crafting recipes; the viewer's own `+` fills the grid from storage and inventory |
+
 **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Sand below.
 
 ## What you get
 
 - 108 slots (12×9) of personal storage, tied to you rather than to the chest, so it survives death, logout and dimension changes.
-- A 3×3 crafting grid, with JEI's `+` recipe fill when JEI is installed.
+- A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
 - One chest per player. Only its owner can open or move it, and only `/kill` can kill it.
 - The chest is dismissed automatically on logout or dimension change; re-summon it with the charm.
@@ -29,4 +37,4 @@ A NeoForge 1.21.1 mod: a summonable, ghostly flying chest that follows you like 
 ./gradlew runClient      # dev client
 ```
 
-JEI is an optional compile-only dependency. Uncomment the `localRuntime` line in `build.gradle` to run the dev client with JEI.
+JEI and REI are optional compile-only dependencies. Uncomment the `localRuntime` line in `build.gradle` to run the dev client with JEI.

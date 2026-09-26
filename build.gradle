@@ -24,6 +24,20 @@ repositories {
         url = 'https://maven.blamejared.com/'
         content { includeGroup 'mezz.jei' }
     }
+    // REI API and its transitive deps (cloth math, architectury)
+    maven {
+        name = 'Shedaniel'
+        url = 'https://maven.shedaniel.me/'
+        content {
+            includeGroup 'me.shedaniel'
+            includeGroup 'me.shedaniel.cloth'
+        }
+    }
+    maven {
+        name = 'Architectury'
+        url = 'https://maven.architectury.dev/'
+        content { includeGroup 'dev.architectury' }
+    }
 }
 
 neoForge {
@@ -62,6 +76,8 @@ dependencies {
     // Soft JEI compat: compiled against the API only; never required at runtime.
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    // Soft REI compat, same pattern.
+    compileOnly "me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}"
     // Uncomment to test with JEI in the dev client:
     // localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 

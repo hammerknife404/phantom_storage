@@ -3,8 +3,13 @@ package com.phantomstorage.menu;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.registry.ModRegistries;
 import com.phantomstorage.storage.PhantomInventory;
+import com.phantomstorage.storage.StackCompactor;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -43,11 +48,20 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     public static final int HOTBAR_START = INV_END;
     public static final int HOTBAR_END = HOTBAR_START + 9;
 
-    /** {@link #clickMenuButton} id for the void filter's trash can. */
+    /** {@link #clickMenuButton} ids. */
     public static final int BUTTON_TRASH = 0;
+    public static final int BUTTON_SORT = 1;
+
+    /** Sort order: item id, then name (separates enchanted books etc.), then damage, fullest first. */
+    private static final Comparator<ItemStack> SORT_ORDER = Comparator
+            .comparing((ItemStack stack) -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())
+            .thenComparing(stack -> stack.getHoverName().getString())
+            .thenComparingInt(ItemStack::getDamageValue)
+            .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed());
 
     private final Player player;
     private final PhantomLayout layout;
+    private final Container storage;
     @Nullable
     private final PhantomChestEntity chest;
     private final TransientCraftingContainer craftSlots = new TransientCraftingContainer(this, 3, 3);
@@ -70,6 +84,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         checkContainerSize(storage, PhantomInventory.SIZE);
         this.player = playerInventory.player;
         this.layout = layout;
+        this.storage = storage;
         this.chest = chest;
 
         for (int row = 0; row < PhantomInventory.ROWS; row++) {
@@ -159,23 +174,74 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         return slot.container != this.resultSlots && super.canTakeItemForPickAll(stack, slot);
     }
 
-    // ---- void filter ---------------------------------------------------------------------------
+    // ---- buttons -------------------------------------------------------------------------------
 
     /**
-     * Button 0: the trash can. Destroys everything in the void filter. Arrives via vanilla's
-     * container-button packet, which the server only honours for this open, still-valid menu.
+     * Trash and sort buttons. Arrive via vanilla's container-button packet, which the server only
+     * honours for the player's open, still-valid menu; all work happens here, server-side.
      */
     @Override
     public boolean clickMenuButton(Player player, int id) {
-        if (id != BUTTON_TRASH) {
-            return false;
+        return switch (id) {
+            case BUTTON_TRASH -> {
+                this.emptyVoid(player);
+                yield true;
+            }
+            case BUTTON_SORT -> {
+                this.sortStorage();
+                yield true;
+            }
+            default -> false;
+        };
+    }
+
+    private void sortStorage() {
+        int size = this.storage.getContainerSize();
+        List<ItemStack> contents = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            contents.add(this.storage.getItem(i));
         }
+        List<ItemStack> sorted = StackCompactor.compact(contents, new StackCompactor.Ops<>() {
+            @Override
+            public boolean isEmpty(ItemStack stack) {
+                return stack.isEmpty();
+            }
+
+            @Override
+            public boolean canMerge(ItemStack a, ItemStack b) {
+                return ItemStack.isSameItemSameComponents(a, b);
+            }
+
+            @Override
+            public int count(ItemStack stack) {
+                return stack.getCount();
+            }
+
+            @Override
+            public int maxCount(ItemStack stack) {
+                return Math.min(PhantomChestMenu.this.storage.getMaxStackSize(), stack.getMaxStackSize());
+            }
+
+            @Override
+            public ItemStack withCount(ItemStack stack, int count) {
+                return stack.copyWithCount(count);
+            }
+        }, SORT_ORDER);
+        if (sorted.size() > size) {
+            return; // over-stacked input would need more slots than exist: leave it untouched
+        }
+        for (int i = 0; i < size; i++) {
+            this.storage.setItem(i, i < sorted.size() ? sorted.get(i) : ItemStack.EMPTY);
+        }
+        this.storage.setChanged();
+    }
+
+    private void emptyVoid(Player player) {
         if (!this.voidSlots.isEmpty()) {
             this.voidSlots.clearContent();
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.8F, 0.9F + player.getRandom().nextFloat() * 0.2F);
         }
-        return true;
     }
 
     // ---- shift-click ---------------------------------------------------------------------------
