@@ -55,6 +55,10 @@ public final class ModRegistries {
     private ModRegistries() {}
 
     public static void register(IEventBus modBus) {
+        // Phantom Storage 1.x summoners (all tiers) load as the Phantom Charm instead of vanishing.
+        for (String legacy : new String[] {"phantom_chest_summoner", "phantom_chest_summoner_upgraded", "phantom_chest_summoner_supreme"}) {
+            ITEMS.addAlias(PhantomStorage.id(legacy), PHANTOM_CHARM.getId());
+        }
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENU_TYPES.register(modBus);

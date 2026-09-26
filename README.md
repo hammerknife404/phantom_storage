@@ -32,6 +32,10 @@ In the chest's GUI, hover any icon for a short description:
 - One chest per player. Only its owner can open or move it, and only `/kill` can kill it.
 - The chest is dismissed automatically on logout or dimension change; re-summon it with the charm.
 
+## Upgrading from 1.x
+
+1.x chest contents move into v2 storage automatically the first time each player logs in; v2 has 108 slots to 1.x's 54, so they normally all fit. Anything that doesn't fit, or can't be read (e.g. from a removed mod), stays where it was and is retried on every login and chest open. 1.x summoners of any tier load as the Phantom Charm. 1.x filter/refill slots were templates, not items, so they aren't carried over. The wrench, anchor and link blocks have no v2 equivalent and are removed.
+
 ## Build
 
 ```sh
