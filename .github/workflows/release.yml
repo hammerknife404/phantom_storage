@@ -1,0 +1,62 @@
+name: Release
+
+# Publishes a GitHub release for the version in gradle.properties (tag v<mod_version>).
+# Trigger by pushing a matching tag, or run manually from the Actions tab on main.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Read mod version
+        id: version
+        run: |
+          version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match mod_version $version"
+            exit 1
+          fi
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build and test
+        run: ./gradlew build --stacktrace
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Phantom Storage ${{ steps.version.outputs.version }}
+          files: build/libs/phantomstorage-${{ steps.version.outputs.version }}.jar
+          fail_on_unmatched_files: true
+          body: |
+            **Requires:** Minecraft 1.21.1, NeoForge 21.1.251+. **Optional:** JEI (recipe fill for the crafting grid).
+
+            | Action | Result |
+            |---|---|
+            | Use Phantom Charm | Summon your chest (5 s cooldown) |
+            | Sneak + use Phantom Charm | Dismiss your chest |
+            | Right-click chest | Open storage |
+            | Sneak + right-click chest | Toggle stay / follow |
+            | Look at chest ~½ s (idle) | Chest comes within reach |
+
+            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Sand below.
+          generate_release_notes: true
