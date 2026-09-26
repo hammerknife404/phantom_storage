@@ -47,6 +47,10 @@ public class PhantomChestEntity extends TamableAnimal {
     private static final EntityDataAccessor<Boolean> DATA_OPEN =
             SynchedEntityData.defineId(PhantomChestEntity.class, EntityDataSerializers.BOOLEAN);
     private static final int OWNER_CHECK_INTERVAL = 20;
+    /** Beyond this the chest blinks back to its owner instead of flying. */
+    private static final double TELEPORT_DISTANCE_SQR = 12.0 * 12.0;
+    private static final double TELEPORT_RING = 2.0;
+    private static final int TELEPORT_ATTEMPTS = 8;
     private static final float LID_SPEED = 0.1F;
 
     private int openCount;
@@ -166,6 +170,44 @@ public class PhantomChestEntity extends TamableAnimal {
     @Override
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
         return false;
+    }
+
+    // ---- teleport -----------------------------------------------------------------------------
+
+    public boolean isTooFarFrom(Player owner) {
+        return this.distanceToSqr(owner) >= TELEPORT_DISTANCE_SQR;
+    }
+
+    /**
+     * Blink to a free spot beside the owner, trying behind them first, then fanning out to the sides.
+     * Unlike vanilla's tameable teleport this needs no walkable ground (the chest flies and phases
+     * through blocks), so it works after big drops, over water, on ledges and in cramped caves.
+     */
+    public void teleportNear(Player owner) {
+        Vec3 look = owner.getLookAngle();
+        double behind = Mth.atan2(-look.z, -look.x);
+        for (int i = 0; i < TELEPORT_ATTEMPTS; i++) {
+            // 0, +45, -45, +90, -90, +135, -135, 180 degrees from "behind"
+            double angle = behind + ((i + 1) / 2) * (i % 2 == 0 ? -1 : 1) * (Math.PI / 4.0);
+            double x = owner.getX() + Math.cos(angle) * TELEPORT_RING;
+            double z = owner.getZ() + Math.sin(angle) * TELEPORT_RING;
+            double y = HoverBounds.clampY(this.level(), x, owner.getY() + 1.0, z);
+            if (this.level().noCollision(this, this.getBoundingBox().move(x - this.getX(), y - this.getY(), z - this.getZ()))) {
+                this.blinkTo(x, y, z);
+                return;
+            }
+        }
+        // Nowhere free (tight tunnel): share the owner's space; it floats out of blocks on its own.
+        this.blinkTo(owner.getX(), owner.getY(), owner.getZ());
+    }
+
+    private void blinkTo(double x, double y, double z) {
+        this.moveTo(x, y, z, this.getYRot(), this.getXRot());
+        this.setDeltaMovement(Vec3.ZERO);
+        this.navigation.stop();
+        if (this.level() instanceof ServerLevel level) {
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y + 0.45, z, 12, 0.3, 0.3, 0.3, 0.02);
+        }
     }
 
     // ---- menu / lid ---------------------------------------------------------------------------
