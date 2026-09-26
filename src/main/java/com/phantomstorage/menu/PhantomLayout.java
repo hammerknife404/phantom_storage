@@ -9,7 +9,7 @@ import java.util.function.Supplier;
  * <pre>
  * TALL 292x266 (preferred, leaves JEI room)      WIDE 400x186 (fits 720p/768p at GUI scale 3)
  * +--------------+-----+                         +--------------+----------------------+
- * | storage 12x9 |craft|                         | storage 12x9 | craft -> out   void  |
+ * | storage 12x9 |craft|                         | storage 12x9 | craft->out  void [T] |
  * |              | out |                         |              |                      |
  * |              |void |                         |              | player inventory     |
  * +--------------+-----+                         |              | hotbar               |
@@ -18,6 +18,7 @@ import java.util.function.Supplier;
  * </pre>
  *
  * @param invLabelX -1 hides the "Inventory" label (no room for it in the tall layout)
+ * @param trashX top-left of the void filter's trash-can button
  */
 public record PhantomLayout(
         boolean wide, int width, int height,
@@ -28,15 +29,21 @@ public record PhantomLayout(
         int invX, int invY, int hotbarY,
         int craftLabelX, int craftLabelY,
         int voidLabelX, int voidLabelY,
-        int invLabelX, int invLabelY) {
+        int invLabelX, int invLabelY,
+        int trashX, int trashY) {
+
+    /** Size of the square trash-can button. */
+    public static final int TRASH_SIZE = 12;
 
     public static final PhantomLayout TALL = new PhantomLayout(false, 292, 266,
             8, 16, 232, 16, 250, 84, 232, 122, 35, 184, 242,
-            232, 5, 232, 111, -1, -1);
+            232, 5, 232, 111, -1, -1,
+            274, 108);
 
     public static final PhantomLayout WIDE = new PhantomLayout(true, 400, 186,
             8, 16, 231, 16, 305, 34, 339, 16, 231, 102, 160,
-            231, 5, 339, 5, 231, 91);
+            231, 5, 339, 5, 231, 91,
+            380, 3);
 
     /** Screen-edge margin kept free around the GUI when deciding what fits. */
     private static final int MARGIN = 4;

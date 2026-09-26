@@ -3,11 +3,12 @@ package com.phantomstorage.menu;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.registry.ModRegistries;
 import com.phantomstorage.storage.PhantomInventory;
-import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -42,8 +43,8 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     public static final int HOTBAR_START = INV_END;
     public static final int HOTBAR_END = HOTBAR_START + 9;
 
-    /** Ticks an item stays visible in a void slot before it is destroyed. */
-    public static final int VOID_DELAY_TICKS = 5;
+    /** {@link #clickMenuButton} id for the void filter's trash can. */
+    public static final int BUTTON_TRASH = 0;
 
     private final Player player;
     private final PhantomLayout layout;
@@ -52,7 +53,6 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     private final TransientCraftingContainer craftSlots = new TransientCraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
     private final SimpleContainer voidSlots = new SimpleContainer(9);
-    private final long[] voidExpiry = new long[9];
 
     /** Client constructor. */
     public PhantomChestMenu(int windowId, Inventory playerInventory) {
@@ -71,7 +71,6 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         this.player = playerInventory.player;
         this.layout = layout;
         this.chest = chest;
-        Arrays.fill(this.voidExpiry, -1L);
 
         for (int row = 0; row < PhantomInventory.ROWS; row++) {
             for (int col = 0; col < PhantomInventory.COLUMNS; col++) {
@@ -163,28 +162,20 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     // ---- void filter ---------------------------------------------------------------------------
 
     /**
-     * Called by the server every tick while the menu is open (and after each click).
-     * Items get a short visible beat, then are destroyed. Nine array checks per tick; zero cost when closed.
+     * Button 0: the trash can. Destroys everything in the void filter. Arrives via vanilla's
+     * container-button packet, which the server only honours for this open, still-valid menu.
      */
     @Override
-    public void broadcastChanges() {
-        if (!this.player.level().isClientSide()) {
-            this.tickVoid(this.player.level().getGameTime());
+    public boolean clickMenuButton(Player player, int id) {
+        if (id != BUTTON_TRASH) {
+            return false;
         }
-        super.broadcastChanges();
-    }
-
-    private void tickVoid(long now) {
-        for (int i = 0; i < this.voidExpiry.length; i++) {
-            if (this.voidSlots.getItem(i).isEmpty()) {
-                this.voidExpiry[i] = -1L;
-            } else if (this.voidExpiry[i] < 0L) {
-                this.voidExpiry[i] = now + VOID_DELAY_TICKS;
-            } else if (now >= this.voidExpiry[i]) {
-                this.voidSlots.setItem(i, ItemStack.EMPTY);
-                this.voidExpiry[i] = -1L;
-            }
+        if (!this.voidSlots.isEmpty()) {
+            this.voidSlots.clearContent();
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.8F, 0.9F + player.getRandom().nextFloat() * 0.2F);
         }
+        return true;
     }
 
     // ---- shift-click ---------------------------------------------------------------------------
@@ -260,7 +251,8 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         super.removed(player);
         if (!player.level().isClientSide()) {
             this.clearContainer(player, this.craftSlots);
-            this.voidSlots.clearContent();
+            // Only the trash can destroys items; anything left in the void filter goes back to the player.
+            this.clearContainer(player, this.voidSlots);
             if (this.chest != null) {
                 this.chest.onMenuClosed();
             }

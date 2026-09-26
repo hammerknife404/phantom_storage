@@ -18,7 +18,7 @@ A NeoForge 1.21.1 mod: a summonable, ghostly flying chest that follows you like 
 
 - 108 slots (12×9) of personal storage, tied to you rather than to the chest, so it survives death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI's `+` recipe fill when JEI is installed.
-- A 9-slot void filter: items inserted there are shown briefly, then destroyed.
+- A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
 - One chest per player. Only its owner can open or move it, and only `/kill` can kill it.
 - The chest is dismissed automatically on logout or dimension change; re-summon it with the charm.
 
