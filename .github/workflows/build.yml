@@ -25,6 +25,8 @@ jobs:
 
       - name: Build and test
         run: ./gradlew build --stacktrace
+        env:
+          BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Show built jar
         run: ls -l build/libs

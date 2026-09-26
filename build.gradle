@@ -12,7 +12,8 @@ tasks.named('wrapper', Wrapper).configure {
 // as a dev build (with the commit in CI), so a CI artifact can never share a version or file name
 // with a published release.
 def releaseBuild = providers.environmentVariable('RELEASE').map { it == 'true' }.getOrElse(false)
-def commit = providers.environmentVariable('GITHUB_SHA').map { it.take(7) }.getOrNull()
+// BUILD_COMMIT is set by CI to the commit being built (on PRs, the PR's head, not GitHub's merge commit).
+def commit = providers.environmentVariable('BUILD_COMMIT').orElse(providers.environmentVariable('GITHUB_SHA')).map { it.take(7) }.getOrNull()
 version = releaseBuild ? mod_version : (commit ? "${mod_version}-dev.${commit}" : "${mod_version}-dev")
 group = mod_group_id
 
