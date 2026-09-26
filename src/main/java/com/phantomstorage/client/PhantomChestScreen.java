@@ -49,6 +49,8 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     private enum Icon { SORT, TRASH, RECIPES }
 
     private final PhantomLayout layout;
+    /** Set in {@link #init()} once the font is available: the sort icon follows the title. */
+    private int sortIconX;
     /** The "+" only means something when a recipe viewer is there to handle it. */
     private final boolean recipeViewerLoaded;
 
@@ -57,8 +59,8 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         this.layout = menu.getLayout();
         this.imageWidth = this.layout.width();
         this.imageHeight = this.layout.height();
-        this.titleLabelX = 8;
-        this.titleLabelY = 5;
+        this.titleLabelX = PhantomLayout.TITLE_X;
+        this.titleLabelY = PhantomLayout.TITLE_Y;
         this.recipeViewerLoaded = ModList.get().isLoaded("jei") || ModList.get().isLoaded("roughlyenoughitems");
     }
 
@@ -67,6 +69,13 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         return List.of(
                 Component.translatable("tooltip.phantomstorage." + key),
                 Component.translatable("tooltip.phantomstorage." + key + ".desc").withStyle(ChatFormatting.GRAY));
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        int titleWidth = Math.min(this.font.width(this.title), this.layout.maxTitleWidth());
+        this.sortIconX = this.layout.sortXAfterTitle(titleWidth);
     }
 
     @Override
@@ -108,8 +117,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         // Long custom names are cut short rather than running under the sort button.
-        int maxTitleWidth = this.layout.sortX() - this.titleLabelX - 4;
-        graphics.drawString(this.font, Language.getInstance().getVisualOrder(this.font.substrByWidth(this.title, maxTitleWidth)),
+        graphics.drawString(this.font, Language.getInstance().getVisualOrder(this.font.substrByWidth(this.title, this.layout.maxTitleWidth())),
                 this.titleLabelX, this.titleLabelY, LABEL, false);
         graphics.drawString(this.font, CRAFTING, this.layout.craftLabelX(), this.layout.craftLabelY(), LABEL, false);
         graphics.drawString(this.font, VOID, this.layout.voidLabelX(), this.layout.voidLabelY(), VOID_LABEL, false);
@@ -174,7 +182,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
 
     private int iconX(Icon icon) {
         return switch (icon) {
-            case SORT -> this.layout.sortX();
+            case SORT -> this.sortIconX;
             case TRASH -> this.layout.trashX();
             case RECIPES -> this.layout.recipesX();
         };

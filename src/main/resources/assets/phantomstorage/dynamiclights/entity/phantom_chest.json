@@ -1,0 +1,6 @@
+{
+  "match": {
+    "type": "phantomstorage:phantom_chest"
+  },
+  "luminance": 7
+}

@@ -48,7 +48,7 @@ jobs:
           files: build/libs/phantomstorage-${{ steps.version.outputs.version }}.jar
           fail_on_unmatched_files: true
           body: |
-            **Requires:** Minecraft 1.21.1, NeoForge 21.1.251+. **Optional:** JEI (recipe fill for the crafting grid).
+            **Requires:** Minecraft 1.21.1, NeoForge 21.1.251+. **Optional:** JEI or REI (recipe lookup and crafting-grid fill).
 
             | Action | Result |
             |---|---|
@@ -58,5 +58,5 @@ jobs:
             | Sneak + right-click chest | Toggle stay / follow |
             | Look at chest ~½ s (idle) | Chest comes within reach |
 
-            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Sand below.
+            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below.
           generate_release_notes: true

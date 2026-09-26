@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  *
  * @param invLabelX -1 hides the "Inventory" label (no room for it in the tall layout)
  * @param trashX top-left of the void filter's trash-can button
- * @param sortX top-left of the storage sort button
+ * @param sortX rightmost position of the sort button; it normally sits just after the title
  * @param recipesX top-left of the "+" show-recipes button (JEI/REI)
  */
 public record PhantomLayout(
@@ -38,6 +38,10 @@ public record PhantomLayout(
 
     /** Size of the square icon buttons (trash, sort, recipes). */
     public static final int ICON_SIZE = 12;
+    public static final int TITLE_X = 8;
+    public static final int TITLE_Y = 5;
+    /** Padding between the end of the title and the sort icon. */
+    public static final int SORT_GAP = 6;
 
     public static final PhantomLayout TALL = new PhantomLayout(false, 292, 266,
             8, 16, 232, 16, 250, 84, 232, 122, 35, 184, 242,
@@ -61,6 +65,16 @@ public record PhantomLayout(
 
     static PhantomLayout forClient() {
         return clientSelector.get();
+    }
+
+    /** Widest the title may draw so the sort icon still gets its padding. */
+    public int maxTitleWidth() {
+        return this.sortX - SORT_GAP - TITLE_X;
+    }
+
+    /** Sort icon x: {@link #SORT_GAP} after a title of this pixel width, never past {@link #sortX}. */
+    public int sortXAfterTitle(int titleWidth) {
+        return Math.min(TITLE_X + Math.max(0, titleWidth) + SORT_GAP, this.sortX);
     }
 
     /** Tall when it fits (more side room for JEI), otherwise wide. */

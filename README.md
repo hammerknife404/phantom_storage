@@ -16,17 +16,19 @@ In the chest's GUI, hover any icon for a short description:
 
 | Icon | Does |
 |---|---|
-| Sort (bars, above storage) | Merges stacks and orders storage by item |
+| Sort (bars, after the title) | Merges stacks and orders storage by item |
 | Trash (by the void grid) | Destroys everything in the void slots |
 | `+` (by the crafting output, JEI/REI only) | Opens crafting recipes; the viewer's own `+` fills the grid from storage and inventory |
 
-**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Sand below.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below.
 
 ## What you get
 
 - 108 slots (12×9) of personal storage, tied to you rather than to the chest, so it survives death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
+- Floats like an Allay: trails and bobs while you travel, drifts 2-5 blocks around and above you when you stop, then settles beside you at your foot level.
+- Glowing details (eye, runes, web strands) that shader packs treat as emissive. With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed it also lights its surroundings (level 7, like a redstone torch).
 - One chest per player. Only its owner can open or move it, and only `/kill` can kill it.
 - The chest is dismissed automatically on logout or dimension change; re-summon it with the charm.
 
