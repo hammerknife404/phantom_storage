@@ -8,7 +8,13 @@ tasks.named('wrapper', Wrapper).configure {
     distributionType = Wrapper.DistributionType.BIN
 }
 
-version = mod_version
+// Only the Release workflow (RELEASE=true) builds the plain mod_version. Every other build is tagged
+// as a dev build (with the commit in CI), so a CI artifact can never share a version or file name
+// with a published release.
+def releaseBuild = providers.environmentVariable('RELEASE').map { it == 'true' }.getOrElse(false)
+// BUILD_COMMIT is set by CI to the commit being built (on PRs, the PR's head, not GitHub's merge commit).
+def commit = providers.environmentVariable('BUILD_COMMIT').orElse(providers.environmentVariable('GITHUB_SHA')).map { it.take(7) }.getOrNull()
+version = releaseBuild ? mod_version : (commit ? "${mod_version}-dev.${commit}" : "${mod_version}-dev")
 group = mod_group_id
 
 base {
@@ -100,7 +106,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_id                 : mod_id,
             mod_name               : mod_name,
             mod_license            : mod_license,
-            mod_version            : mod_version,
+            mod_version            : project.version.toString(),
     ]
     inputs.properties replaceProperties
     expand replaceProperties

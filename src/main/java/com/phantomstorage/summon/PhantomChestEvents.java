@@ -3,6 +3,7 @@ package com.phantomstorage.summon;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.registry.ModRegistries;
+import com.phantomstorage.storage.LegacyMigration;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -12,6 +13,7 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -24,6 +26,9 @@ public final class PhantomChestEvents {
         bus.addListener(PhantomChestEvents::onLoggedOut);
         bus.addListener(PhantomChestEvents::onChangedDimension);
         bus.addListener(PhantomChestEvents::onRespawn);
+        bus.addListener(PhantomChestEvents::onDeath);
+        bus.addListener(PhantomChestEvents::onLoggedIn);
+        bus.addListener(PhantomChestEvents::onClone);
         bus.addListener(PhantomChestEvents::onServerStopped);
     }
 
@@ -59,6 +64,7 @@ public final class PhantomChestEvents {
             if (serverPlayer.isShiftKeyDown()) {
                 chest.toggleStay(serverPlayer);
             } else {
+                LegacyMigration.run(serverPlayer); // retry anything from 1.x still waiting for space
                 serverPlayer.openMenu(menuProvider(chest));
             }
         }
@@ -90,6 +96,29 @@ public final class PhantomChestEvents {
             if (chest != null && chest.level() != player.level()) {
                 ChestManager.dismiss(player, false);
             }
+        }
+    }
+
+    /**
+     * Vanilla leaves an open menu dangling on death, which would lose the crafting grid and void filter
+     * contents with the old player object. Closing it here (before death drops) returns them to the
+     * inventory, so they drop or are kept exactly like the rest of the inventory.
+     */
+    private static void onDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player && player.containerMenu instanceof PhantomChestMenu) {
+            player.closeContainer();
+        }
+    }
+
+    private static void onLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LegacyMigration.run(player);
+        }
+    }
+
+    private static void onClone(PlayerEvent.Clone event) {
+        if (event.getOriginal() instanceof ServerPlayer original && event.getEntity() instanceof ServerPlayer clone) {
+            LegacyMigration.copyOnClone(original, clone);
         }
     }
 

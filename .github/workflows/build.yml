@@ -25,8 +25,13 @@ jobs:
 
       - name: Build and test
         run: ./gradlew build --stacktrace
+        env:
+          BUILD_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - uses: actions/upload-artifact@v5
+      - name: Show built jar
+        run: ls -l build/libs
+
+      - uses: actions/upload-artifact@v6
         with:
-          name: phantomstorage-jar
+          name: phantomstorage-dev-jar
           path: build/libs/*.jar

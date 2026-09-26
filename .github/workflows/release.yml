@@ -39,6 +39,11 @@ jobs:
 
       - name: Build and test
         run: ./gradlew build --stacktrace
+        env:
+          RELEASE: 'true'
+
+      - name: Show built jar
+        run: ls -l build/libs
 
       - uses: softprops/action-gh-release@v3
         with:

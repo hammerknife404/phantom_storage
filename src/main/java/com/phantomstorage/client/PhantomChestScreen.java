@@ -1,5 +1,7 @@
 package com.phantomstorage.client;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.menu.VoidSlot;
@@ -11,6 +13,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ResultSlot;
@@ -22,7 +25,18 @@ import net.neoforged.fml.ModList;
  * (no background textures to keep in sync).
  */
 public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu> {
-    private static final int PANEL = 0xFFC8C3D4;
+    private static final int PANEL_TOP = 0xFFCDC8DA;
+    private static final int PANEL_BOTTOM = 0xFFBCB5CC;
+    private static final int WELL_EDGE = 0xFF978DAE;
+    private static final int WELL_FILL = 0xFFB3ABC6;
+    private static final int VOID_WELL_EDGE = 0xFF5E4680;
+    private static final int VOID_WELL_FILL = 0xFF8F7AB0;
+    /** Decorations are faint so they read as texture, not content. */
+    private static final float EMBLEM_ALPHA = 0.28F;
+    private static final float WEB_ALPHA = 0.35F;
+    private static final ResourceLocation EMBLEM = PhantomStorage.id("textures/item/phantom_charm.png");
+    private static final int EMBLEM_TEXTURE_SIZE = 64;
+    private static final ResourceLocation COBWEB = ResourceLocation.withDefaultNamespace("textures/block/cobweb.png");
     private static final int OUTLINE = 0xFF000000;
     private static final int HIGHLIGHT = 0xFFFFFFFF;
     private static final int SHADOW = 0xFF55506A;
@@ -89,6 +103,10 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         int x = this.leftPos;
         int y = this.topPos;
         drawPanel(graphics, x, y, this.imageWidth, this.imageHeight);
+        this.drawDecorations(graphics, x, y);
+        for (PhantomLayout.Well well : this.layout.wells()) {
+            drawWell(graphics, x, y, well);
+        }
 
         for (int i = 0; i < this.menu.slots.size(); i++) {
             Slot slot = this.menu.slots.get(i);
@@ -229,7 +247,39 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         g.fill(x, y + 1, x + w, y + h - 1, OUTLINE);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, HIGHLIGHT);
         g.fill(x + 3, y + 3, x + w - 1, y + h - 1, SHADOW);
-        g.fill(x + 3, y + 3, x + w - 3, y + h - 3, PANEL);
+        g.fillGradient(x + 3, y + 3, x + w - 3, y + h - 3, PANEL_TOP, PANEL_BOTTOM);
+    }
+
+    /** A soft recess behind a slot group: edge on the sides and bottom, flush at the top. */
+    private static void drawWell(GuiGraphics g, int ox, int oy, PhantomLayout.Well well) {
+        PhantomLayout.Box b = well.box();
+        int x0 = ox + b.x();
+        int y0 = oy + b.y();
+        int x1 = ox + b.right();
+        int y1 = oy + b.bottom();
+        g.fill(x0, y0, x1, y1, well.isVoid() ? VOID_WELL_EDGE : WELL_EDGE);
+        g.fill(x0 + 1, y0, x1 - 1, y1 - 1, well.isVoid() ? VOID_WELL_FILL : WELL_FILL);
+    }
+
+    /** Faint charm emblem and corner cobweb, only where the layout has spare space. */
+    private void drawDecorations(GuiGraphics g, int ox, int oy) {
+        if (this.layout.emblemX() < 0 && this.layout.webX() < 0) {
+            return;
+        }
+        RenderSystem.enableBlend();
+        if (this.layout.emblemX() >= 0) {
+            int size = this.layout.emblemSize();
+            g.setColor(1.0F, 1.0F, 1.0F, EMBLEM_ALPHA);
+            g.blit(EMBLEM, ox + this.layout.emblemX(), oy + this.layout.emblemY(), size, size,
+                    0.0F, 0.0F, EMBLEM_TEXTURE_SIZE, EMBLEM_TEXTURE_SIZE, EMBLEM_TEXTURE_SIZE, EMBLEM_TEXTURE_SIZE);
+        }
+        if (this.layout.webX() >= 0) {
+            int size = PhantomLayout.WEB_SIZE;
+            g.setColor(1.0F, 1.0F, 1.0F, WEB_ALPHA);
+            g.blit(COBWEB, ox + this.layout.webX(), oy + this.layout.webY(), 0.0F, 0.0F, size, size, size, size);
+        }
+        g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.disableBlend();
     }
 
     private static void drawSlot(GuiGraphics g, int x, int y, int w, int h, int fill) {

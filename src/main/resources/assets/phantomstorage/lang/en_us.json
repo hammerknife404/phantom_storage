@@ -17,5 +17,8 @@
   "message.phantomstorage.not_owner": "This Phantom Chest belongs to someone else",
   "message.phantomstorage.dismissed": "Phantom Chest dismissed",
   "message.phantomstorage.stay": "Phantom Chest will stay here",
-  "message.phantomstorage.follow": "Phantom Chest will follow you"
+  "message.phantomstorage.follow": "Phantom Chest will follow you",
+  "message.phantomstorage.legacy_moved": "Moved %s item stacks from your old Phantom Chest into your storage",
+  "message.phantomstorage.legacy_waiting": "%s old Phantom Chest stacks are waiting for space. Free up storage and reopen your chest",
+  "message.phantomstorage.legacy_unreadable": "%s old stacks couldn't be read (their mod may be missing) and were kept untouched"
 }

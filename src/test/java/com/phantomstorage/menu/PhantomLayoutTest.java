@@ -129,15 +129,91 @@ class PhantomLayoutTest {
         }
     }
 
+    private static Rect rect(String name, PhantomLayout.Box b) {
+        return new Rect(name, b.x(), b.y(), b.w(), b.h());
+    }
+
+    private static List<Rect> wellRects(PhantomLayout l) {
+        List<Rect> rects = new ArrayList<>();
+        for (PhantomLayout.Well w : l.wells()) {
+            rects.add(rect(w.isVoid() ? "voidWell" : "well", w.box()));
+        }
+        return rects;
+    }
+
+    private static boolean inside(Rect outer, Rect inner) {
+        return inner.x() >= outer.x() && inner.y() >= outer.y()
+                && inner.x() + inner.w() <= outer.x() + outer.w() && inner.y() + inner.h() <= outer.y() + outer.h();
+    }
+
+    @ParameterizedTest
+    @EnumSource(Layout.class)
+    void wellsStayInsidePanelAndApart(Layout layout) {
+        PhantomLayout l = layout.value;
+        List<Rect> wells = wellRects(l);
+        for (Rect w : wells) {
+            assertTrue(w.x() >= BORDER && w.y() >= BORDER
+                    && w.x() + w.w() <= l.width() - BORDER && w.y() + w.h() <= l.height() - BORDER, layout + ": " + w + " leaves the panel");
+        }
+        for (int i = 0; i < wells.size(); i++) {
+            for (int j = i + 1; j < wells.size(); j++) {
+                assertFalse(wells.get(i).overlaps(wells.get(j)), layout + ": " + wells.get(i) + " overlaps " + wells.get(j));
+            }
+        }
+    }
+
+    /** Every slot and the "+" sit inside a well; labels, sort and trash stay clear of all wells. */
+    @ParameterizedTest
+    @EnumSource(Layout.class)
+    void wellsFrameTheirGroupsOnly(Layout layout) {
+        PhantomLayout l = layout.value;
+        List<Rect> wells = wellRects(l);
+        for (Rect frame : slotFrames(l)) {
+            if (frame.name().equals("trash")) {
+                continue;
+            }
+            assertTrue(wells.stream().anyMatch(w -> inside(w, frame)), layout + ": " + frame + " is outside every well");
+        }
+        List<Rect> mustStayClear = new ArrayList<>(labels(l));
+        mustStayClear.add(new Rect("trash", l.trashX(), l.trashY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        mustStayClear.add(new Rect("sort", l.sortX(), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        mustStayClear.add(new Rect("sortAfterTitle", l.sortXAfterTitle(13 * CHAR_WIDTH), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        for (Rect clear : mustStayClear) {
+            for (Rect w : wells) {
+                assertFalse(clear.overlaps(w), layout + ": " + clear + " overlaps " + w);
+            }
+        }
+    }
+
+    /** Decorations only use spare space: inside the panel, touching no well, slot, label or icon. */
+    @ParameterizedTest
+    @EnumSource(Layout.class)
+    void decorationsUseSpareSpaceOnly(Layout layout) {
+        PhantomLayout l = layout.value;
+        List<Rect> occupied = new ArrayList<>(wellRects(l));
+        occupied.addAll(slotFrames(l));
+        occupied.addAll(labels(l));
+        occupied.add(new Rect("sort", l.sortX(), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        for (PhantomLayout.Box box : l.decorations()) {
+            Rect deco = rect("decoration", box);
+            assertTrue(deco.x() >= BORDER && deco.y() >= BORDER
+                    && deco.x() + deco.w() <= l.width() - BORDER && deco.y() + deco.h() <= l.height() - BORDER, layout + ": " + deco + " leaves the panel");
+            for (Rect o : occupied) {
+                assertFalse(deco.overlaps(o), layout + ": " + deco + " overlaps " + o);
+            }
+        }
+    }
+
     /** Scaled GUI sizes from Minecraft's auto GUI scale at common resolutions. */
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "1920x1080 scale 4, 480, 270, TALL",
-            "2560x1440 scale 5, 512, 288, TALL",
-            "1440x900 scale 3,  480, 300, TALL",
+            "1920x1080 scale 4, 480, 270, WIDE",
+            "2560x1440 scale 5, 512, 288, WIDE",
+            "1440x900 scale 3,  480, 300, WIDE",
             "1366x768 scale 3,  455, 256, WIDE",
             "1280x720 scale 3,  426, 240, WIDE",
             "2560x1440 scale 6, 426, 240, WIDE",
+            "800x600 scale 2,   400, 300, TALL",
     })
     void choosesLayoutThatFits(String name, int width, int height, Layout expected) {
         PhantomLayout chosen = PhantomLayout.choose(width, height);
