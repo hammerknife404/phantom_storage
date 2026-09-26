@@ -36,6 +36,7 @@ import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.PushReaction;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.fluids.FluidType;
 
 /**
  * The summoned chest. Deliberately holds no items: storage lives on the owner
@@ -241,7 +242,7 @@ public class PhantomChestEntity extends TamableAnimal {
     }
 
     @Override
-    public boolean isPushedByFluid() {
+    public boolean isPushedByFluid(FluidType type) {
         return false;
     }
 
@@ -273,6 +274,7 @@ public class PhantomChestEntity extends TamableAnimal {
     }
 
     @Override
+    @SuppressWarnings("deprecation") // NeoForge deprecates calling it; overriding is the intended use
     public boolean canBeAffected(MobEffectInstance effect) {
         return false;
     }

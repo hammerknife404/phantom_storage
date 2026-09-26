@@ -64,6 +64,15 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     // Uncomment to test with JEI in the dev client:
     // localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+
+    // Plain JUnit for pure logic (no Minecraft bootstrap).
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

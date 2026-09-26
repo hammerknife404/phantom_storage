@@ -47,7 +47,6 @@ public class PhantomChestMenu extends AbstractContainerMenu {
 
     private final Player player;
     private final PhantomLayout layout;
-    private final Container storage;
     @Nullable
     private final PhantomChestEntity chest;
     private final TransientCraftingContainer craftSlots = new TransientCraftingContainer(this, 3, 3);
@@ -71,7 +70,6 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         checkContainerSize(storage, PhantomInventory.SIZE);
         this.player = playerInventory.player;
         this.layout = layout;
-        this.storage = storage;
         this.chest = chest;
         Arrays.fill(this.voidExpiry, -1L);
 
