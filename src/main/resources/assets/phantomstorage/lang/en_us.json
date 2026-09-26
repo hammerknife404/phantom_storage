@@ -1,6 +1,7 @@
 {
   "item.phantomstorage.phantom_charm": "Phantom Charm",
-  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon chest",
+  "itemGroup.phantomstorage": "Phantom Storage",
+  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon / recall chest",
   "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss chest",
   "entity.phantomstorage.phantom_chest": "Phantom Chest",
   "container.phantomstorage.phantom_chest": "Phantom Chest",
@@ -14,7 +15,7 @@
   "tooltip.phantomstorage.void_slot.desc": "Items here are destroyed by the trash can",
   "tooltip.phantomstorage.result": "Crafting output",
   "tooltip.phantomstorage.result.desc": "Shift-click to craft as many as possible",
-  "message.phantomstorage.already_active": "Your Phantom Chest is already summoned",
+  "message.phantomstorage.recalled": "Phantom Chest recalled",
   "message.phantomstorage.not_owner": "This Phantom Chest belongs to someone else",
   "message.phantomstorage.dismissed": "Phantom Chest dismissed",
   "message.phantomstorage.stay": "Phantom Chest will stay here",

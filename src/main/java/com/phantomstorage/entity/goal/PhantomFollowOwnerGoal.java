@@ -17,6 +17,7 @@ import net.minecraft.world.phys.Vec3;
  * owner stops   -> WANDER : drift 2-5 blocks out, 2-5 blocks above the owner's feet
  * still ~15 s   -> SETTLE : hover ~2 blocks beside the owner at their foot level, facing them
  * any idle time -> CALL   : owner looks at it ~0.5 s -> comes within reach, lingers
+ * charm recall  -> placed beside the owner at foot level, straight into SETTLE
  * menu open     -> hold still
  * </pre>
  * Every target passes through {@link HoverBounds}, so the ground rules always win. When lagging, it
@@ -174,6 +175,17 @@ public class PhantomFollowOwnerGoal extends Goal {
         }
 
         this.chest.getLookControl().setLookAt(player, 10.0F, this.chest.getMaxHeadXRot());
+
+        if (this.chest.takeRecall()) {
+            // Recalled: already beside the owner at foot level, so hold there as if settled.
+            this.lastOwnerPos = player.position();
+            this.ownerTravelling = false;
+            this.idleTicks = SETTLE_AFTER_TICKS;
+            this.idleTarget = this.chest.position();
+            this.settled = true;
+            this.lookTicks = 0;
+            this.retargetTimer = 0;
+        }
 
         if (--this.teleportTimer <= 0 && this.chest.isTooFarFrom(player) && !isFalling(player)) {
             this.teleportTimer = this.adjustedTickDelay(10);

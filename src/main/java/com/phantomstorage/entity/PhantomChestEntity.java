@@ -54,6 +54,8 @@ public class PhantomChestEntity extends TamableAnimal {
     private static final float LID_SPEED = 0.1F;
 
     private int openCount;
+    /** Set by a recall; the follow goal picks it up and settles in place instead of wandering off. */
+    private boolean recalled;
     private float lidOpenness;
     private float lidOpennessO;
 
@@ -184,6 +186,30 @@ public class PhantomChestEntity extends TamableAnimal {
      * through blocks), so it works after big drops, over water, on ledges and in cramped caves.
      */
     public void teleportNear(Player owner) {
+        this.placeNear(owner, 1.0);
+    }
+
+    /**
+     * Charm recall: pull the chest to ~2 blocks from the owner at their foot level, switch it back to
+     * follow (a stay anchor would drag it away again) and have it settle there.
+     */
+    public void recallTo(Player owner) {
+        if (this.isOrderedToSit()) {
+            this.setOrderedToSit(false);
+            this.setInSittingPose(false);
+        }
+        this.placeNear(owner, 0.0);
+        this.recalled = true;
+    }
+
+    /** Consumed by the follow goal. */
+    public boolean takeRecall() {
+        boolean was = this.recalled;
+        this.recalled = false;
+        return was;
+    }
+
+    private void placeNear(Player owner, double heightAboveFeet) {
         Vec3 look = owner.getLookAngle();
         double behind = Mth.atan2(-look.z, -look.x);
         for (int i = 0; i < TELEPORT_ATTEMPTS; i++) {
@@ -191,7 +217,7 @@ public class PhantomChestEntity extends TamableAnimal {
             double angle = behind + ((i + 1) / 2) * (i % 2 == 0 ? -1 : 1) * (Math.PI / 4.0);
             double x = owner.getX() + Math.cos(angle) * TELEPORT_RING;
             double z = owner.getZ() + Math.sin(angle) * TELEPORT_RING;
-            double y = HoverBounds.clampY(this.level(), x, owner.getY() + 1.0, z);
+            double y = HoverBounds.clampY(this.level(), x, owner.getY() + heightAboveFeet, z);
             if (this.level().noCollision(this, this.getBoundingBox().move(x - this.getX(), y - this.getY(), z - this.getZ()))) {
                 this.blinkTo(x, y, z);
                 return;
