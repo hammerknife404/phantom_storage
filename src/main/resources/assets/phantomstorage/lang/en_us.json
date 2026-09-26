@@ -1,6 +1,7 @@
 {
   "item.phantomstorage.phantom_charm": "Phantom Charm",
-  "item.phantomstorage.phantom_charm.tooltip": "Use to summon your Phantom Chest, sneak-use to dismiss it",
+  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon chest",
+  "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss chest",
   "entity.phantomstorage.phantom_chest": "Phantom Chest",
   "container.phantomstorage.phantom_chest": "Phantom Chest",
   "container.phantomstorage.crafting": "Crafting",
