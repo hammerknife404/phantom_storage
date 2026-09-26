@@ -207,12 +207,13 @@ class PhantomLayoutTest {
     /** Scaled GUI sizes from Minecraft's auto GUI scale at common resolutions. */
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "1920x1080 scale 4, 480, 270, TALL",
-            "2560x1440 scale 5, 512, 288, TALL",
-            "1440x900 scale 3,  480, 300, TALL",
+            "1920x1080 scale 4, 480, 270, WIDE",
+            "2560x1440 scale 5, 512, 288, WIDE",
+            "1440x900 scale 3,  480, 300, WIDE",
             "1366x768 scale 3,  455, 256, WIDE",
             "1280x720 scale 3,  426, 240, WIDE",
             "2560x1440 scale 6, 426, 240, WIDE",
+            "800x600 scale 2,   400, 300, TALL",
     })
     void choosesLayoutThatFits(String name, int width, int height, Layout expected) {
         PhantomLayout chosen = PhantomLayout.choose(width, height);

@@ -8,7 +8,7 @@ import java.util.function.Supplier;
  * and hit-testing), so the client picks whichever layout fits the window when the menu opens.
  *
  * <pre>
- * TALL 292x266 (preferred, leaves JEI room)      WIDE 400x186 (fits 720p/768p at GUI scale 3)
+ * TALL 292x266 (fallback for narrow windows)     WIDE 400x186 (preferred)
  * +--------------+-----+                         +--------------+----------------------+
  * | storage 12x9 |craft|                         | storage 12x9 | craft->out  void [T] |
  * |              | out |                         |              |                      |
@@ -168,11 +168,11 @@ public record PhantomLayout(
         return Math.min(TITLE_X + Math.max(0, titleWidth) + SORT_GAP, this.sortX);
     }
 
-    /** Tall when it fits (more side room for JEI), otherwise wide. */
+    /** Wide whenever it fits; tall only for windows too narrow for it (e.g. 800x600 at GUI scale 2). */
     public static PhantomLayout choose(int guiScaledWidth, int guiScaledHeight) {
-        if (guiScaledHeight >= TALL.height + MARGIN && guiScaledWidth >= TALL.width + MARGIN) {
-            return TALL;
+        if (guiScaledWidth >= WIDE.width + MARGIN && guiScaledHeight >= WIDE.height + MARGIN) {
+            return WIDE;
         }
-        return WIDE;
+        return TALL;
     }
 }
