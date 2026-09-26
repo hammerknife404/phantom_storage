@@ -130,7 +130,8 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         if (this.chest == null) {
             return true; // client side; the server decides
         }
-        return this.chest.isAlive()
+        return player.isAlive()
+                && this.chest.isAlive()
                 && this.chest.isOwnedBy(player)
                 && this.chest.level() == player.level()
                 && player.distanceToSqr(this.chest) <= 64.0;
@@ -314,14 +315,40 @@ public class PhantomChestMenu extends AbstractContainerMenu {
 
     @Override
     public void removed(Player player) {
-        super.removed(player);
         if (!player.level().isClientSide()) {
-            this.clearContainer(player, this.craftSlots);
-            // Only the trash can destroys items; anything left in the void filter goes back to the player.
-            this.clearContainer(player, this.voidSlots);
+            // Cursor stack, crafting grid and void filter all go back to the player. Only the trash can
+            // destroys items. Done here rather than via vanilla's clearContainer, which drops everything
+            // on the ground when the player is disconnecting (logout closes this menu).
+            ItemStack carried = this.getCarried();
+            this.setCarried(ItemStack.EMPTY);
+            this.returnToPlayer(player, carried);
+            for (Container container : List.of(this.craftSlots, this.voidSlots)) {
+                for (int i = 0; i < container.getContainerSize(); i++) {
+                    this.returnToPlayer(player, container.removeItemNoUpdate(i));
+                }
+            }
+            this.resultSlots.clearContent();
             if (this.chest != null) {
                 this.chest.onMenuClosed();
             }
+        }
+        super.removed(player);
+    }
+
+    /**
+     * Player inventory first, then (if alive) phantom storage, then drop at the player's feet.
+     * A dead player's overflow drops like death loot rather than escaping into storage.
+     */
+    private void returnToPlayer(Player player, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        player.getInventory().add(stack);
+        if (!stack.isEmpty() && player.isAlive() && this.storage instanceof SimpleContainer phantom) {
+            stack = phantom.addItem(stack);
+        }
+        if (!stack.isEmpty()) {
+            player.drop(stack, false);
         }
     }
 }
