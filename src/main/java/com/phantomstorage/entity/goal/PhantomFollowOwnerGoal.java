@@ -17,10 +17,12 @@ import net.minecraft.world.phys.Vec3;
  * owner stops   -> WANDER : drift 2-5 blocks out, 2-5 blocks above the owner's feet
  * still ~15 s   -> SETTLE : hover ~2 blocks beside the owner at their foot level, facing them
  * any idle time -> CALL   : owner looks at it ~0.5 s -> comes within reach, lingers
+ * charm recall  -> placed beside the owner at foot level, straight into SETTLE
  * menu open     -> hold still
  * </pre>
- * Every target passes through {@link HoverBounds}, so the ground rules always win. Beyond 12 blocks,
- * vanilla tameable teleport-to-owner ({@code TamableAnimal#tryToTeleportToOwner}) kicks in.
+ * Every target passes through {@link HoverBounds}, so the ground rules always win. When lagging, it
+ * flies faster the further behind it is; beyond 12 blocks it blinks back ({@link PhantomChestEntity#teleportNear}),
+ * waiting until a plain fall ends so it doesn't stutter down beside a falling owner.
  * Per-tick work is O(1); ground scans and look checks run at most every {@link #RETARGET_TICKS} ticks.
  */
 public class PhantomFollowOwnerGoal extends Goal {
@@ -29,6 +31,10 @@ public class PhantomFollowOwnerGoal extends Goal {
     private static final double TRAIL_MAX = 9.0;
     private static final double TRAVEL_SPEED = 1.0;
     private static final double CATCH_UP_SPEED = 1.75;
+    /** Speed modifier cap when far behind (x FLYING_SPEED 0.4 = 1.2 blocks/tick). */
+    private static final double MAX_CATCH_UP_SPEED = 3.0;
+    /** Fall distance after which a non-gliding owner counts as falling. */
+    private static final float FALLING_DISTANCE = 3.0F;
     private static final double DRIFT_SPEED = 0.4;
     /** Aimless travel motion: sideways sway and vertical bob around the trailing point. */
     private static final double SWAY = 1.0;
@@ -170,9 +176,20 @@ public class PhantomFollowOwnerGoal extends Goal {
 
         this.chest.getLookControl().setLookAt(player, 10.0F, this.chest.getMaxHeadXRot());
 
-        if (this.chest.shouldTryTeleportToOwner() && --this.teleportTimer <= 0) {
+        if (this.chest.takeRecall()) {
+            // Recalled: already beside the owner at foot level, so hold there as if settled.
+            this.lastOwnerPos = player.position();
+            this.ownerTravelling = false;
+            this.idleTicks = SETTLE_AFTER_TICKS;
+            this.idleTarget = this.chest.position();
+            this.settled = true;
+            this.lookTicks = 0;
+            this.retargetTimer = 0;
+        }
+
+        if (--this.teleportTimer <= 0 && this.chest.isTooFarFrom(player) && !isFalling(player)) {
             this.teleportTimer = this.adjustedTickDelay(10);
-            this.chest.tryToTeleportToOwner();
+            this.chest.teleportNear(player);
             this.idleTarget = null;
             this.settled = false;
             this.retargetTimer = 0;
@@ -252,7 +269,7 @@ public class PhantomFollowOwnerGoal extends Goal {
         if (dist > TRAIL_MIN) {
             along = TRAIL_MIN; // catch up to the trailing ring
             this.swayDir = dir;
-            this.targetSpeed = dist > TRAIL_MAX ? CATCH_UP_SPEED : TRAVEL_SPEED;
+            this.targetSpeed = dist > TRAIL_MAX ? this.catchUp(TRAVEL_SPEED, dist) : TRAVEL_SPEED;
         } else {
             along = Math.max(dist, 3.0); // inside the band: drift around where it is, relative to the owner
             this.targetSpeed = DRIFT_SPEED;
@@ -282,7 +299,20 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     private void aim(Vec3 point, double speed) {
         this.target = point;
-        this.targetSpeed = speed;
+        this.targetSpeed = this.owner == null ? speed : this.catchUp(speed, this.chest.distanceTo(this.owner));
+    }
+
+    /** Idle speeds are gentle; once well behind (e.g. after the owner drops off a cliff), hurry, faster the further. */
+    private double catchUp(double speed, double distToOwner) {
+        if (distToOwner <= TRAIL_MAX) {
+            return speed;
+        }
+        return Math.max(speed, Math.min(CATCH_UP_SPEED * distToOwner / TRAIL_MAX, MAX_CATCH_UP_SPEED));
+    }
+
+    /** Mid-drop without an elytra; teleporting now would just leave the chest above them again. */
+    private static boolean isFalling(Player player) {
+        return !player.onGround() && !player.isFallFlying() && !player.isInWater() && player.fallDistance > FALLING_DISTANCE;
     }
 
     /** A point {@code distance} out from the owner along {@code direction} (flattened), at height {@code y}. */

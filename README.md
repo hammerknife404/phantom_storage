@@ -6,8 +6,8 @@ A NeoForge 1.21.1 mod: a summonable, ghostly flying chest that follows you like 
 
 | Action | Result |
 |---|---|
-| Use **Phantom Charm** | Summon your chest (5 s cooldown) |
-| Sneak + use **Phantom Charm** | Dismiss your chest |
+| Use **Phantom Charm** | Summon your chest, or recall it to your side if it's already out (5 s cooldown) |
+| Sneak + use **Phantom Charm** | Dismiss your chest (same cooldown) |
 | Right-click chest | Open storage |
 | Sneak + right-click chest | Toggle stay / follow |
 | Look at chest ~½ s (while idle) | Chest comes within reach |

@@ -7,10 +7,14 @@ import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.storage.PhantomInventory;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -28,9 +32,19 @@ public final class ModRegistries {
             DeferredRegister.create(Registries.MENU, PhantomStorage.MODID);
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, PhantomStorage.MODID);
+    private static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PhantomStorage.MODID);
 
     public static final DeferredItem<PhantomCharmItem> PHANTOM_CHARM = ITEMS.register("phantom_charm",
             () -> new PhantomCharmItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_TABS.register("phantomstorage",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.phantomstorage"))
+                    .icon(() -> new ItemStack(PHANTOM_CHARM.get()))
+                    .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
+                    .displayItems((params, output) -> output.accept(PHANTOM_CHARM.get()))
+                    .build());
 
     // noSummon(): the chest can only come into existence through the charm, never /summon or spawners.
     public static final DeferredHolder<EntityType<?>, EntityType<PhantomChestEntity>> PHANTOM_CHEST =
@@ -63,5 +77,6 @@ public final class ModRegistries {
         ENTITY_TYPES.register(modBus);
         MENU_TYPES.register(modBus);
         ATTACHMENT_TYPES.register(modBus);
+        CREATIVE_TABS.register(modBus);
     }
 }
