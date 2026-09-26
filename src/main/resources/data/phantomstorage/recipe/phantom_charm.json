@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " M ",
+    "MEM",
+    " S "
+  ],
+  "key": {
+    "M": { "item": "minecraft:phantom_membrane" },
+    "E": { "item": "minecraft:ender_chest" },
+    "S": { "item": "minecraft:soul_sand" }
+  },
+  "result": {
+    "id": "phantomstorage:phantom_charm",
+    "count": 1
+  }
+}
