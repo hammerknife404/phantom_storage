@@ -15,8 +15,8 @@ class PhantomLayoutTest {
     /** Inner edge of the panel's bevelled border. */
     private static final int BORDER = 3;
     private static final int FONT_HEIGHT = 9;
-    /** Conservative label width for the overlap check ("Crafting", "Inventory", "Void"). */
-    private static final int LABEL_WIDTH = 50;
+    /** Generous per-character width of Minecraft's default font. */
+    private static final int CHAR_WIDTH = 6;
 
     enum Layout {
         TALL(PhantomLayout.TALL), WIDE(PhantomLayout.WIDE);
@@ -34,7 +34,7 @@ class PhantomLayoutTest {
         }
     }
 
-    /** Every drawn slot frame, matching PhantomChestScreen#renderBg. */
+    /** Every drawn slot frame plus the icon buttons, matching PhantomChestScreen#renderBg. */
     private static List<Rect> slotFrames(PhantomLayout l) {
         List<Rect> rects = new ArrayList<>();
         grid(rects, "storage", l.storageX(), l.storageY(), 12, 9);
@@ -43,6 +43,9 @@ class PhantomLayoutTest {
         grid(rects, "inv", l.invX(), l.invY(), 9, 3);
         grid(rects, "hotbar", l.invX(), l.hotbarY(), 9, 1);
         rects.add(new Rect("result", l.resultX() - 5, l.resultY() - 5, 26, 26));
+        rects.add(new Rect("trash", l.trashX(), l.trashY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        rects.add(new Rect("sort", l.sortX(), l.sortY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
+        rects.add(new Rect("recipes", l.recipesX(), l.recipesY(), PhantomLayout.ICON_SIZE, PhantomLayout.ICON_SIZE));
         return rects;
     }
 
@@ -56,13 +59,17 @@ class PhantomLayoutTest {
 
     private static List<Rect> labels(PhantomLayout l) {
         List<Rect> rects = new ArrayList<>();
-        rects.add(new Rect("title", 8, 5, LABEL_WIDTH, FONT_HEIGHT));
-        rects.add(new Rect("craftLabel", l.craftLabelX(), l.craftLabelY(), LABEL_WIDTH, FONT_HEIGHT));
-        rects.add(new Rect("voidLabel", l.voidLabelX(), l.voidLabelY(), LABEL_WIDTH, FONT_HEIGHT));
+        rects.add(label("Phantom Chest", 8, 5));
+        rects.add(label("Crafting", l.craftLabelX(), l.craftLabelY()));
+        rects.add(label("Void", l.voidLabelX(), l.voidLabelY()));
         if (l.invLabelX() >= 0) {
-            rects.add(new Rect("invLabel", l.invLabelX(), l.invLabelY(), LABEL_WIDTH, FONT_HEIGHT));
+            rects.add(label("Inventory", l.invLabelX(), l.invLabelY()));
         }
         return rects;
+    }
+
+    private static Rect label(String text, int x, int y) {
+        return new Rect(text, x, y, text.length() * CHAR_WIDTH, FONT_HEIGHT);
     }
 
     @ParameterizedTest

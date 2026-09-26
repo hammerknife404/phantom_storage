@@ -33,3 +33,10 @@ A summonable, ghostly flying chest that follows its owner like a pet.
     versionRange="*"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="roughlyenoughitems"
+    type="optional"
+    versionRange="*"
+    ordering="NONE"
+    side="BOTH"

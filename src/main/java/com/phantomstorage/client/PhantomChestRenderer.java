@@ -3,6 +3,7 @@ package com.phantomstorage.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomChestEntity;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.geom.ModelPart;
@@ -15,11 +16,11 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
-/** Renders the vanilla chest model with the ender chest texture, translucent and gently bobbing. */
+/** Renders the vanilla chest model with the Phantom Chest texture, translucent and gently bobbing. */
 public class PhantomChestRenderer extends EntityRenderer<PhantomChestEntity> {
-    private static final ResourceLocation TEXTURE = ResourceLocation.withDefaultNamespace("textures/entity/chest/ender.png");
-    /** ARGB: ~70% opacity with a faint cool tint. */
-    private static final int GHOST_COLOR = 0xB4D8E4FF;
+    private static final ResourceLocation TEXTURE = PhantomStorage.id("textures/entity/phantom_chest.png");
+    /** ARGB: ~80% opacity, no tint (the texture carries the colour). */
+    private static final int GHOST_COLOR = 0xCCFFFFFF;
     private static final int MIN_BLOCK_LIGHT = 7;
 
     private final ModelPart bottom;
