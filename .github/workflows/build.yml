@@ -26,7 +26,10 @@ jobs:
       - name: Build and test
         run: ./gradlew build --stacktrace
 
-      - uses: actions/upload-artifact@v5
+      - name: Show built jar
+        run: ls -l build/libs
+
+      - uses: actions/upload-artifact@v6
         with:
           name: phantomstorage-dev-jar
           path: build/libs/*.jar
