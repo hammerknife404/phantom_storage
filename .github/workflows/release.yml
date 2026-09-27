@@ -63,5 +63,5 @@ jobs:
             | Sneak + right-click chest | Toggle stay / follow |
             | Look at chest ~½ s (idle) | Chest comes within reach |
 
-            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below.
+            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner.
           generate_release_notes: true

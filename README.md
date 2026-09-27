@@ -20,7 +20,7 @@ In the chest's GUI, hover any icon for a short description:
 | Trash (by the void grid) | Destroys everything in the void slots |
 | `+` (by the crafting output, JEI/REI only) | Opens crafting recipes; the viewer's own `+` fills the grid from storage and inventory |
 
-**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner.
 
 ## What you get
 
