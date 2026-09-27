@@ -1,0 +1,11 @@
+# Keeps the workflow actions current (e.g. runner Node deprecations). Gradle/NeoForge versions are
+# pinned to the Minecraft version on purpose and bumped by hand.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

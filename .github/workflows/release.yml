@@ -25,8 +25,21 @@ jobs:
         run: |
           version=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_TYPE" != "tag" ] && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Releases are built from main or a v* tag, not $GITHUB_REF"
+            exit 1
+          fi
           if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "v$version" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match mod_version $version"
+            exit 1
+          fi
+
+      - name: Refuse to overwrite an existing release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "::error::Release v${{ steps.version.outputs.version }} already exists. Bump mod_version (or delete that release) first."
             exit 1
           fi
 
