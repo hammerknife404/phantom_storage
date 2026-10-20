@@ -9,8 +9,9 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="hammerknife404"
 description='''
-A summonable, ghostly flying chest that follows its owner like a pet.
-108 slots of personal storage, a crafting grid, and a void filter.
+Summonable, ghostly flying pets that follow their owner.
+The Phantom Chest: 108 slots of personal storage, a crafting grid, and a void filter.
+The Phantom Tank: 4 fluid tanks of 32 buckets each.
 '''
 
 [[dependencies.${mod_id}]]

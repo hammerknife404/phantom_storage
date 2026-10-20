@@ -130,11 +130,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         if (this.chest == null) {
             return true; // client side; the server decides
         }
-        return player.isAlive()
-                && this.chest.isAlive()
-                && this.chest.isOwnedBy(player)
-                && this.chest.level() == player.level()
-                && player.distanceToSqr(this.chest) <= 64.0;
+        return this.chest.canBeUsedBy(player);
     }
 
     // ---- crafting ------------------------------------------------------------------------------

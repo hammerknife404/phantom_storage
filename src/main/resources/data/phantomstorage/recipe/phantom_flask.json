@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GMG",
+    "MCM",
+    "GSG"
+  ],
+  "key": {
+    "G": { "item": "minecraft:gold_ingot" },
+    "M": { "item": "minecraft:phantom_membrane" },
+    "C": { "item": "minecraft:cauldron" },
+    "S": { "item": "minecraft:soul_torch" }
+  },
+  "result": {
+    "id": "phantomstorage:phantom_flask",
+    "count": 1
+  }
+}

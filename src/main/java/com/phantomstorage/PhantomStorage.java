@@ -1,9 +1,10 @@
 package com.phantomstorage;
 
 import com.mojang.logging.LogUtils;
-import com.phantomstorage.entity.PhantomChestEntity;
+import com.phantomstorage.entity.PhantomPetEntity;
+import com.phantomstorage.network.TankSyncPayload;
 import com.phantomstorage.registry.ModRegistries;
-import com.phantomstorage.summon.PhantomChestEvents;
+import com.phantomstorage.summon.PhantomPetEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
@@ -22,7 +23,8 @@ public final class PhantomStorage {
         ModRegistries.register(modBus);
         modBus.addListener(PhantomStorage::onEntityAttributes);
         modBus.addListener(PhantomStorage::onCreativeTabs);
-        PhantomChestEvents.register(NeoForge.EVENT_BUS);
+        modBus.addListener(TankSyncPayload::register);
+        PhantomPetEvents.register(NeoForge.EVENT_BUS);
     }
 
     public static ResourceLocation id(String path) {
@@ -30,12 +32,14 @@ public final class PhantomStorage {
     }
 
     private static void onEntityAttributes(EntityAttributeCreationEvent event) {
-        event.put(ModRegistries.PHANTOM_CHEST.get(), PhantomChestEntity.createAttributes().build());
+        event.put(ModRegistries.PHANTOM_CHEST.get(), PhantomPetEntity.createAttributes().build());
+        event.put(ModRegistries.PHANTOM_TANK.get(), PhantomPetEntity.createAttributes().build());
     }
 
     private static void onCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ModRegistries.PHANTOM_CHARM.get());
+            event.accept(ModRegistries.PHANTOM_FLASK.get());
         }
     }
 }

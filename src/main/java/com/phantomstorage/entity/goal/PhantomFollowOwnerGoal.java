@@ -1,7 +1,7 @@
 package com.phantomstorage.entity.goal;
 
 import com.phantomstorage.entity.HoverBounds;
-import com.phantomstorage.entity.PhantomChestEntity;
+import com.phantomstorage.entity.PhantomPetEntity;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
@@ -21,7 +21,7 @@ import net.minecraft.world.phys.Vec3;
  * menu open     -> hold still
  * </pre>
  * Every target passes through {@link HoverBounds}, so the ground rules always win. When lagging, it
- * flies faster the further behind it is; beyond 12 blocks it blinks back ({@link PhantomChestEntity#teleportNear}),
+ * flies faster the further behind it is; beyond 12 blocks it blinks back ({@link PhantomPetEntity#teleportNear}),
  * waiting until a plain fall ends so it doesn't stutter down beside a falling owner.
  * Per-tick work is O(1); ground scans and look checks run at most every {@link #RETARGET_TICKS} ticks.
  */
@@ -74,7 +74,7 @@ public class PhantomFollowOwnerGoal extends Goal {
     private static final int SAMPLE_TICKS = 10;
     private static final int RETARGET_TICKS = 5;
 
-    private final PhantomChestEntity chest;
+    private final PhantomPetEntity pet;
     @Nullable
     private Player owner;
     @Nullable
@@ -98,17 +98,17 @@ public class PhantomFollowOwnerGoal extends Goal {
     private int swayTimer;
     private int lookTicks;
 
-    public PhantomFollowOwnerGoal(PhantomChestEntity chest) {
-        this.chest = chest;
+    public PhantomFollowOwnerGoal(PhantomPetEntity pet) {
+        this.pet = pet;
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.LOOK));
     }
 
     @Override
     public boolean canUse() {
-        if (this.chest.isOrderedToSit()) {
+        if (this.pet.isOrderedToSit()) {
             return false;
         }
-        Player player = this.chest.getOwnerPlayer();
+        Player player = this.pet.getOwnerPlayer();
         if (!isFollowable(player)) {
             return false;
         }
@@ -118,11 +118,11 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return !this.chest.isOrderedToSit() && isFollowable(this.owner);
+        return !this.pet.isOrderedToSit() && isFollowable(this.owner);
     }
 
     private boolean isFollowable(@Nullable Player player) {
-        return player != null && player.isAlive() && !player.isSpectator() && player.level() == this.chest.level();
+        return player != null && player.isAlive() && !player.isSpectator() && player.level() == this.pet.level();
     }
 
     @Override
@@ -174,22 +174,22 @@ public class PhantomFollowOwnerGoal extends Goal {
             }
         }
 
-        this.chest.getLookControl().setLookAt(player, 10.0F, this.chest.getMaxHeadXRot());
+        this.pet.getLookControl().setLookAt(player, 10.0F, this.pet.getMaxHeadXRot());
 
-        if (this.chest.takeRecall()) {
+        if (this.pet.takeRecall()) {
             // Recalled: already beside the owner at foot level, so hold there as if settled.
             this.lastOwnerPos = player.position();
             this.ownerTravelling = false;
             this.idleTicks = SETTLE_AFTER_TICKS;
-            this.idleTarget = this.chest.position();
+            this.idleTarget = this.pet.position();
             this.settled = true;
             this.lookTicks = 0;
             this.retargetTimer = 0;
         }
 
-        if (--this.teleportTimer <= 0 && this.chest.isTooFarFrom(player) && !isFalling(player)) {
+        if (--this.teleportTimer <= 0 && this.pet.isTooFarFrom(player) && !isFalling(player)) {
             this.teleportTimer = this.adjustedTickDelay(10);
-            this.chest.teleportNear(player);
+            this.pet.teleportNear(player);
             this.idleTarget = null;
             this.settled = false;
             this.retargetTimer = 0;
@@ -200,12 +200,12 @@ public class PhantomFollowOwnerGoal extends Goal {
             this.retarget(player);
         }
         if (this.target != null) {
-            this.chest.getMoveControl().setWantedPosition(this.target.x, this.target.y, this.target.z, this.targetSpeed);
+            this.pet.getMoveControl().setWantedPosition(this.target.x, this.target.y, this.target.z, this.targetSpeed);
         }
     }
 
     private void retarget(Player player) {
-        if (this.chest.isBeingViewed()) {
+        if (this.pet.isBeingViewed()) {
             // Don't drift away from an open GUI; re-settle from wherever it is once closed.
             this.target = null;
             this.idleTarget = null;
@@ -231,7 +231,7 @@ public class PhantomFollowOwnerGoal extends Goal {
         // SETTLE: after a while, rest beside the owner at their foot level and stay there.
         if (this.idleTicks >= SETTLE_AFTER_TICKS) {
             if (!this.settled && this.idleTargetTimer <= 0) {
-                Vec3 fromOwner = this.chest.position().subtract(player.position());
+                Vec3 fromOwner = this.pet.position().subtract(player.position());
                 this.idleTarget = this.pointBeside(player, fromOwner, SETTLE_DISTANCE, player.getY());
                 this.settled = true;
             }
@@ -253,9 +253,9 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     /** TRAVEL: trail behind; inside the band, drift. Either way, sway and bob aimlessly. */
     private void retargetTravel(Player player) {
-        RandomSource random = this.chest.getRandom();
+        RandomSource random = this.pet.getRandom();
         Vec3 ownerPos = player.position();
-        Vec3 dir = this.flatDirection(this.chest.getX() - ownerPos.x, this.chest.getZ() - ownerPos.z, player);
+        Vec3 dir = this.flatDirection(this.pet.getX() - ownerPos.x, this.pet.getZ() - ownerPos.z, player);
         this.swayTimer -= RETARGET_TICKS;
         if (this.swayTimer <= 0) {
             this.swayTimer = SWAY_MIN_TICKS + random.nextInt(SWAY_EXTRA_TICKS + 1);
@@ -264,7 +264,7 @@ public class PhantomFollowOwnerGoal extends Goal {
             this.swayDir = dir;
         }
 
-        double dist = this.chest.distanceTo(player);
+        double dist = this.pet.distanceTo(player);
         double along;
         if (dist > TRAIL_MIN) {
             along = TRAIL_MIN; // catch up to the trailing ring
@@ -285,8 +285,8 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     /** Next drift point: a gentle arc (at most +-90 degrees) around the owner, 2-5 blocks above their feet. */
     private Vec3 pickWanderTarget(Vec3 ownerPos) {
-        RandomSource random = this.chest.getRandom();
-        double current = Mth.atan2(this.chest.getZ() - ownerPos.z, this.chest.getX() - ownerPos.x);
+        RandomSource random = this.pet.getRandom();
+        double current = Mth.atan2(this.pet.getZ() - ownerPos.z, this.pet.getX() - ownerPos.x);
         double angle = current + (random.nextDouble() - 0.5) * Math.PI;
         double radius = WANDER_MIN + random.nextDouble() * (WANDER_MAX - WANDER_MIN);
         double height = WANDER_HEIGHT_MIN + random.nextDouble() * (WANDER_HEIGHT_MAX - WANDER_HEIGHT_MIN);
@@ -299,7 +299,7 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     private void aim(Vec3 point, double speed) {
         this.target = point;
-        this.targetSpeed = this.owner == null ? speed : this.catchUp(speed, this.chest.distanceTo(this.owner));
+        this.targetSpeed = this.owner == null ? speed : this.catchUp(speed, this.pet.distanceTo(this.owner));
     }
 
     /** Idle speeds are gentle; once well behind (e.g. after the owner drops off a cliff), hurry, faster the further. */
@@ -322,7 +322,7 @@ public class PhantomFollowOwnerGoal extends Goal {
     }
 
     private boolean isLookedAtBy(Player player) {
-        Vec3 toChest = this.chest.getBoundingBox().getCenter().subtract(player.getEyePosition());
+        Vec3 toChest = this.pet.getBoundingBox().getCenter().subtract(player.getEyePosition());
         double distSqr = toChest.lengthSqr();
         if (distSqr < 1.0E-4 || distSqr > CALL_MAX_DISTANCE_SQR) {
             return false;
@@ -331,7 +331,7 @@ public class PhantomFollowOwnerGoal extends Goal {
     }
 
     private Vec3 hoverPoint(double x, double y, double z) {
-        return new Vec3(x, HoverBounds.clampY(this.chest.level(), x, y, z), z);
+        return new Vec3(x, HoverBounds.clampY(this.pet.level(), x, y, z), z);
     }
 
     /** Normalised horizontal direction, falling back to "behind the owner" when degenerate. */
