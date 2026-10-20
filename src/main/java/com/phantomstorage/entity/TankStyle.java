@@ -8,8 +8,10 @@ package com.phantomstorage.entity;
 public enum TankStyle {
     /** Polished deepslate slab and rim. */
     DEEPSLATE,
-    /** Ender chest base band and lid, with the chest's lock on the front. */
-    ENDER_CHEST;
+    /** Ghostly ender chest base and lid, flapping phantom wings, glowing phantom eyes on the front. */
+    PHANTOM,
+    /** {@link #PHANTOM} with the ender chest's latch between the eyes. */
+    PHANTOM_LATCH;
 
     public static TankStyle byIndex(int index) {
         TankStyle[] styles = values();

@@ -29,9 +29,9 @@ import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtension
  * or texture to maintain. Never darker than light level 7, or the brightest fluid's own light (lava).
  *
  * <pre>
- *  ┌────────────┐ rim    1 px
- *  │  │ glass │ │
- *  │  │ fluid │ │        (ender chest style: lock on the front, under the rim)
+ *  ┌────────────┐ rim    1 px      phantom styles: ghostly ender chest base and lid,
+ *  │  │ glass │ │                  phantom wings off the rim, glowing phantom eyes on
+ *  │  │ fluid │ │                  the front (optionally the chest latch between them)
  *  ╞══╧═══════╧═╡ base   2 px
  * </pre>
  */
@@ -59,6 +59,29 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float[] ENDER_BASE_UNDER = px(28, 19, 42, 33);
     private static final float[] ENDER_BASE_SIDE = px(14, 40, 28, 43);
     private static final float[] ENDER_LOCK = px(1, 1, 3, 5);
+    /** ARGB: the ender chest parts are ghostly, like the chest pet. */
+    private static final int GHOST_COLOR = 0xCCFFFFFF;
+
+    private static final ResourceLocation PHANTOM = ResourceLocation.withDefaultNamespace("textures/entity/phantom.png");
+    private static final ResourceLocation PHANTOM_EYES = ResourceLocation.withDefaultNamespace("textures/entity/phantom_eyes.png");
+    /** Phantom model UVs (64x64): wing base box 6x2x9 at (23,12), wing tip box 13x1x9 at (16,24), head front 7x3 at (5,5). */
+    private static final float[] WING_BASE_TOP = px(32, 12, 38, 21);
+    private static final float[] WING_BASE_UNDER = px(38, 12, 44, 21);
+    private static final float[] WING_BASE_SIDE = px(32, 21, 38, 23);
+    private static final float[] WING_TIP_TOP = px(25, 24, 38, 33);
+    private static final float[] WING_TIP_UNDER = px(38, 24, 51, 33);
+    private static final float[] WING_TIP_SIDE = px(25, 33, 38, 34);
+    private static final float[] EYES = px(5, 5, 12, 8);
+    /** Wings at half the phantom's size: base 3 px out, tip 6.5 px further, 4.5 px deep. */
+    private static final float WING_BASE = 3.0F * PX;
+    private static final float WING_TIP = 6.5F * PX;
+    private static final float WING_DEPTH = 4.5F * PX;
+    private static final float WING_THICK = 0.5F * PX;
+    private static final float FLAP_SPEED = 0.18F;
+    private static final float FLAP_DEGREES = 18.0F;
+    /** Eyes at 1.5x the phantom's 7x3 px, so the 2 px latch fits between them. */
+    private static final float EYES_HALF_W = 5.25F * PX;
+    private static final float EYES_H = 4.5F * PX;
     private static final float INSET = 1.0F / 32.0F;
     private static final int FRAME_COLOR = 0xFFFFFFFF;
     private static final float MIN_LAYER = 0.08F;
@@ -116,28 +139,60 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
                 box(pose, consumer, slab, -HALF, 0.0F, -HALF, HALF, BASE, HALF, FRAME_COLOR, light);
                 box(pose, consumer, slab, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF, FRAME_COLOR, light);
             }
-            case ENDER_CHEST -> {
-                VertexConsumer ender = buffer.getBuffer(RenderType.entityCutout(ENDER_CHEST));
+            case PHANTOM, PHANTOM_LATCH -> {
+                VertexConsumer ender = buffer.getBuffer(RenderType.entityTranslucent(ENDER_CHEST));
                 uvBox(pose, ender, -HALF, 0.0F, -HALF, HALF, BASE, HALF,
-                        ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, light);
+                        ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, GHOST_COLOR, light);
                 uvBox(pose, ender, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF,
-                        ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, light);
-                // The chest's lock, hanging from the rim on the front (+z, the way the pet faces).
-                uvBox(pose, ender, -PX, HEIGHT - RIM - 3.0F * PX, glass, PX, HEIGHT - RIM, glass + PX,
-                        ENDER_LOCK, ENDER_LOCK, ENDER_LOCK, light);
+                        ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, GHOST_COLOR, light);
+                if (entity.getDisplayStyle() == TankStyle.PHANTOM_LATCH) {
+                    // The chest's latch, hanging from the rim on the front (+z, the way the pet faces).
+                    uvBox(pose, ender, -PX, HEIGHT - RIM - 3.0F * PX, glass, PX, HEIGHT - RIM, glass + PX,
+                            ENDER_LOCK, ENDER_LOCK, ENDER_LOCK, GHOST_COLOR, light);
+                }
+                VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(PHANTOM));
+                float flap = Mth.sin(age * FLAP_SPEED) * FLAP_DEGREES;
+                wing(poseStack, wings, 1, flap, light);
+                wing(poseStack, wings, -1, flap, light);
                 consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
             }
         }
         box(pose, consumer, sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, GLASS_COLOR, light);
+        if (entity.getDisplayStyle() != TankStyle.DEEPSLATE) {
+            // Glowing eyes on the front of the glass, just under the rim; full-bright like a phantom's.
+            VertexConsumer eyes = buffer.getBuffer(RenderType.eyes(PHANTOM_EYES));
+            float z = glass + 0.002F;
+            float top = HEIGHT - RIM - 0.5F * PX;
+            quad(pose, eyes, 0xFFFFFFFF, LightTexture.FULL_BRIGHT, 0, 0, 1, EYES[0], EYES[1], EYES[2], EYES[3],
+                    -EYES_HALF_W, top - EYES_H, z, -EYES_HALF_W, top, z, EYES_HALF_W, top, z, EYES_HALF_W, top - EYES_H, z);
+        }
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 
     /** A box whose faces each show a fixed region of the bound texture, stretched to fit. */
+    /**
+     * One phantom wing off the rim on side {@code side} (+1 = +x, -1 = -x): a base and a tip, each
+     * hinged at its inner edge and swung by {@code flap} degrees, the tip twice as far like the phantom's.
+     */
+    private static void wing(PoseStack poseStack, VertexConsumer c, int side, float flap, int light) {
+        poseStack.pushPose();
+        poseStack.translate(side * HALF, HEIGHT - RIM, -WING_DEPTH / 2.0F);
+        poseStack.mulPose(Axis.ZP.rotationDegrees(side * flap));
+        float b0 = side > 0 ? 0.0F : -WING_BASE;
+        uvBox(poseStack.last(), c, b0, 0.0F, 0.0F, b0 + WING_BASE, WING_THICK * 2.0F, WING_DEPTH,
+                WING_BASE_TOP, WING_BASE_UNDER, WING_BASE_SIDE, GHOST_COLOR, light);
+        poseStack.translate(side * WING_BASE, 0.0F, 0.0F);
+        poseStack.mulPose(Axis.ZP.rotationDegrees(side * flap));
+        float t0 = side > 0 ? 0.0F : -WING_TIP;
+        uvBox(poseStack.last(), c, t0, 0.0F, 0.0F, t0 + WING_TIP, WING_THICK, WING_DEPTH,
+                WING_TIP_TOP, WING_TIP_UNDER, WING_TIP_SIDE, GHOST_COLOR, light);
+        poseStack.popPose();
+    }
+
     private static void uvBox(PoseStack.Pose pose, VertexConsumer c, float x0, float y0, float z0, float x1, float y1, float z1,
-                              float[] top, float[] bottom, float[] side, int light) {
-        int color = FRAME_COLOR;
+                              float[] top, float[] bottom, float[] side, int color, int light) {
         quad(pose, c, color, light, 0, 1, 0, top[0], top[1], top[2], top[3], x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
         quad(pose, c, color, light, 0, -1, 0, bottom[0], bottom[1], bottom[2], bottom[3], x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
         quad(pose, c, color, light, 0, 0, -1, side[0], side[1], side[2], side[3], x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);

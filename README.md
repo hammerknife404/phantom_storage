@@ -49,7 +49,7 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - 108 slots (12×9) of personal item storage and 4 fluid tanks of 32 buckets each, tied to you rather than to the pets, so they survive death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
-- The tank is tinted glass between a base slab and rim that change each time you summon it: polished deepslate, or ender chest (with its lock).
+- The tank is tinted glass between a base slab and rim that change each time you summon it: polished deepslate, or a ghostly ender chest with flapping phantom wings and glowing phantom eyes (with or without the chest's latch).
 - The tank shows every tank's fluid stacked inside its glass, each layer filling a quarter of the height, with the active tank on top.
 - Buckets used on the tank take only from the active tank, and pour into it unless it holds another fluid or is full (then the fluid goes where it fits).
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
