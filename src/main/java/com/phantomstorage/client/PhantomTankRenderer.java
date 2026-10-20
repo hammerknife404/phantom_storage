@@ -22,17 +22,17 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
 /**
- * A ghostly tinted-glass tank in a {@link TankStyle} frame (base slab, top rim, corner posts), with
- * every tank's fluid inside, stacked bottom-up in tank order with the active tank's layer moved to
- * the top, each layer a quarter of the fluid space when its tank is full. Bobs like the chest.
- * Everything is drawn from vanilla block-atlas sprites, so there is no model or entity texture to
- * maintain. Never darker than light level 7, or the brightest fluid's own light level (lava).
+ * A ghostly tinted-glass tank in a {@link TankStyle} frame (base slab and top rim), with every tank's
+ * fluid inside, stacked bottom-up in tank order with the active tank's layer moved to the top, each
+ * layer a quarter of the fluid space when its tank is full. Bobs like the chest. Everything is drawn
+ * from vanilla textures (block atlas, or the ender chest's own model texture), so there is no model
+ * or texture to maintain. Never darker than light level 7, or the brightest fluid's own light (lava).
  *
  * <pre>
- *  ┌▓┬────────┬▓┐ rim    1 px
- *  │▓│ glass  │▓│ posts  1.5 px square
- *  │▓│ fluid  │▓│
- *  ╞▓╧════════╧▓╡ base   2 px
+ *  ┌────────────┐ rim    1 px
+ *  │  │ glass │ │
+ *  │  │ fluid │ │        (ender chest style: lock on the front, under the rim)
+ *  ╞══╧═══════╧═╡ base   2 px
  * </pre>
  */
 public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
@@ -47,7 +47,18 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float HEIGHT = 12.0F * PX;
     private static final float BASE = 2.0F * PX;
     private static final float RIM = PX;
-    private static final float POST = 1.5F * PX;
+    /** Glass and fluid sit this far inside the base and rim. */
+    private static final float GLASS_INSET = 0.75F * PX;
+    private static final ResourceLocation DEEPSLATE = ResourceLocation.withDefaultNamespace("block/polished_deepslate");
+    private static final ResourceLocation ENDER_CHEST = ResourceLocation.withDefaultNamespace("textures/entity/chest/ender.png");
+    /** Ender chest texture regions (64x64 sheet, vanilla chest model UVs) as u0, v0, u1, v1 fractions. */
+    private static final float[] ENDER_LID_TOP = px(14, 0, 28, 14);
+    private static final float[] ENDER_LID_UNDER = px(28, 0, 42, 14);
+    private static final float[] ENDER_LID_SIDE = px(14, 15, 28, 18);
+    private static final float[] ENDER_BASE_TOP = px(14, 19, 28, 33);
+    private static final float[] ENDER_BASE_UNDER = px(28, 19, 42, 33);
+    private static final float[] ENDER_BASE_SIDE = px(14, 40, 28, 43);
+    private static final float[] ENDER_LOCK = px(1, 1, 3, 5);
     private static final float INSET = 1.0F / 32.0F;
     private static final int FRAME_COLOR = 0xFFFFFFFF;
     private static final float MIN_LAYER = 0.08F;
@@ -78,7 +89,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
         PoseStack.Pose pose = poseStack.last();
 
-        float inner = HALF - POST;
+        float inner = HALF - GLASS_INSET - INSET;
         float floor = BASE + INSET;
         float layerMax = (HEIGHT - RIM - INSET - floor) / PhantomTanks.TANKS;
         float bottom = floor;
@@ -98,39 +109,46 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
             box(pose, consumer, sprite(ext.getStillTexture()), -inner, bottom, -inner, inner, top, inner, color, light);
             bottom = top;
         }
-        frame(pose, consumer, entity.getDisplayStyle(), light);
-        float glass = HALF - POST / 2.0F;
+        float glass = HALF - GLASS_INSET;
+        switch (entity.getDisplayStyle()) {
+            case DEEPSLATE -> {
+                TextureAtlasSprite slab = sprite(DEEPSLATE);
+                box(pose, consumer, slab, -HALF, 0.0F, -HALF, HALF, BASE, HALF, FRAME_COLOR, light);
+                box(pose, consumer, slab, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF, FRAME_COLOR, light);
+            }
+            case ENDER_CHEST -> {
+                VertexConsumer ender = buffer.getBuffer(RenderType.entityCutout(ENDER_CHEST));
+                uvBox(pose, ender, -HALF, 0.0F, -HALF, HALF, BASE, HALF,
+                        ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, light);
+                uvBox(pose, ender, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF,
+                        ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, light);
+                // The chest's lock, hanging from the rim on the front (+z, the way the pet faces).
+                uvBox(pose, ender, -PX, HEIGHT - RIM - 3.0F * PX, glass, PX, HEIGHT - RIM, glass + PX,
+                        ENDER_LOCK, ENDER_LOCK, ENDER_LOCK, light);
+                consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
+            }
+        }
         box(pose, consumer, sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, GLASS_COLOR, light);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 
-    private static void frame(PoseStack.Pose pose, VertexConsumer c, TankStyle style, int light) {
-        box(pose, c, sprite(style.base), -HALF, 0.0F, -HALF, HALF, BASE, HALF, FRAME_COLOR, light);
-        box(pose, c, sprite(style.rim), -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF, FRAME_COLOR, light);
-        TextureAtlasSprite post = sprite(style.post);
-        for (int sx = -1; sx <= 1; sx += 2) {
-            for (int sz = -1; sz <= 1; sz += 2) {
-                float x0 = sx < 0 ? -HALF : HALF - POST;
-                float z0 = sz < 0 ? -HALF : HALF - POST;
-                post(pose, c, post, style, x0, BASE, z0, x0 + POST, HEIGHT - RIM, z0 + POST, light);
-            }
-        }
+    /** A box whose faces each show a fixed region of the bound texture, stretched to fit. */
+    private static void uvBox(PoseStack.Pose pose, VertexConsumer c, float x0, float y0, float z0, float x1, float y1, float z1,
+                              float[] top, float[] bottom, float[] side, int light) {
+        int color = FRAME_COLOR;
+        quad(pose, c, color, light, 0, 1, 0, top[0], top[1], top[2], top[3], x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+        quad(pose, c, color, light, 0, -1, 0, bottom[0], bottom[1], bottom[2], bottom[3], x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
+        quad(pose, c, color, light, 0, 0, -1, side[0], side[1], side[2], side[3], x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+        quad(pose, c, color, light, 0, 0, 1, side[0], side[1], side[2], side[3], x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
+        quad(pose, c, color, light, -1, 0, 0, side[0], side[1], side[2], side[3], x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
+        quad(pose, c, color, light, 1, 0, 0, side[0], side[1], side[2], side[3], x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
     }
 
-    /** A post: the style's UV strip stretched over its whole height on each side; no end caps needed. */
-    private static void post(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite s, TankStyle style,
-                             float x0, float y0, float z0, float x1, float y1, float z1, int light) {
-        float u0 = Mth.lerp(style.postU0, s.getU0(), s.getU1());
-        float u1 = Mth.lerp(style.postU1, s.getU0(), s.getU1());
-        float vTop = Mth.lerp(style.postV0, s.getV0(), s.getV1());
-        float vBottom = Mth.lerp(style.postV1, s.getV0(), s.getV1());
-        int color = FRAME_COLOR;
-        quad(pose, c, color, light, 0, 0, -1, u0, vTop, u1, vBottom, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
-        quad(pose, c, color, light, 0, 0, 1, u0, vTop, u1, vBottom, x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
-        quad(pose, c, color, light, -1, 0, 0, u0, vTop, u1, vBottom, x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
-        quad(pose, c, color, light, 1, 0, 0, u0, vTop, u1, vBottom, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+    /** Pixel rectangle on a 64x64 texture as u0, v0, u1, v1 fractions. */
+    private static float[] px(int u0, int v0, int u1, int v1) {
+        return new float[] {u0 / 64.0F, v0 / 64.0F, u1 / 64.0F, v1 / 64.0F};
     }
 
     private static TextureAtlasSprite sprite(ResourceLocation id) {
