@@ -3,7 +3,6 @@ package com.phantomstorage.summon;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.registry.ModRegistries;
-import com.phantomstorage.storage.LegacyMigration;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -27,8 +26,6 @@ public final class PhantomChestEvents {
         bus.addListener(PhantomChestEvents::onChangedDimension);
         bus.addListener(PhantomChestEvents::onRespawn);
         bus.addListener(PhantomChestEvents::onDeath);
-        bus.addListener(PhantomChestEvents::onLoggedIn);
-        bus.addListener(PhantomChestEvents::onClone);
         bus.addListener(PhantomChestEvents::onServerStopped);
     }
 
@@ -64,7 +61,6 @@ public final class PhantomChestEvents {
             if (serverPlayer.isShiftKeyDown()) {
                 chest.toggleStay(serverPlayer);
             } else {
-                LegacyMigration.run(serverPlayer); // retry anything from 1.x still waiting for space
                 serverPlayer.openMenu(menuProvider(chest));
             }
         }
@@ -107,18 +103,6 @@ public final class PhantomChestEvents {
     private static void onDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && player.containerMenu instanceof PhantomChestMenu) {
             player.closeContainer();
-        }
-    }
-
-    private static void onLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            LegacyMigration.run(player);
-        }
-    }
-
-    private static void onClone(PlayerEvent.Clone event) {
-        if (event.getOriginal() instanceof ServerPlayer original && event.getEntity() instanceof ServerPlayer clone) {
-            LegacyMigration.copyOnClone(original, clone);
         }
     }
 
