@@ -3,6 +3,7 @@ package com.phantomstorage.menu;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.network.TankSyncPayload;
 import com.phantomstorage.registry.ModRegistries;
+import com.phantomstorage.storage.FluidContainers;
 import com.phantomstorage.storage.PhantomTanks;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,6 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -165,8 +165,8 @@ public class PhantomTankMenu extends AbstractContainerMenu {
             return;
         }
         FluidActionResult result = pour
-                ? FluidUtil.tryEmptyContainer(carried, tank, Integer.MAX_VALUE, player, true)
-                : FluidUtil.tryFillContainer(carried, tank, Integer.MAX_VALUE, player, true);
+                ? FluidContainers.pour(carried, tank, player)
+                : FluidContainers.take(carried, tank, player);
         if (!result.isSuccess()) {
             return;
         }

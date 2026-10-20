@@ -42,25 +42,6 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
         }
     }
 
-    public int totalAmount() {
-        int total = 0;
-        for (FluidTank tank : this.tanks) {
-            total += tank.getFluidAmount();
-        }
-        return total;
-    }
-
-    /** The fluid with the most volume, for rendering the pet; empty when all tanks are. */
-    public FluidStack dominant() {
-        FluidStack best = FluidStack.EMPTY;
-        for (FluidTank tank : this.tanks) {
-            if (tank.getFluidAmount() > best.getAmount()) {
-                best = tank.getFluid();
-            }
-        }
-        return best;
-    }
-
     // ---- IFluidHandler -------------------------------------------------------------------------
 
     @Override
@@ -109,6 +90,12 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     public FluidStack drain(FluidStack resource, FluidAction action) {
         if (resource.isEmpty()) {
             return FluidStack.EMPTY;
+        }
+        // A tank that can cover the whole request first, so a nearly empty tank doesn't block a full bottle.
+        for (FluidTank tank : this.tanks) {
+            if (tank.getFluidAmount() >= resource.getAmount() && FluidStack.isSameFluidSameComponents(tank.getFluid(), resource)) {
+                return tank.drain(resource, action);
+            }
         }
         for (FluidTank tank : this.tanks) {
             FluidStack drained = tank.drain(resource, action);

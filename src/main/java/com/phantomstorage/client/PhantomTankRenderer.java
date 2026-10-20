@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.phantomstorage.entity.PhantomTankEntity;
+import com.phantomstorage.storage.PhantomTanks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -20,10 +21,10 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
 /**
- * A ghostly glass cube with the tank's fullest fluid inside, filled to the overall level, bobbing
- * like the chest. Both are drawn from block-atlas sprites (vanilla glass, the fluid's own still
+ * A ghostly glass cube with every tank's fluid inside, stacked bottom-up in tank order, each layer a
+ * quarter of the height when its tank is full. Bobs like the chest. Both are drawn from block-atlas sprites (vanilla glass, the fluid's own still
  * texture), so there is no model or entity texture to maintain. Never darker than light level 7,
- * or the fluid's own light level if brighter (lava).
+ * or the brightest fluid's own light level (lava).
  */
 public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final ResourceLocation GLASS = ResourceLocation.withDefaultNamespace("block/glass");
@@ -34,6 +35,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float HALF = 11.0F / 32.0F;
     private static final float HEIGHT = 0.6875F;
     private static final float INSET = 1.0F / 32.0F;
+    private static final float MIN_LAYER = 0.08F;
 
     public PhantomTankRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -50,22 +52,32 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         float bodyYaw = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
         poseStack.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
 
-        Fluid fluid = entity.getDisplayFluid();
-        float fill = Mth.clamp(entity.getDisplayFill(), 0.0F, 1.0F);
         int blockLight = Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT);
-        if (fluid != Fluids.EMPTY) {
-            blockLight = Math.max(blockLight, fluid.getFluidType().getLightLevel());
+        for (int i = 0; i < PhantomTanks.TANKS; i++) {
+            Fluid fluid = entity.getDisplayFluid(i);
+            if (fluid != Fluids.EMPTY) {
+                blockLight = Math.max(blockLight, fluid.getFluidType().getLightLevel());
+            }
         }
         int light = LightTexture.pack(blockLight, LightTexture.sky(packedLight));
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
         PoseStack.Pose pose = poseStack.last();
 
-        if (fluid != Fluids.EMPTY && fill > 0.0F) {
+        float inner = HALF - INSET;
+        float layerMax = (HEIGHT - 2.0F * INSET) / PhantomTanks.TANKS;
+        float bottom = INSET;
+        for (int i = 0; i < PhantomTanks.TANKS; i++) {
+            Fluid fluid = entity.getDisplayFluid(i);
+            float fill = Mth.clamp(entity.getDisplayFill(i), 0.0F, 1.0F);
+            if (fluid == Fluids.EMPTY || fill <= 0.0F) {
+                continue;
+            }
+            // A sliver of fluid still shows as a thin layer.
+            float top = bottom + layerMax * Math.max(fill, MIN_LAYER);
             IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(fluid);
             int color = FLUID_ALPHA << 24 | (ext.getTintColor() & 0xFFFFFF);
-            float inner = HALF - INSET;
-            float top = INSET + (HEIGHT - 2.0F * INSET) * Math.max(fill, 0.04F);
-            box(pose, consumer, sprite(ext.getStillTexture()), -inner, INSET, -inner, inner, top, inner, color, light);
+            box(pose, consumer, sprite(ext.getStillTexture()), -inner, bottom, -inner, inner, top, inner, color, light);
+            bottom = top;
         }
         box(pose, consumer, sprite(GLASS), -HALF, 0.0F, -HALF, HALF, HEIGHT, HALF, GLASS_COLOR, light);
         poseStack.popPose();
