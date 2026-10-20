@@ -6,8 +6,9 @@ A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. Th
 
 | Action | Result |
 |---|---|
-| Use **Phantom Charm** / **Phantom Flask** | Summon your chest / tank, or recall it to your side if it's already out (5 s cooldown) |
-| Sneak + use the charm / flask | Dismiss that pet (same cooldown) |
+| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest or Tank (the charm's art changes to match) |
+| Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown) |
+| Sneak + use the charm | Dismiss that pet (same cooldown) |
 | Right-click a pet | Open its storage |
 | Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
@@ -33,7 +34,7 @@ Tank:
 | Gauge, right-click with an empty container | Fills it from that tank |
 | Trash (under each gauge) | Destroys the fluid in that tank |
 
-**Recipes:** Phantom Membrane ×3 around the centre item, Soul Torch below, Gold Ingot in each corner. Centre: Ender Chest for the Phantom Charm, Cauldron for the Phantom Flask.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner. One charm summons every pet.
 
 ## What you get
 
@@ -45,7 +46,7 @@ Tank:
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm or flask.
+- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm.
 
 ## Build
 

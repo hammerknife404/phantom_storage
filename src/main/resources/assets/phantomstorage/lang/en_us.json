@@ -1,11 +1,12 @@
 {
   "item.phantomstorage.phantom_charm": "Phantom Charm",
   "itemGroup.phantomstorage": "Phantom Storage",
-  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon / recall chest",
-  "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss chest",
-  "item.phantomstorage.phantom_flask": "Phantom Flask",
-  "item.phantomstorage.phantom_flask.tooltip.summon": "Right-click: Summon / recall tank",
-  "item.phantomstorage.phantom_flask.tooltip.dismiss": "Shift + Right-click: Dismiss tank",
+  "item.phantomstorage.phantom_charm.tooltip.mode": "Mode: %s",
+  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon / recall",
+  "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss",
+  "item.phantomstorage.phantom_charm.tooltip.cycle": "Shift + Scroll: Change mode",
+  "pet.phantomstorage.chest": "Chest",
+  "pet.phantomstorage.tank": "Tank",
   "entity.phantomstorage.phantom_chest": "Phantom Chest",
   "entity.phantomstorage.phantom_tank": "Phantom Tank",
   "container.phantomstorage.phantom_chest": "Phantom Chest",
@@ -39,5 +40,6 @@
   "message.phantomstorage.tank.stay": "Phantom Tank will stay here",
   "message.phantomstorage.tank.follow": "Phantom Tank will follow you",
   "message.phantomstorage.tank.active": "Active tank %s: %s",
-  "message.phantomstorage.tank.contents": "%s (%s mB)"
+  "message.phantomstorage.tank.contents": "%s (%s mB)",
+  "message.phantomstorage.charm.mode": "Phantom Charm: %s"
 }

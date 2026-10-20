@@ -2,7 +2,7 @@ package com.phantomstorage;
 
 import com.mojang.logging.LogUtils;
 import com.phantomstorage.entity.PhantomPetEntity;
-import com.phantomstorage.network.TankSyncPayload;
+import com.phantomstorage.network.ModNetwork;
 import com.phantomstorage.registry.ModRegistries;
 import com.phantomstorage.summon.PhantomPetEvents;
 import net.minecraft.resources.ResourceLocation;
@@ -23,7 +23,7 @@ public final class PhantomStorage {
         ModRegistries.register(modBus);
         modBus.addListener(PhantomStorage::onEntityAttributes);
         modBus.addListener(PhantomStorage::onCreativeTabs);
-        modBus.addListener(TankSyncPayload::register);
+        modBus.addListener(ModNetwork::register);
         PhantomPetEvents.register(NeoForge.EVENT_BUS);
     }
 
@@ -39,7 +39,6 @@ public final class PhantomStorage {
     private static void onCreativeTabs(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ModRegistries.PHANTOM_CHARM.get());
-            event.accept(ModRegistries.PHANTOM_FLASK.get());
         }
     }
 }

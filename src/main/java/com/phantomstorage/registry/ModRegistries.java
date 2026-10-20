@@ -10,6 +10,7 @@ import com.phantomstorage.storage.PhantomInventory;
 import com.phantomstorage.storage.PhantomTanks;
 import com.phantomstorage.summon.PetKind;
 import java.util.function.Supplier;
+import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
@@ -30,6 +31,8 @@ import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
 public final class ModRegistries {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(PhantomStorage.MODID);
+    private static final DeferredRegister.DataComponents DATA_COMPONENTS =
+            DeferredRegister.createDataComponents(PhantomStorage.MODID);
     private static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
             DeferredRegister.create(Registries.ENTITY_TYPE, PhantomStorage.MODID);
     private static final DeferredRegister<MenuType<?>> MENU_TYPES =
@@ -39,20 +42,21 @@ public final class ModRegistries {
     private static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PhantomStorage.MODID);
 
+    /** Which pet a Phantom Charm summons. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<PetKind>> CHARM_MODE =
+            DATA_COMPONENTS.registerComponentType("charm_mode",
+                    builder -> builder.persistent(PetKind.CODEC).networkSynchronized(PetKind.STREAM_CODEC));
+
     public static final DeferredItem<PhantomCharmItem> PHANTOM_CHARM = ITEMS.register("phantom_charm",
-            () -> new PhantomCharmItem(PetKind.CHEST, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
-    public static final DeferredItem<PhantomCharmItem> PHANTOM_FLASK = ITEMS.register("phantom_flask",
-            () -> new PhantomCharmItem(PetKind.TANK, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+            () -> new PhantomCharmItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+                    .component(CHARM_MODE.get(), PetKind.CHEST)));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_TABS.register("phantomstorage",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.phantomstorage"))
                     .icon(() -> new ItemStack(PHANTOM_CHARM.get()))
                     .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
-                    .displayItems((params, output) -> {
-                        output.accept(PHANTOM_CHARM.get());
-                        output.accept(PHANTOM_FLASK.get());
-                    })
+                    .displayItems((params, output) -> output.accept(PHANTOM_CHARM.get()))
                     .build());
 
     // noSummon(): the chest can only come into existence through the charm, never /summon or spawners.
@@ -93,6 +97,9 @@ public final class ModRegistries {
     private ModRegistries() {}
 
     public static void register(IEventBus modBus) {
+        // The Phantom Flask (2.4 dev builds) became the charm's tank mode.
+        ITEMS.addAlias(PhantomStorage.id("phantom_flask"), PHANTOM_CHARM.getId());
+        DATA_COMPONENTS.register(modBus);
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENU_TYPES.register(modBus);

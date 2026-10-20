@@ -21,15 +21,16 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
 /**
- * A ghostly glass cube with every tank's fluid inside, stacked bottom-up in tank order with the
- * active tank's layer moved to the top, each layer a quarter of the height when its tank is full. Bobs like the chest. Both are drawn from block-atlas sprites (vanilla glass, the fluid's own still
- * texture), so there is no model or entity texture to maintain. Never darker than light level 7,
+ * A ghostly tinted-glass cube with every tank's fluid inside, stacked bottom-up in tank order with
+ * the active tank's layer moved to the top, each layer a quarter of the height when its tank is
+ * full. Bobs like the chest. Both are drawn from block-atlas sprites (vanilla tinted glass, the
+ * fluid's own still texture), so there is no model or entity texture to maintain. Never darker than light level 7,
  * or the brightest fluid's own light level (lava).
  */
 public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
-    private static final ResourceLocation GLASS = ResourceLocation.withDefaultNamespace("block/glass");
-    /** ARGB: translucent with a faint violet tint, to match the chest. */
-    private static final int GLASS_COLOR = 0xB0D8CCFF;
+    private static final ResourceLocation GLASS = ResourceLocation.withDefaultNamespace("block/tinted_glass");
+    /** ARGB: extra translucency only; the texture already carries the violet tint. */
+    private static final int GLASS_COLOR = 0xB0FFFFFF;
     private static final int FLUID_ALPHA = 0xD0;
     private static final int MIN_BLOCK_LIGHT = 7;
     private static final float HALF = 11.0F / 32.0F;

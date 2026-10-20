@@ -8,7 +8,6 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
@@ -29,12 +28,8 @@ public record TankSyncPayload(int containerId, List<FluidStack> fluids, int acti
         return TYPE;
     }
 
-    public static void register(RegisterPayloadHandlersEvent event) {
-        event.registrar("2").playToClient(TYPE, STREAM_CODEC, TankSyncPayload::handle);
-    }
-
     /** Runs on the client main thread. A stale id (menu already closed) is ignored. */
-    private static void handle(TankSyncPayload payload, IPayloadContext context) {
+    static void handle(TankSyncPayload payload, IPayloadContext context) {
         if (context.player().containerMenu instanceof PhantomTankMenu menu && menu.containerId == payload.containerId()) {
             menu.receive(payload.fluids(), payload.active());
         }

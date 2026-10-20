@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "phantomstorage:item/phantom_flask"
+    "layer0": "phantomstorage:item/phantom_charm_tank"
   }
 }
