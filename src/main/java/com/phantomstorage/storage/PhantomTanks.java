@@ -24,10 +24,13 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     public static final int CAPACITY = 32_000;
     private static final String KEY_TANKS = "Tanks";
     private static final String KEY_ACTIVE = "Active";
+    private static final String KEY_STYLE = "Style";
 
     private final FluidTank[] tanks = new FluidTank[TANKS];
     private final IFluidHandler selected = new Selected();
     private int active;
+    /** Index into {@code TankStyle}; only the look of the pet. */
+    private int style;
 
     public PhantomTanks() {
         for (int i = 0; i < TANKS; i++) {
@@ -60,6 +63,15 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     public int cycleActive() {
         this.setActive(this.active + 1);
         return this.active;
+    }
+
+    public int getStyle() {
+        return this.style;
+    }
+
+    /** Next frame style along; called on every summon. */
+    public int nextStyle() {
+        return ++this.style;
     }
 
     /**
@@ -156,6 +168,7 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
         CompoundTag tag = new CompoundTag();
         tag.put(KEY_TANKS, list);
         tag.putInt(KEY_ACTIVE, this.active);
+        tag.putInt(KEY_STYLE, this.style);
         return tag;
     }
 
@@ -169,6 +182,7 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
             }
         }
         this.setActive(tag.getInt(KEY_ACTIVE));
+        this.style = tag.getInt(KEY_STYLE);
     }
 
     private final class Selected implements IFluidHandler {

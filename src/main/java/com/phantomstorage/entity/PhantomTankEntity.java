@@ -37,6 +37,8 @@ public class PhantomTankEntity extends PhantomPetEntity {
     private static final List<EntityDataAccessor<Float>> DATA_FILL = new ArrayList<>(PhantomTanks.TANKS);
     private static final EntityDataAccessor<Integer> DATA_ACTIVE =
             SynchedEntityData.defineId(PhantomTankEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DATA_STYLE =
+            SynchedEntityData.defineId(PhantomTankEntity.class, EntityDataSerializers.INT);
     private static final int DISPLAY_INTERVAL = 10;
 
     static {
@@ -63,6 +65,15 @@ public class PhantomTankEntity extends PhantomPetEntity {
             builder.define(DATA_FILL.get(i), 0.0F);
         }
         builder.define(DATA_ACTIVE, 0);
+        builder.define(DATA_STYLE, 0);
+    }
+
+    /** Each summon shows the next {@link TankStyle} frame. */
+    @Override
+    public void onSummoned(ServerPlayer owner) {
+        PhantomTanks tanks = owner.getData(ModRegistries.TANKS);
+        tanks.nextStyle();
+        this.updateDisplay(tanks);
     }
 
     @Override
@@ -118,6 +129,12 @@ public class PhantomTankEntity extends PhantomPetEntity {
             this.entityData.set(DATA_FILL.get(i), fluid.getAmount() / (float) PhantomTanks.CAPACITY);
         }
         this.entityData.set(DATA_ACTIVE, tanks.getActive());
+        this.entityData.set(DATA_STYLE, tanks.getStyle());
+    }
+
+    /** Client: the frame to draw. */
+    public TankStyle getDisplayStyle() {
+        return TankStyle.byIndex(this.entityData.get(DATA_STYLE));
     }
 
     /** Client: the active tank's index. */

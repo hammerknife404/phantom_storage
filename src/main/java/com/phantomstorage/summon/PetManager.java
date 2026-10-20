@@ -51,6 +51,7 @@ public final class PetManager {
             return false;
         }
         pet.bindOwner(player);
+        pet.onSummoned(player);
 
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);

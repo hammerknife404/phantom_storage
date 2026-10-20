@@ -110,6 +110,9 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         player.displayClientMessage(Component.translatable(this.kind().message(stay ? "stay" : "follow")), true);
     }
 
+    /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
+    public void onSummoned(ServerPlayer owner) {}
+
     /** Whether {@code player} may keep a menu on this pet open. */
     public boolean canBeUsedBy(Player player) {
         return player.isAlive()
