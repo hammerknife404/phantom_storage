@@ -1,6 +1,7 @@
 package com.phantomstorage.summon;
 
 import com.phantomstorage.entity.PhantomPetEntity;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -9,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -23,6 +25,7 @@ public final class PhantomPetEvents {
         bus.addListener(PhantomPetEvents::onRespawn);
         bus.addListener(PhantomPetEvents::onDeath);
         bus.addListener(PhantomPetEvents::onServerStopped);
+        bus.addListener(PhantomPetEvents::onAdvancementEarned);
     }
 
     /**
@@ -55,7 +58,9 @@ public final class PhantomPetEvents {
         }
         if (player instanceof ServerPlayer serverPlayer) {
             if (serverPlayer.isShiftKeyDown()) {
-                pet.toggleStay(serverPlayer);
+                if (!pet.sneakInteract(serverPlayer, event.getHand())) {
+                    pet.toggleStay(serverPlayer);
+                }
             } else {
                 pet.interact(serverPlayer, event.getHand());
             }
@@ -97,6 +102,18 @@ public final class PhantomPetEvents {
             for (PetKind kind : PetKind.values()) {
                 if (kind.isMenu(player.containerMenu)) {
                     player.closeContainer();
+                }
+            }
+        }
+    }
+
+    /** Tells the player when an advancement unlocks a pet for their charm. */
+    private static void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            for (PetKind kind : PetKind.values()) {
+                if (kind.isUnlockedBy(event.getAdvancement().id())) {
+                    player.sendSystemMessage(Component.translatable("message.phantomstorage.unlocked", kind.displayName())
+                            .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
             }
         }

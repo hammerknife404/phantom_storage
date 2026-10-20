@@ -75,6 +75,14 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     /** The owner right-clicked this pet (not sneaking, not with a name tag). Server-side only. */
     public abstract void interact(ServerPlayer owner, InteractionHand hand);
 
+    /**
+     * The owner sneak-right-clicked this pet. Return true if that was handled; otherwise it toggles
+     * stay / follow. Server-side only.
+     */
+    public boolean sneakInteract(ServerPlayer owner, InteractionHand hand) {
+        return false;
+    }
+
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(1, new PhantomStayGoal(this));
@@ -101,6 +109,9 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         this.navigation.stop();
         player.displayClientMessage(Component.translatable(this.kind().message(stay ? "stay" : "follow")), true);
     }
+
+    /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
+    public void onSummoned(ServerPlayer owner) {}
 
     /** Whether {@code player} may keep a menu on this pet open. */
     public boolean canBeUsedBy(Player player) {

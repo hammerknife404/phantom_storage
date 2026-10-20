@@ -6,11 +6,13 @@ A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. Th
 
 | Action | Result |
 |---|---|
-| Use **Phantom Charm** / **Phantom Flask** | Summon your chest / tank, or recall it to your side if it's already out (5 s cooldown) |
-| Sneak + use the charm / flask | Dismiss that pet (same cooldown) |
+| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest or Tank (the charm's art changes to match) |
+| Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown) |
+| Sneak + use the charm | Dismiss that pet (same cooldown) |
 | Right-click a pet | Open its storage |
-| Right-click the tank with a bucket (or any fluid container) | Pour in, or fill an empty one, without opening the GUI |
-| Sneak + right-click a pet | Toggle stay / follow |
+| Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI |
+| Sneak + right-click the tank holding a fluid container | Cycle the active tank |
+| Sneak + right-click a pet (empty-handed) | Toggle stay / follow |
 | Look at a pet ~½ s (while idle) | It comes within reach |
 
 In either GUI, hover any icon or gauge for a short description.
@@ -27,22 +29,33 @@ Tank:
 
 | Control | Does |
 |---|---|
+| Gauge, click with an empty cursor | Makes that the active tank (outlined) |
 | Gauge, left-click with a filled container | Pours it into that tank |
 | Gauge, right-click with an empty container | Fills it from that tank |
 | Trash (under each gauge) | Destroys the fluid in that tank |
 
-**Recipes:** Phantom Membrane ×3 around the centre item, Soul Torch below, Gold Ingot in each corner. Centre: Ender Chest for the Phantom Charm, Cauldron for the Phantom Flask.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner. One charm summons every pet.
+
+**Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
+
+| Pet | Unlocked by |
+|---|---|
+| Phantom Tank | *Ice Bucket Challenge* (obtain obsidian) |
+
+Until then the charm skips that mode. Creative mode ignores unlocks.
 
 ## What you get
 
 - 108 slots (12×9) of personal item storage and 4 fluid tanks of 32 buckets each, tied to you rather than to the pets, so they survive death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
-- The tank shows its fullest fluid inside its glass, filled to the overall level.
+- The tank is tinted glass in a vanilla-block frame that changes each time you summon it: crying obsidian with iron posts, cauldron, copper, purpur with end rods, deepslate with chains.
+- The tank shows every tank's fluid stacked inside its glass, each layer filling a quarter of the height, with the active tank on top.
+- Buckets used on the tank take only from the active tank, and pour into it unless it holds another fluid or is full (then the fluid goes where it fits).
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm or flask.
+- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm.
 
 ## Build
 

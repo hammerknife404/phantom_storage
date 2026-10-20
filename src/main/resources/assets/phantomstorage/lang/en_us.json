@@ -1,11 +1,12 @@
 {
   "item.phantomstorage.phantom_charm": "Phantom Charm",
   "itemGroup.phantomstorage": "Phantom Storage",
-  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon / recall chest",
-  "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss chest",
-  "item.phantomstorage.phantom_flask": "Phantom Flask",
-  "item.phantomstorage.phantom_flask.tooltip.summon": "Right-click: Summon / recall tank",
-  "item.phantomstorage.phantom_flask.tooltip.dismiss": "Shift + Right-click: Dismiss tank",
+  "item.phantomstorage.phantom_charm.tooltip.mode": "Mode: %s",
+  "item.phantomstorage.phantom_charm.tooltip.summon": "Right-click: Summon / recall",
+  "item.phantomstorage.phantom_charm.tooltip.dismiss": "Shift + Right-click: Dismiss",
+  "item.phantomstorage.phantom_charm.tooltip.cycle": "Shift + Scroll: Change mode",
+  "pet.phantomstorage.chest": "Chest",
+  "pet.phantomstorage.tank": "Tank",
   "entity.phantomstorage.phantom_chest": "Phantom Chest",
   "entity.phantomstorage.phantom_tank": "Phantom Tank",
   "container.phantomstorage.phantom_chest": "Phantom Chest",
@@ -22,6 +23,8 @@
   "tooltip.phantomstorage.result.desc": "Shift-click to craft as many as possible",
   "tooltip.phantomstorage.tank_empty": "Empty",
   "tooltip.phantomstorage.tank_amount": "%s / %s mB",
+  "tooltip.phantomstorage.tank_active": "Active tank: buckets used on the tank start here",
+  "tooltip.phantomstorage.tank_select": "Click with an empty cursor: make active",
   "tooltip.phantomstorage.tank_pour": "Left-click with a container: pour in",
   "tooltip.phantomstorage.tank_take": "Right-click with a container: fill it",
   "tooltip.phantomstorage.tank_trash": "Empty tank",
@@ -35,5 +38,10 @@
   "message.phantomstorage.tank.not_owner": "This Phantom Tank belongs to someone else",
   "message.phantomstorage.tank.dismissed": "Phantom Tank dismissed",
   "message.phantomstorage.tank.stay": "Phantom Tank will stay here",
-  "message.phantomstorage.tank.follow": "Phantom Tank will follow you"
+  "message.phantomstorage.tank.follow": "Phantom Tank will follow you",
+  "message.phantomstorage.tank.active": "Active tank %s: %s",
+  "message.phantomstorage.tank.contents": "%s (%s mB)",
+  "message.phantomstorage.charm.mode": "Phantom Charm: %s",
+  "message.phantomstorage.locked": "%s is locked. Earn the advancement \"%s\" to unlock it",
+  "message.phantomstorage.unlocked": "Phantom %s unlocked! Sneak + scroll your Phantom Charm to switch to it"
 }

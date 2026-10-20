@@ -2,5 +2,8 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "phantomstorage:item/phantom_charm"
-  }
+  },
+  "overrides": [
+    { "predicate": { "phantomstorage:mode": 1 }, "model": "phantomstorage:item/phantom_charm_tank" }
+  ]
 }
