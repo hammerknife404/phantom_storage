@@ -24,6 +24,8 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
     private static final int GAUGE_BACK = 0xFF5E586E;
     private static final int GAUGE_TICK = 0x60FFFFFF;
     private static final int GAUGE_HOVER = 0x40FFFFFF;
+    /** Outline around the active tank's gauge, in the icon hover violet. */
+    private static final int ACTIVE_OUTLINE = PhantomChestScreen.ICON_BODY_HOVER;
     private static final int TILE = 16;
 
     private static final List<Component> TRASH_TOOLTIP = PhantomChestScreen.tooltip("tank_trash");
@@ -74,6 +76,9 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         int y0 = this.topPos + PhantomTankMenu.GAUGE_Y;
         int x1 = x0 + PhantomTankMenu.GAUGE_W;
         int y1 = y0 + PhantomTankMenu.GAUGE_H;
+        if (tank == this.menu.getActive()) {
+            g.fill(x0 - 2, y0 - 2, x1 + 2, y1 + 2, ACTIVE_OUTLINE);
+        }
         g.fill(x0, y0, x1, y1, GAUGE_EDGE);
         g.fill(x0 + 1, y0 + 1, x1 - 1, y1 - 1, GAUGE_BACK);
 
@@ -134,11 +139,15 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         Component name = fluid.isEmpty()
                 ? Component.translatable("tooltip.phantomstorage.tank_empty")
                 : fluid.getHoverName();
+        boolean active = tank == this.menu.getActive();
         return List.of(
                 name,
                 Component.translatable("tooltip.phantomstorage.tank_amount",
                         String.format("%,d", fluid.getAmount()), String.format("%,d", PhantomTanks.CAPACITY))
                         .withStyle(ChatFormatting.GRAY),
+                active
+                        ? Component.translatable("tooltip.phantomstorage.tank_active").withStyle(ChatFormatting.LIGHT_PURPLE)
+                        : Component.translatable("tooltip.phantomstorage.tank_select").withStyle(ChatFormatting.DARK_GRAY),
                 Component.translatable("tooltip.phantomstorage.tank_pour").withStyle(ChatFormatting.DARK_GRAY),
                 Component.translatable("tooltip.phantomstorage.tank_take").withStyle(ChatFormatting.DARK_GRAY));
     }
@@ -151,17 +160,17 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         int gauge = this.gaugeAt(mouseX, mouseY);
         int trash = this.trashAt(mouseX, mouseY);
         if (gauge >= 0 && (button == 0 || button == 1)) {
-            if (this.menu.getCarried().isEmpty()) {
-                return true; // nothing to pour or fill; don't fall through to slot handling
-            }
-            menuButton = gauge * PhantomTankMenu.ACTIONS + (button == 0 ? PhantomTankMenu.ACTION_POUR : PhantomTankMenu.ACTION_TAKE);
+            int action = this.menu.getCarried().isEmpty() ? PhantomTankMenu.ACTION_SELECT
+                    : button == 0 ? PhantomTankMenu.ACTION_POUR
+                    : PhantomTankMenu.ACTION_TAKE;
+            menuButton = gauge * PhantomTankMenu.ACTIONS + action;
         } else if (trash >= 0 && button == 0) {
             menuButton = trash * PhantomTankMenu.ACTIONS + PhantomTankMenu.ACTION_VOID;
         }
         if (menuButton >= 0 && this.minecraft != null && this.minecraft.gameMode != null) {
             // The server validates the menu and does the work; see PhantomTankMenu#clickMenuButton.
             this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, menuButton);
-            if (trash >= 0) {
+            if (trash >= 0 || this.menu.getCarried().isEmpty()) {
                 this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             }
             return true;

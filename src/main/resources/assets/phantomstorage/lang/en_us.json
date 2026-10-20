@@ -22,6 +22,8 @@
   "tooltip.phantomstorage.result.desc": "Shift-click to craft as many as possible",
   "tooltip.phantomstorage.tank_empty": "Empty",
   "tooltip.phantomstorage.tank_amount": "%s / %s mB",
+  "tooltip.phantomstorage.tank_active": "Active tank: buckets used on the tank start here",
+  "tooltip.phantomstorage.tank_select": "Click with an empty cursor: make active",
   "tooltip.phantomstorage.tank_pour": "Left-click with a container: pour in",
   "tooltip.phantomstorage.tank_take": "Right-click with a container: fill it",
   "tooltip.phantomstorage.tank_trash": "Empty tank",
@@ -35,5 +37,7 @@
   "message.phantomstorage.tank.not_owner": "This Phantom Tank belongs to someone else",
   "message.phantomstorage.tank.dismissed": "Phantom Tank dismissed",
   "message.phantomstorage.tank.stay": "Phantom Tank will stay here",
-  "message.phantomstorage.tank.follow": "Phantom Tank will follow you"
+  "message.phantomstorage.tank.follow": "Phantom Tank will follow you",
+  "message.phantomstorage.tank.active": "Active tank %s: %s",
+  "message.phantomstorage.tank.contents": "%s (%s mB)"
 }

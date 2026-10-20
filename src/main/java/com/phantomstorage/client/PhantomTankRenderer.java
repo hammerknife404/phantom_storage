@@ -21,8 +21,8 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
 /**
- * A ghostly glass cube with every tank's fluid inside, stacked bottom-up in tank order, each layer a
- * quarter of the height when its tank is full. Bobs like the chest. Both are drawn from block-atlas sprites (vanilla glass, the fluid's own still
+ * A ghostly glass cube with every tank's fluid inside, stacked bottom-up in tank order with the
+ * active tank's layer moved to the top, each layer a quarter of the height when its tank is full. Bobs like the chest. Both are drawn from block-atlas sprites (vanilla glass, the fluid's own still
  * texture), so there is no model or entity texture to maintain. Never darker than light level 7,
  * or the brightest fluid's own light level (lava).
  */
@@ -66,7 +66,10 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         float inner = HALF - INSET;
         float layerMax = (HEIGHT - 2.0F * INSET) / PhantomTanks.TANKS;
         float bottom = INSET;
-        for (int i = 0; i < PhantomTanks.TANKS; i++) {
+        int active = entity.getDisplayActive();
+        for (int n = 0; n < PhantomTanks.TANKS; n++) {
+            // Every other tank in order, then the active one last, on top.
+            int i = n == PhantomTanks.TANKS - 1 ? active : n < active ? n : n + 1;
             Fluid fluid = entity.getDisplayFluid(i);
             float fill = Mth.clamp(entity.getDisplayFill(i), 0.0F, 1.0F);
             if (fluid == Fluids.EMPTY || fill <= 0.0F) {

@@ -55,7 +55,9 @@ public final class PhantomPetEvents {
         }
         if (player instanceof ServerPlayer serverPlayer) {
             if (serverPlayer.isShiftKeyDown()) {
-                pet.toggleStay(serverPlayer);
+                if (!pet.sneakInteract(serverPlayer, event.getHand())) {
+                    pet.toggleStay(serverPlayer);
+                }
             } else {
                 pet.interact(serverPlayer, event.getHand());
             }

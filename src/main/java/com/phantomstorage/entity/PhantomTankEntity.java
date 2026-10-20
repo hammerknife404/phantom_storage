@@ -8,10 +8,12 @@ import com.phantomstorage.summon.PetKind;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.EntityType;
@@ -26,12 +28,15 @@ import net.neoforged.neoforge.fluids.FluidStack;
 
 /**
  * The summoned tank: opens the owner's fluid storage ({@code ModRegistries.TANKS}). Right-clicking
- * it with a bucket, bottle or other fluid container pours in or takes out without opening the GUI.
- * Each tank's fluid and level is synced from the owner's storage so the renderer can stack them.
+ * it with a bucket, bottle or other fluid container pours in or takes out of the active tank without
+ * opening the GUI; sneak-right-clicking with one cycles the active tank. Each tank's fluid and level,
+ * and which is active, are synced from the owner's storage for the renderer.
  */
 public class PhantomTankEntity extends PhantomPetEntity {
     private static final List<EntityDataAccessor<Integer>> DATA_FLUID = new ArrayList<>(PhantomTanks.TANKS);
     private static final List<EntityDataAccessor<Float>> DATA_FILL = new ArrayList<>(PhantomTanks.TANKS);
+    private static final EntityDataAccessor<Integer> DATA_ACTIVE =
+            SynchedEntityData.defineId(PhantomTankEntity.class, EntityDataSerializers.INT);
     private static final int DISPLAY_INTERVAL = 10;
 
     static {
@@ -57,6 +62,7 @@ public class PhantomTankEntity extends PhantomPetEntity {
             builder.define(DATA_FLUID.get(i), BuiltInRegistries.FLUID.getId(Fluids.EMPTY));
             builder.define(DATA_FILL.get(i), 0.0F);
         }
+        builder.define(DATA_ACTIVE, 0);
     }
 
     @Override
@@ -64,7 +70,7 @@ public class PhantomTankEntity extends PhantomPetEntity {
         PhantomTanks tanks = owner.getData(ModRegistries.TANKS);
         ItemStack held = owner.getItemInHand(hand);
         if (FluidContainers.isContainer(held)) {
-            FluidActionResult result = FluidContainers.interact(held, tanks, owner);
+            FluidActionResult result = FluidContainers.interact(held, tanks.selected(), owner);
             if (result.isSuccess()) {
                 owner.setItemInHand(hand, ItemUtils.createFilledResult(held, owner, result.getResult()));
             }
@@ -74,6 +80,25 @@ public class PhantomTankEntity extends PhantomPetEntity {
         owner.openMenu(new SimpleMenuProvider(
                 (windowId, inventory, p) -> new PhantomTankMenu(windowId, inventory, tanks, this),
                 this.titleOr("container.phantomstorage.phantom_tank")));
+    }
+
+    /** Sneak-use with a fluid container cycles the active tank; empty-handed it still toggles stay. */
+    @Override
+    public boolean sneakInteract(ServerPlayer owner, InteractionHand hand) {
+        if (!FluidContainers.isContainer(owner.getItemInHand(hand))) {
+            return false;
+        }
+        PhantomTanks tanks = owner.getData(ModRegistries.TANKS);
+        int active = tanks.cycleActive();
+        FluidStack fluid = tanks.getFluidInTank(active);
+        Component contents = fluid.isEmpty()
+                ? Component.translatable("tooltip.phantomstorage.tank_empty")
+                : Component.translatable("message.phantomstorage.tank.contents",
+                        fluid.getHoverName(), String.format("%,d", fluid.getAmount()));
+        owner.displayClientMessage(Component.translatable("message.phantomstorage.tank.active", active + 1, contents), true);
+        this.playSound(SoundEvents.UI_BUTTON_CLICK.value(), 0.4F, 1.4F);
+        this.updateDisplay(tanks);
+        return true;
     }
 
     @Override
@@ -92,6 +117,12 @@ public class PhantomTankEntity extends PhantomPetEntity {
             this.entityData.set(DATA_FLUID.get(i), BuiltInRegistries.FLUID.getId(fluid.isEmpty() ? Fluids.EMPTY : fluid.getFluid()));
             this.entityData.set(DATA_FILL.get(i), fluid.getAmount() / (float) PhantomTanks.CAPACITY);
         }
+        this.entityData.set(DATA_ACTIVE, tanks.getActive());
+    }
+
+    /** Client: the active tank's index. */
+    public int getDisplayActive() {
+        return this.entityData.get(DATA_ACTIVE);
     }
 
     /** Client: tank {@code i}'s fluid ({@link Fluids#EMPTY} when empty). */

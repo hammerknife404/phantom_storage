@@ -23,8 +23,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
  * The tank screen: {@link PhantomTanks#TANKS} gauges over the player inventory. There are no fluid
- * slots: clicking a gauge with a container on the cursor pours it in (left) or fills it (right), and
- * each gauge has a trash button. All of it arrives as container-button clicks and runs server-side.
+ * slots: clicking a gauge with a container on the cursor pours it in (left) or fills it (right),
+ * clicking it with an empty cursor makes it the active tank, and each gauge has a trash button. All of it arrives as container-button clicks and runs server-side.
  *
  * <pre>
  * +------------------------------+
@@ -54,7 +54,8 @@ public class PhantomTankMenu extends AbstractContainerMenu {
     public static final int ACTION_POUR = 0;
     public static final int ACTION_TAKE = 1;
     public static final int ACTION_VOID = 2;
-    public static final int ACTIONS = 3;
+    public static final int ACTION_SELECT = 3;
+    public static final int ACTIONS = 4;
 
     private static final int INV_SLOTS = 27;
     private static final int HOTBAR_END = INV_SLOTS + 9;
@@ -66,6 +67,7 @@ public class PhantomTankMenu extends AbstractContainerMenu {
     /** Server: what the client was last sent; null forces a send. */
     @Nullable
     private List<FluidStack> lastSent;
+    private int lastActive = -1;
 
     /** Client constructor; contents arrive by {@link TankSyncPayload}. */
     public PhantomTankMenu(int windowId, Inventory playerInventory) {
@@ -105,9 +107,13 @@ public class PhantomTankMenu extends AbstractContainerMenu {
         return this.tanks.getFluidInTank(tank);
     }
 
+    public int getActive() {
+        return this.tanks.getActive();
+    }
+
     /** Client: apply a {@link TankSyncPayload}. */
-    public void receive(List<FluidStack> fluids) {
-        this.tanks.set(fluids);
+    public void receive(List<FluidStack> fluids, int active) {
+        this.tanks.set(fluids, active);
     }
 
     @Override
@@ -124,7 +130,7 @@ public class PhantomTankMenu extends AbstractContainerMenu {
             return;
         }
         List<FluidStack> current = new ArrayList<>(PhantomTanks.TANKS);
-        boolean changed = this.lastSent == null;
+        boolean changed = this.lastSent == null || this.lastActive != this.tanks.getActive();
         for (int i = 0; i < PhantomTanks.TANKS; i++) {
             FluidStack fluid = this.tanks.getFluidInTank(i);
             current.add(fluid.copy());
@@ -134,7 +140,8 @@ public class PhantomTankMenu extends AbstractContainerMenu {
         }
         if (changed) {
             this.lastSent = current;
-            PacketDistributor.sendToPlayer(serverPlayer, new TankSyncPayload(this.containerId, current));
+            this.lastActive = this.tanks.getActive();
+            PacketDistributor.sendToPlayer(serverPlayer, new TankSyncPayload(this.containerId, current, this.lastActive));
         }
     }
 
@@ -150,6 +157,7 @@ public class PhantomTankMenu extends AbstractContainerMenu {
         switch (id % ACTIONS) {
             case ACTION_POUR -> this.transfer(player, tank, true);
             case ACTION_TAKE -> this.transfer(player, tank, false);
+            case ACTION_SELECT -> this.tanks.setActive(index);
             default -> this.voidTank(player, tank);
         }
         return true;
