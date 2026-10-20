@@ -1,7 +1,8 @@
 package com.phantomstorage.item;
 
-import com.phantomstorage.entity.PhantomChestEntity;
-import com.phantomstorage.summon.ChestManager;
+import com.phantomstorage.entity.PhantomPetEntity;
+import com.phantomstorage.summon.PetKind;
+import com.phantomstorage.summon.PetManager;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -16,15 +17,18 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 /**
- * Use: summons the owner's Phantom Chest, or recalls it to their side if it's already out.
- * Sneak-use: dismisses it. Never duplicates a chest or moves it across dimensions.
- * All three share one cooldown.
+ * Use: summons the owner's pet of this item's kind (Charm: chest, Flask: tank), or recalls it to
+ * their side if it's already out. Sneak-use: dismisses it. Never duplicates a pet or moves it across
+ * dimensions. All three share one cooldown, per item.
  */
 public class PhantomCharmItem extends Item {
     public static final int COOLDOWN_TICKS = 5 * 20;
 
-    public PhantomCharmItem(Properties properties) {
+    private final PetKind kind;
+
+    public PhantomCharmItem(PetKind kind, Properties properties) {
         super(properties);
+        this.kind = kind;
     }
 
     @Override
@@ -38,18 +42,18 @@ public class PhantomCharmItem extends Item {
         if (serverPlayer.getCooldowns().isOnCooldown(this)) {
             return InteractionResultHolder.fail(stack);
         }
-        PhantomChestEntity active = ChestManager.getActive(serverPlayer.getUUID());
+        PhantomPetEntity active = PetManager.getActive(this.kind, serverPlayer.getUUID());
         if (active != null) {
             if (serverPlayer.isShiftKeyDown()) {
-                ChestManager.dismiss(serverPlayer, false);
-                serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.dismissed"), true);
+                PetManager.dismiss(this.kind, serverPlayer, false);
+                serverPlayer.displayClientMessage(Component.translatable(this.kind.message("dismissed")), true);
             } else if (active.level() == serverPlayer.level()) {
                 active.recallTo(serverPlayer);
-                serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.recalled"), true);
+                serverPlayer.displayClientMessage(Component.translatable(this.kind.message("recalled")), true);
             } else {
                 return InteractionResultHolder.fail(stack);
             }
-        } else if (!ChestManager.summon(serverPlayer)) {
+        } else if (!PetManager.summon(this.kind, serverPlayer)) {
             return InteractionResultHolder.fail(stack);
         }
         // Cooldown covers both summon and dismiss, so the pair can't be spammed.
@@ -60,7 +64,7 @@ public class PhantomCharmItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.summon").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.dismiss").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".tooltip.summon").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".tooltip.dismiss").withStyle(ChatFormatting.GRAY));
     }
 }

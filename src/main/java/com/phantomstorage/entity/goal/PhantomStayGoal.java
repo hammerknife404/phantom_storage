@@ -1,7 +1,7 @@
 package com.phantomstorage.entity.goal;
 
 import com.phantomstorage.entity.HoverBounds;
-import com.phantomstorage.entity.PhantomChestEntity;
+import com.phantomstorage.entity.PhantomPetEntity;
 import java.util.EnumSet;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
@@ -10,23 +10,23 @@ import net.minecraft.world.phys.Vec3;
 public class PhantomStayGoal extends Goal {
     private static final int REFRESH_TICKS = 20;
 
-    private final PhantomChestEntity chest;
+    private final PhantomPetEntity pet;
     private Vec3 anchor = Vec3.ZERO;
     private int refreshTimer;
 
-    public PhantomStayGoal(PhantomChestEntity chest) {
-        this.chest = chest;
+    public PhantomStayGoal(PhantomPetEntity pet) {
+        this.pet = pet;
         this.setFlags(EnumSet.of(Flag.MOVE, Flag.JUMP));
     }
 
     @Override
     public boolean canUse() {
-        return this.chest.isOrderedToSit();
+        return this.pet.isOrderedToSit();
     }
 
     @Override
     public boolean canContinueToUse() {
-        return this.chest.isOrderedToSit();
+        return this.pet.isOrderedToSit();
     }
 
     @Override
@@ -36,18 +36,18 @@ public class PhantomStayGoal extends Goal {
 
     @Override
     public void start() {
-        this.anchor = this.chest.position();
+        this.anchor = this.pet.position();
         this.refreshTimer = 0;
-        this.chest.getNavigation().stop();
+        this.pet.getNavigation().stop();
     }
 
     @Override
     public void tick() {
         if (--this.refreshTimer <= 0) {
             this.refreshTimer = REFRESH_TICKS;
-            double y = HoverBounds.clampY(this.chest.level(), this.anchor.x, this.anchor.y, this.anchor.z);
+            double y = HoverBounds.clampY(this.pet.level(), this.anchor.x, this.anchor.y, this.anchor.z);
             this.anchor = new Vec3(this.anchor.x, y, this.anchor.z);
         }
-        this.chest.getMoveControl().setWantedPosition(this.anchor.x, this.anchor.y, this.anchor.z, 0.5);
+        this.pet.getMoveControl().setWantedPosition(this.anchor.x, this.anchor.y, this.anchor.z, 0.5);
     }
 }

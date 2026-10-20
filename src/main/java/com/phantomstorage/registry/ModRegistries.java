@@ -2,9 +2,13 @@ package com.phantomstorage.registry;
 
 import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomChestEntity;
+import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.menu.PhantomChestMenu;
+import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.storage.PhantomInventory;
+import com.phantomstorage.storage.PhantomTanks;
+import com.phantomstorage.summon.PetKind;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -36,14 +40,19 @@ public final class ModRegistries {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PhantomStorage.MODID);
 
     public static final DeferredItem<PhantomCharmItem> PHANTOM_CHARM = ITEMS.register("phantom_charm",
-            () -> new PhantomCharmItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+            () -> new PhantomCharmItem(PetKind.CHEST, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+    public static final DeferredItem<PhantomCharmItem> PHANTOM_FLASK = ITEMS.register("phantom_flask",
+            () -> new PhantomCharmItem(PetKind.TANK, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_TABS.register("phantomstorage",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.phantomstorage"))
                     .icon(() -> new ItemStack(PHANTOM_CHARM.get()))
                     .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
-                    .displayItems((params, output) -> output.accept(PHANTOM_CHARM.get()))
+                    .displayItems((params, output) -> {
+                        output.accept(PHANTOM_CHARM.get());
+                        output.accept(PHANTOM_FLASK.get());
+                    })
                     .build());
 
     // noSummon(): the chest can only come into existence through the charm, never /summon or spawners.
@@ -57,22 +66,33 @@ public final class ModRegistries {
                     .updateInterval(2)
                     .build("phantom_chest"));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<PhantomTankEntity>> PHANTOM_TANK =
+            ENTITY_TYPES.register("phantom_tank", () -> EntityType.Builder
+                    .<PhantomTankEntity>of(PhantomTankEntity::new, MobCategory.MISC)
+                    .sized(0.75F, 0.75F)
+                    .fireImmune()
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(2)
+                    .build("phantom_tank"));
+
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomChestMenu>> PHANTOM_CHEST_MENU =
             MENU_TYPES.register("phantom_chest",
                     () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomChestMenu(windowId, inventory)));
+    public static final DeferredHolder<MenuType<?>, MenuType<PhantomTankMenu>> PHANTOM_TANK_MENU =
+            MENU_TYPES.register("phantom_tank",
+                    () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomTankMenu(windowId, inventory)));
 
     // The storage lives on the player (saved inside the player's own .dat, like the ender chest),
     // never on the entity. Summon/unsummon/dimension change can't lose or duplicate contents.
     public static final Supplier<AttachmentType<PhantomInventory>> STORAGE = ATTACHMENT_TYPES.register("storage",
             () -> AttachmentType.serializable(() -> new PhantomInventory()).copyOnDeath().build());
+    public static final Supplier<AttachmentType<PhantomTanks>> TANKS = ATTACHMENT_TYPES.register("tanks",
+            () -> AttachmentType.serializable(() -> new PhantomTanks()).copyOnDeath().build());
 
     private ModRegistries() {}
 
     public static void register(IEventBus modBus) {
-        // Phantom Storage 1.x summoners (all tiers) load as the Phantom Charm instead of vanishing.
-        for (String legacy : new String[] {"phantom_chest_summoner", "phantom_chest_summoner_upgraded", "phantom_chest_summoner_supreme"}) {
-            ITEMS.addAlias(PhantomStorage.id(legacy), PHANTOM_CHARM.getId());
-        }
         ITEMS.register(modBus);
         ENTITY_TYPES.register(modBus);
         MENU_TYPES.register(modBus);

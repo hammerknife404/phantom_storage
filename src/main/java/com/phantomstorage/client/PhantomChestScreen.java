@@ -27,8 +27,8 @@ import net.neoforged.fml.ModList;
 public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu> {
     private static final int PANEL_TOP = 0xFFCDC8DA;
     private static final int PANEL_BOTTOM = 0xFFBCB5CC;
-    private static final int WELL_EDGE = 0xFF978DAE;
-    private static final int WELL_FILL = 0xFFB3ABC6;
+    static final int WELL_EDGE = 0xFF978DAE;
+    static final int WELL_FILL = 0xFFB3ABC6;
     private static final int VOID_WELL_EDGE = 0xFF5E4680;
     private static final int VOID_WELL_FILL = 0xFF8F7AB0;
     /** Decorations are faint so they read as texture, not content. */
@@ -42,16 +42,16 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     private static final int SHADOW = 0xFF55506A;
     private static final int SLOT_DARK = 0xFF373737;
     private static final int SLOT_LIGHT = 0xFFFFFFFF;
-    private static final int SLOT_FILL = 0xFF8B8B8B;
+    static final int SLOT_FILL = 0xFF8B8B8B;
     private static final int VOID_FILL = 0xFF4A3563;
-    private static final int LABEL = 0x404040;
+    static final int LABEL = 0x404040;
     private static final int VOID_LABEL = 0x4A2A70;
 
     private static final int ICON_OUTLINE = 0xFF2A2536;
-    private static final int ICON_BODY = 0xFF8A8499;
-    private static final int ICON_DETAIL = 0xFF5E586E;
-    private static final int ICON_BODY_HOVER = 0xFFB07CE8;
-    private static final int ICON_DETAIL_HOVER = 0xFF7A48B0;
+    static final int ICON_BODY = 0xFF8A8499;
+    static final int ICON_DETAIL = 0xFF5E586E;
+    static final int ICON_BODY_HOVER = 0xFFB07CE8;
+    static final int ICON_DETAIL_HOVER = 0xFF7A48B0;
 
     private static final Component CRAFTING = Component.translatable("container.phantomstorage.crafting");
     private static final Component VOID = Component.translatable("container.phantomstorage.void");
@@ -79,7 +79,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     }
 
     /** Title line plus a grey description line, from {@code tooltip.phantomstorage.<key>[.desc]}. */
-    private static List<Component> tooltip(String key) {
+    static List<Component> tooltip(String key) {
         return List.of(
                 Component.translatable("tooltip.phantomstorage." + key),
                 Component.translatable("tooltip.phantomstorage." + key + ".desc").withStyle(ChatFormatting.GRAY));
@@ -242,7 +242,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
 
     // ---- drawing -------------------------------------------------------------------------------
 
-    private static void drawPanel(GuiGraphics g, int x, int y, int w, int h) {
+    static void drawPanel(GuiGraphics g, int x, int y, int w, int h) {
         g.fill(x + 1, y, x + w - 1, y + h, OUTLINE);
         g.fill(x, y + 1, x + w, y + h - 1, OUTLINE);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, HIGHLIGHT);
@@ -282,7 +282,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         RenderSystem.disableBlend();
     }
 
-    private static void drawSlot(GuiGraphics g, int x, int y, int w, int h, int fill) {
+    static void drawSlot(GuiGraphics g, int x, int y, int w, int h, int fill) {
         g.fill(x, y, x + w, y + h, SLOT_DARK);
         g.fill(x + 1, y + 1, x + w, y + h, SLOT_LIGHT);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
@@ -315,7 +315,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     }
 
     /** 12x12 trash can. */
-    private static void drawTrash(GuiGraphics g, int x, int y, int body, int rib) {
+    static void drawTrash(GuiGraphics g, int x, int y, int body, int rib) {
         g.fill(x + 4, y, x + 8, y + 1, ICON_OUTLINE);
         g.fill(x + 4, y + 1, x + 5, y + 2, ICON_OUTLINE);
         g.fill(x + 7, y + 1, x + 8, y + 2, ICON_OUTLINE);
