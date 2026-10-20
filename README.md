@@ -36,6 +36,14 @@ Tank:
 
 **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner. One charm summons every pet.
 
+**Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
+
+| Pet | Unlocked by |
+|---|---|
+| Phantom Tank | *Ice Bucket Challenge* (obtain obsidian) |
+
+Until then the charm skips that mode. Creative mode ignores unlocks.
+
 ## What you get
 
 - 108 slots (12×9) of personal item storage and 4 fluid tanks of 32 buckets each, tied to you rather than to the pets, so they survive death, logout and dimension changes.

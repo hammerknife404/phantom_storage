@@ -41,5 +41,7 @@
   "message.phantomstorage.tank.follow": "Phantom Tank will follow you",
   "message.phantomstorage.tank.active": "Active tank %s: %s",
   "message.phantomstorage.tank.contents": "%s (%s mB)",
-  "message.phantomstorage.charm.mode": "Phantom Charm: %s"
+  "message.phantomstorage.charm.mode": "Phantom Charm: %s",
+  "message.phantomstorage.locked": "%s is locked. Earn the advancement \"%s\" to unlock it",
+  "message.phantomstorage.unlocked": "Phantom %s unlocked! Sneak + scroll your Phantom Charm to switch to it"
 }
