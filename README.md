@@ -30,7 +30,7 @@ Tank:
 | Control | Does |
 |---|---|
 | Gauge, click with an empty cursor | Makes that the active tank (outlined) |
-| Gauge, left-click with a filled container | Pours it into that tank |
+| Gauge, left-click with a filled container (bucket, water bottle, modded tank item) | Pours it into that tank |
 | Gauge, right-click with an empty container | Fills it from that tank |
 | Trash (under each gauge) | Destroys the fluid in that tank |
 | **Overfill** checkbox (off by default) | Buckets on the tank: when the active tank is full or holds another fluid, pour into the next tank of that fluid or an empty one |
@@ -51,7 +51,7 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - 108 slots (12×9) of personal item storage and 4 fluid tanks of 32 buckets each, tied to you rather than to the pets, so they survive death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
-- The tank is tinted glass in a ghostly ender chest base and lid, with flapping phantom wings and glowing phantom eyes.
+- The tank holds any fluid, modded ones included. It's tinted glass in a ghostly ender chest base and lid, with flapping phantom wings and glowing phantom eyes, and rings like amethyst when you open it.
 - The tank shows every tank's fluid stacked inside its glass, each layer filling a quarter of the height, with the active tank on top.
 - Buckets used on the tank work with the active tank only, unless you tick Overfill or Drain all in the GUI.
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
