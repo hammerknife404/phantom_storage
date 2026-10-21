@@ -64,19 +64,17 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
 
     private static final ResourceLocation PHANTOM = ResourceLocation.withDefaultNamespace("textures/entity/phantom.png");
     private static final ResourceLocation PHANTOM_EYES = ResourceLocation.withDefaultNamespace("textures/entity/phantom_eyes.png");
-    /** Phantom model UVs (64x64): wing base box 6x2x9 at (23,12), wing tip box 13x1x9 at (16,24), head front 7x3 at (5,5). */
-    private static final float[] WING_BASE_TOP = px(32, 12, 38, 21);
-    private static final float[] WING_BASE_UNDER = px(38, 12, 44, 21);
-    private static final float[] WING_BASE_SIDE = px(32, 21, 38, 23);
-    private static final float[] WING_TIP_TOP = px(25, 24, 38, 33);
-    private static final float[] WING_TIP_UNDER = px(38, 24, 51, 33);
-    private static final float[] WING_TIP_SIDE = px(25, 33, 38, 34);
+    /** Phantom model UVs (64x64): the wing tip's top face (13x9 at (25,24)) and the head front (7x3 at (5,5)). */
+    private static final float[] WING = px(25, 24, 38, 33);
     private static final float[] EYES = px(5, 5, 12, 8);
-    /** Wings at half the phantom's size: base 3 px out, tip 6.5 px further, 4.5 px deep. */
+    /** Wings at half the phantom's size: 3 px inner half, 6.5 px outer half, 4.5 px deep at the root. */
     private static final float WING_BASE = 3.0F * PX;
     private static final float WING_TIP = 6.5F * PX;
     private static final float WING_DEPTH = 4.5F * PX;
-    private static final float WING_THICK = 0.5F * PX;
+    /** The wing root starts this far inside the lid edge, so it grows out from under the lid. */
+    private static final float WING_TUCK = 1.5F * PX;
+    /** Fraction of the root depth the outer edge loses at the front: the tip tapers and sweeps back. */
+    private static final float WING_TAPER = 0.4F;
     private static final float FLAP_SPEED = 0.18F;
     private static final float FLAP_DEGREES = 18.0F;
     /** Eyes at 1.5x the phantom's 7x3 px, so the 2 px latch fits between them. */
@@ -152,8 +150,8 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
                 }
                 VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(PHANTOM));
                 float flap = Mth.sin(age * FLAP_SPEED) * FLAP_DEGREES;
-                wing(poseStack, wings, 1, flap, light);
-                wing(poseStack, wings, -1, flap, light);
+                wing(pose, wings, 1, flap, light);
+                wing(pose, wings, -1, flap, light);
                 consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
             }
         }
@@ -163,8 +161,12 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
             VertexConsumer eyes = buffer.getBuffer(RenderType.eyes(PHANTOM_EYES));
             float z = glass + 0.002F;
             float top = HEIGHT - RIM - 0.5F * PX;
-            quad(pose, eyes, 0xFFFFFFFF, LightTexture.FULL_BRIGHT, 0, 0, 1, EYES[0], EYES[1], EYES[2], EYES[3],
-                    -EYES_HALF_W, top - EYES_H, z, -EYES_HALF_W, top, z, EYES_HALF_W, top, z, EYES_HALF_W, top - EYES_H, z);
+            // The eyes render type culls back faces, so wind counter-clockwise as seen from the front.
+            int bright = LightTexture.FULL_BRIGHT;
+            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top - EYES_H, z, EYES[0], EYES[3]);
+            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top - EYES_H, z, EYES[2], EYES[3]);
+            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top, z, EYES[2], EYES[1]);
+            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top, z, EYES[0], EYES[1]);
         }
         poseStack.popPose();
 
@@ -173,22 +175,41 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
 
     /** A box whose faces each show a fixed region of the bound texture, stretched to fit. */
     /**
-     * One phantom wing off the rim on side {@code side} (+1 = +x, -1 = -x): a base and a tip, each
-     * hinged at its inner edge and swung by {@code flap} degrees, the tip twice as far like the phantom's.
+     * One phantom wing on side {@code side} (+1 = +x, -1 = -x): a single thin membrane, no box edges,
+     * rooted under the lid. The inner half swings {@code flap} degrees and the outer half twice that,
+     * like the phantom's, but both halves share the joint vertices and one continuous stretch of the
+     * wing texture, so the wing bends there instead of looking bolted together. Drawn once; the render
+     * type doesn't cull, so it shows from above and below.
      */
-    private static void wing(PoseStack poseStack, VertexConsumer c, int side, float flap, int light) {
-        poseStack.pushPose();
-        poseStack.translate(side * HALF, HEIGHT - RIM, -WING_DEPTH / 2.0F);
-        poseStack.mulPose(Axis.ZP.rotationDegrees(side * flap));
-        float b0 = side > 0 ? 0.0F : -WING_BASE;
-        uvBox(poseStack.last(), c, b0, 0.0F, 0.0F, b0 + WING_BASE, WING_THICK * 2.0F, WING_DEPTH,
-                WING_BASE_TOP, WING_BASE_UNDER, WING_BASE_SIDE, GHOST_COLOR, light);
-        poseStack.translate(side * WING_BASE, 0.0F, 0.0F);
-        poseStack.mulPose(Axis.ZP.rotationDegrees(side * flap));
-        float t0 = side > 0 ? 0.0F : -WING_TIP;
-        uvBox(poseStack.last(), c, t0, 0.0F, 0.0F, t0 + WING_TIP, WING_THICK, WING_DEPTH,
-                WING_TIP_TOP, WING_TIP_UNDER, WING_TIP_SIDE, GHOST_COLOR, light);
-        poseStack.popPose();
+    private static void wing(PoseStack.Pose pose, VertexConsumer c, int side, float flap, int light) {
+        float a = flap * Mth.DEG_TO_RAD;
+        float rootX = HALF - WING_TUCK;
+        float rootY = HEIGHT - RIM * 0.5F;
+        float jointX = rootX + Mth.cos(a) * WING_BASE;
+        float jointY = rootY + Mth.sin(a) * WING_BASE;
+        float tipX = jointX + Mth.cos(2.0F * a) * WING_TIP;
+        float tipY = jointY + Mth.sin(2.0F * a) * WING_TIP;
+        float z0 = -WING_DEPTH / 2.0F;
+        float z1 = WING_DEPTH / 2.0F;
+        float tipZ0 = z0 + WING_DEPTH * WING_TAPER;
+
+        float u0 = WING[0];
+        float uJoint = Mth.lerp(WING_BASE / (WING_BASE + WING_TIP), WING[0], WING[2]);
+        float u1 = WING[2];
+        float v0 = WING[1];
+        float v1 = WING[3];
+        float vTip0 = Mth.lerp(WING_TAPER, v0, v1);
+        int color = GHOST_COLOR;
+        // Inner half: root -> joint.
+        vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z0, u0, v0);
+        vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z1, u0, v1);
+        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z1, uJoint, v1);
+        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z0, uJoint, v0);
+        // Outer half: joint -> tapered tip.
+        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z0, uJoint, v0);
+        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z1, uJoint, v1);
+        vertex(pose, c, color, light, 0, 1, 0, side * tipX, tipY, z1, u1, v1);
+        vertex(pose, c, color, light, 0, 1, 0, side * tipX, tipY, tipZ0, u1, vTip0);
     }
 
     private static void uvBox(PoseStack.Pose pose, VertexConsumer c, float x0, float y0, float z0, float x1, float y1, float z1,
