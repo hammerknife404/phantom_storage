@@ -33,14 +33,16 @@ Tank:
 | Gauge, left-click with a filled container | Pours it into that tank |
 | Gauge, right-click with an empty container | Fills it from that tank |
 | Trash (under each gauge) | Destroys the fluid in that tank |
+| **Overfill** checkbox (off by default) | Buckets on the tank: when the active tank is full or holds another fluid, pour into the next tank of that fluid or an empty one |
+| **Drain all** checkbox (off by default) | Buckets on the tank: when the active tank is empty, keep drawing from the next tank until all are empty |
 
-**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner. One charm summons every pet.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner. One charm summons every pet.
 
 **Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
 
 | Pet | Unlocked by |
 |---|---|
-| Phantom Tank | *Ice Bucket Challenge* (obtain obsidian) |
+| Phantom Tank | *Not Quite "Nine" Lives* (charge a respawn anchor) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
 
@@ -49,9 +51,9 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - 108 slots (12×9) of personal item storage and 4 fluid tanks of 32 buckets each, tied to you rather than to the pets, so they survive death, logout and dimension changes.
 - A 3×3 crafting grid, with JEI or REI recipe fill when either is installed.
 - A 9-slot void filter: the trash-can button destroys whatever is in it. Items left there when you close the GUI go back to you.
-- The tank is tinted glass in a vanilla-block frame that changes each time you summon it: crying obsidian with iron posts, cauldron, copper, purpur with end rods, deepslate with chains.
+- The tank is tinted glass in a ghostly ender chest base and lid, with flapping phantom wings and glowing phantom eyes.
 - The tank shows every tank's fluid stacked inside its glass, each layer filling a quarter of the height, with the active tank on top.
-- Buckets used on the tank take only from the active tank, and pour into it unless it holds another fluid or is full (then the fluid goes where it fits).
+- Buckets used on the tank work with the active tank only, unless you tick Overfill or Drain all in the GUI.
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.

@@ -26,9 +26,12 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
  */
 public enum PetKind implements StringRepresentable {
     CHEST("chest", ModRegistries.PHANTOM_CHEST, PhantomChestMenu.class, null),
-    /** "Ice Bucket Challenge": obtain obsidian, i.e. the player has handled water and lava. */
+    /**
+     * "Not Quite "Nine" Lives": charge a respawn anchor (crying obsidian, glowstone, the Nether).
+     * Past the charm's own recipe, which already needs obsidian for the ender chest.
+     */
     TANK("tank", ModRegistries.PHANTOM_TANK, PhantomTankMenu.class,
-            ResourceLocation.withDefaultNamespace("story/form_obsidian"));
+            ResourceLocation.withDefaultNamespace("nether/charge_respawn_anchor"));
 
     public static final Codec<PetKind> CODEC = StringRepresentable.fromEnum(PetKind::values);
     public static final StreamCodec<ByteBuf, PetKind> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], PetKind::ordinal);
@@ -63,7 +66,7 @@ public enum PetKind implements StringRepresentable {
         return advancement == null || player.isCreative() || player.getAdvancements().getOrStartProgress(advancement).isDone();
     }
 
-    /** "Tank is locked. Earn the advancement "Ice Bucket Challenge" to unlock it." */
+    /** "Tank is locked. Earn the advancement "Not Quite "Nine" Lives" to unlock it." */
     public Component lockedMessage(ServerPlayer player) {
         AdvancementHolder advancement = this.unlockAdvancement(player);
         Component title = advancement == null ? Component.empty()

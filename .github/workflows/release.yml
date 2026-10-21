@@ -70,11 +70,13 @@ jobs:
 
             | Action | Result |
             |---|---|
-            | Right-click Phantom Charm | Summon your chest, or recall it to your side if it's out (5 s cooldown) |
-            | Shift + right-click Phantom Charm | Dismiss your chest (same cooldown) |
-            | Right-click chest | Open storage |
-            | Sneak + right-click chest | Toggle stay / follow |
-            | Look at chest ~½ s (idle) | Chest comes within reach |
+            | Shift + scroll with the Phantom Charm | Switch mode: Chest or Tank |
+            | Right-click Phantom Charm | Summon that pet, or recall it to your side if it's out (5 s cooldown) |
+            | Shift + right-click Phantom Charm | Dismiss that pet (same cooldown) |
+            | Right-click a pet | Open its storage (tank: a bucket or bottle pours in / fills from the active tank) |
+            | Sneak + right-click a pet | Toggle stay / follow (tank, holding a bucket: cycle the active tank) |
+            | Look at a pet ~½ s (idle) | It comes within reach |
 
-            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner.
+            **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner.
+            **Unlocks:** the Phantom Tank needs the advancement *Not Quite "Nine" Lives* (charge a respawn anchor).
           generate_release_notes: true

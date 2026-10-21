@@ -13,7 +13,9 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.EntityType;
@@ -40,6 +42,10 @@ public class PhantomTankEntity extends PhantomPetEntity {
     private static final EntityDataAccessor<Integer> DATA_STYLE =
             SynchedEntityData.defineId(PhantomTankEntity.class, EntityDataSerializers.INT);
     private static final int DISPLAY_INTERVAL = 10;
+    /** Opening the jar rings like amethyst: one of these, at a random pitch. */
+    private static final List<SoundEvent> OPEN_SOUNDS = List.of(
+            SoundEvents.AMETHYST_BLOCK_CHIME, SoundEvents.AMETHYST_BLOCK_HIT,
+            SoundEvents.AMETHYST_BLOCK_PLACE, SoundEvents.AMETHYST_BLOCK_STEP);
 
     static {
         for (int i = 0; i < PhantomTanks.TANKS; i++) {
@@ -91,6 +97,13 @@ public class PhantomTankEntity extends PhantomPetEntity {
         owner.openMenu(new SimpleMenuProvider(
                 (windowId, inventory, p) -> new PhantomTankMenu(windowId, inventory, tanks, this),
                 this.titleOr("container.phantomstorage.phantom_tank")));
+    }
+
+    @Override
+    protected void onFirstViewer() {
+        SoundEvent sound = OPEN_SOUNDS.get(this.random.nextInt(OPEN_SOUNDS.size()));
+        this.level().playSound(null, this.getX(), this.getY() + 0.5, this.getZ(),
+                sound, SoundSource.NEUTRAL, 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
     }
 
     /** Sneak-use with a fluid container cycles the active tank; empty-handed it still toggles stay. */

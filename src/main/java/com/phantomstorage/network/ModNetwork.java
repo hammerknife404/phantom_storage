@@ -5,7 +5,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /** All custom payloads. Bump the version whenever one changes shape. */
 public final class ModNetwork {
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
 
     private ModNetwork() {}
 

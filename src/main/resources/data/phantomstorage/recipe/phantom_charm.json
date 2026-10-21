@@ -7,10 +7,10 @@
     "GSG"
   ],
   "key": {
-    "G": { "item": "minecraft:gold_ingot" },
+    "G": { "item": "minecraft:gold_block" },
     "M": { "item": "minecraft:phantom_membrane" },
     "E": { "item": "minecraft:ender_chest" },
-    "S": { "item": "minecraft:soul_torch" }
+    "S": { "item": "minecraft:soul_campfire" }
   },
   "result": {
     "id": "phantomstorage:phantom_charm",
