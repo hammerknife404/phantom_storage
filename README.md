@@ -36,13 +36,13 @@ Tank:
 | **Overfill** checkbox (off by default) | Buckets on the tank: when the active tank is full or holds another fluid, pour into the next tank of that fluid or an empty one |
 | **Drain all** checkbox (off by default) | Buckets on the tank: when the active tank is empty, keep drawing from the next tank until all are empty |
 
-**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Torch below, Gold Ingot in each corner. One charm summons every pet.
+**Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner. One charm summons every pet.
 
 **Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
 
 | Pet | Unlocked by |
 |---|---|
-| Phantom Tank | *Ice Bucket Challenge* (obtain obsidian) |
+| Phantom Tank | *Not Quite "Nine" Lives* (charge a respawn anchor) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
 
