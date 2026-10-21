@@ -10,7 +10,7 @@ A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. Th
 | Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown) |
 | Sneak + use the charm | Dismiss that pet (same cooldown) |
 | Right-click a pet | Open its storage |
-| Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI |
+| Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI; the action bar shows that tank's level |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
 | Sneak + right-click a pet (empty-handed) | Toggle stay / follow |
 | Look at a pet ~½ s (while idle) | It comes within reach |

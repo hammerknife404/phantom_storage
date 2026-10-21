@@ -16,7 +16,7 @@
 - **4 tanks × 32 buckets**, any fluid, modded ones included
 - A tinted-glass jar in a ghostly ender chest frame, with **flapping phantom wings** and **glowing phantom eyes**. Every fluid shows as a stacked layer inside, so you can colour-arrange it.
 - **Buckets, bottles and modded tank items** work in the GUI or straight on the pet
-- **Active tank:** pick which tank in-world bucket use fills or drains
+- **Active tank:** pick which tank in-world bucket use fills or drains; the action bar shows its exact level after each use
 - **Overfill / Drain all** options: spill into or draw from the next tank automatically. Both are off by default, so nothing goes where you didn't expect.
 - Rings like amethyst when you open it
 
