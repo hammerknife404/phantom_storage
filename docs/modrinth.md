@@ -51,11 +51,11 @@
 
 One charm for every pet:
 
-```
-Gold Block     Phantom Membrane   Gold Block
-Phantom Membrane  Ender Chest   Phantom Membrane
-Gold Block       Soul Campfire     Gold Block
-```
+| | | |
+|:-:|:-:|:-:|
+| Gold Block | Phantom Membrane | Gold Block |
+| Phantom Membrane | Ender Chest | Phantom Membrane |
+| Gold Block | Soul Campfire | Gold Block |
 
 ## 🔓 Unlocks
 
