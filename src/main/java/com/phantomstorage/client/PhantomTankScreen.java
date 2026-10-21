@@ -35,7 +35,7 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
     private static final Component DRAIN_ALL = Component.translatable("container.phantomstorage.drain_all");
     /** Checkbox hit area: the box plus its label. */
     private static final int OPTION_W = 76;
-    private static final int CHECK = PhantomChestScreen.ICON_BODY_HOVER;
+    private static final int CHECK = 0xFF000000;
 
     public PhantomTankScreen(PhantomTankMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -73,7 +73,7 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         drawCheckbox(graphics, x + PhantomTankMenu.DRAIN_ALL_X, y + PhantomTankMenu.OPTION_Y, this.menu.isDrainAll());
     }
 
-    /** A small slot-style box, filled violet when on. */
+    /** A small slot-style box, filled black when on. */
     private static void drawCheckbox(GuiGraphics g, int x, int y, boolean on) {
         int size = PhantomTankMenu.OPTION_SIZE;
         PhantomChestScreen.drawSlot(g, x, y, size, size, PhantomChestScreen.SLOT_FILL);
