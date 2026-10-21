@@ -56,7 +56,6 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - Buckets used on the tank work with the active tank only, unless you tick Overfill or Drain all in the GUI.
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
-- Phantoms keep their distance, like they do from cats: they won't target you while you carry a Phantom Charm, or anyone while a phantom pet is within 16 blocks of them.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
 - Pets are dismissed automatically on logout or dimension change; re-summon them with the charm.
 

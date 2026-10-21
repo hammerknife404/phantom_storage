@@ -5,7 +5,6 @@ import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.network.ModNetwork;
 import com.phantomstorage.registry.ModRegistries;
 import com.phantomstorage.summon.PhantomPetEvents;
-import com.phantomstorage.summon.PhantomRepel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
@@ -26,7 +25,6 @@ public final class PhantomStorage {
         modBus.addListener(PhantomStorage::onCreativeTabs);
         modBus.addListener(ModNetwork::register);
         PhantomPetEvents.register(NeoForge.EVENT_BUS);
-        PhantomRepel.register(NeoForge.EVENT_BUS);
     }
 
     public static ResourceLocation id(String path) {
