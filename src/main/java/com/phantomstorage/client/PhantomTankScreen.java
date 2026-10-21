@@ -29,6 +29,13 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
     private static final int TILE = 16;
 
     private static final List<Component> TRASH_TOOLTIP = PhantomChestScreen.tooltip("tank_trash");
+    private static final List<Component> OVERFILL_TOOLTIP = PhantomChestScreen.tooltip("tank_overfill");
+    private static final List<Component> DRAIN_ALL_TOOLTIP = PhantomChestScreen.tooltip("tank_drain_all");
+    private static final Component OVERFILL = Component.translatable("container.phantomstorage.overfill");
+    private static final Component DRAIN_ALL = Component.translatable("container.phantomstorage.drain_all");
+    /** Checkbox hit area: the box plus its label. */
+    private static final int OPTION_W = 76;
+    private static final int CHECK = PhantomChestScreen.ICON_BODY_HOVER;
 
     public PhantomTankScreen(PhantomTankMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -62,12 +69,28 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
                     hover ? PhantomChestScreen.ICON_BODY_HOVER : PhantomChestScreen.ICON_BODY,
                     hover ? PhantomChestScreen.ICON_DETAIL_HOVER : PhantomChestScreen.ICON_DETAIL);
         }
+        drawCheckbox(graphics, x + PhantomTankMenu.OVERFILL_X, y + PhantomTankMenu.OPTION_Y, this.menu.isOverfill());
+        drawCheckbox(graphics, x + PhantomTankMenu.DRAIN_ALL_X, y + PhantomTankMenu.OPTION_Y, this.menu.isDrainAll());
+    }
+
+    /** A small slot-style box, filled violet when on. */
+    private static void drawCheckbox(GuiGraphics g, int x, int y, boolean on) {
+        int size = PhantomTankMenu.OPTION_SIZE;
+        PhantomChestScreen.drawSlot(g, x, y, size, size, PhantomChestScreen.SLOT_FILL);
+        if (on) {
+            g.fill(x + 2, y + 2, x + size - 2, y + size - 2, CHECK);
+        }
     }
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         graphics.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, PhantomChestScreen.LABEL, false);
         graphics.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY,
+                PhantomChestScreen.LABEL, false);
+        int labelY = PhantomTankMenu.OPTION_Y + 1;
+        graphics.drawString(this.font, OVERFILL, PhantomTankMenu.OVERFILL_X + PhantomTankMenu.OPTION_SIZE + 3, labelY,
+                PhantomChestScreen.LABEL, false);
+        graphics.drawString(this.font, DRAIN_ALL, PhantomTankMenu.DRAIN_ALL_X + PhantomTankMenu.OPTION_SIZE + 3, labelY,
                 PhantomChestScreen.LABEL, false);
     }
 
@@ -131,6 +154,12 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
             graphics.renderComponentTooltip(this.font, TRASH_TOOLTIP, mouseX, mouseY);
             return;
         }
+        int option = this.optionAt(mouseX, mouseY);
+        if (this.menu.getCarried().isEmpty() && option >= 0) {
+            graphics.renderComponentTooltip(this.font,
+                    option == PhantomTankMenu.BUTTON_OVERFILL ? OVERFILL_TOOLTIP : DRAIN_ALL_TOOLTIP, mouseX, mouseY);
+            return;
+        }
         super.renderTooltip(graphics, mouseX, mouseY);
     }
 
@@ -159,7 +188,10 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         int menuButton = -1;
         int gauge = this.gaugeAt(mouseX, mouseY);
         int trash = this.trashAt(mouseX, mouseY);
-        if (gauge >= 0 && (button == 0 || button == 1)) {
+        int option = this.optionAt(mouseX, mouseY);
+        if (option >= 0 && button == 0) {
+            menuButton = option;
+        } else if (gauge >= 0 && (button == 0 || button == 1)) {
             int action = this.menu.getCarried().isEmpty() ? PhantomTankMenu.ACTION_SELECT
                     : button == 0 ? PhantomTankMenu.ACTION_POUR
                     : PhantomTankMenu.ACTION_TAKE;
@@ -170,7 +202,7 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
         if (menuButton >= 0 && this.minecraft != null && this.minecraft.gameMode != null) {
             // The server validates the menu and does the work; see PhantomTankMenu#clickMenuButton.
             this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, menuButton);
-            if (trash >= 0 || this.menu.getCarried().isEmpty()) {
+            if (trash >= 0 || option >= 0 || this.menu.getCarried().isEmpty()) {
                 this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             }
             return true;
@@ -187,6 +219,22 @@ public class PhantomTankScreen extends AbstractContainerScreen<PhantomTankMenu> 
                     && gy < PhantomTankMenu.GAUGE_Y + PhantomTankMenu.GAUGE_H) {
                 return i;
             }
+        }
+        return -1;
+    }
+
+    /** The checkbox's button id under the mouse, or -1. */
+    private int optionAt(double mouseX, double mouseY) {
+        double gx = mouseX - this.leftPos;
+        double gy = mouseY - this.topPos;
+        if (gy < PhantomTankMenu.OPTION_Y || gy >= PhantomTankMenu.OPTION_Y + PhantomTankMenu.OPTION_SIZE) {
+            return -1;
+        }
+        if (gx >= PhantomTankMenu.OVERFILL_X && gx < PhantomTankMenu.OVERFILL_X + OPTION_W) {
+            return PhantomTankMenu.BUTTON_OVERFILL;
+        }
+        if (gx >= PhantomTankMenu.DRAIN_ALL_X && gx < PhantomTankMenu.DRAIN_ALL_X + OPTION_W) {
+            return PhantomTankMenu.BUTTON_DRAIN_ALL;
         }
         return -1;
     }

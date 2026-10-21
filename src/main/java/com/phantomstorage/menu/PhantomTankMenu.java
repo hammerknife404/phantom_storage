@@ -24,13 +24,16 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /**
  * The tank screen: {@link PhantomTanks#TANKS} gauges over the player inventory. There are no fluid
  * slots: clicking a gauge with a container on the cursor pours it in (left) or fills it (right),
- * clicking it with an empty cursor makes it the active tank, and each gauge has a trash button. All of it arrives as container-button clicks and runs server-side.
+ * clicking it with an empty cursor makes it the active tank, and each gauge has a trash button.
+ * Two checkboxes set how bucket use on the pet treats the active tank ({@link PhantomTanks#selected()}).
+ * All of it arrives as container-button clicks and runs server-side.
  *
  * <pre>
  * +------------------------------+
  * | title                        |
  * |  [##]   [##]   [##]   [##]   |  gauges
  * |   T      T      T      T     |  trash
+ * | [ ] Overfill   [ ] Drain all |  options
  * | Inventory                    |
  * | player inventory + hotbar    |
  * +------------------------------+
@@ -38,16 +41,20 @@ import net.neoforged.neoforge.network.PacketDistributor;
  */
 public class PhantomTankMenu extends AbstractContainerMenu {
     public static final int WIDTH = 176;
-    public static final int HEIGHT = 182;
+    public static final int HEIGHT = 194;
     public static final int GAUGE_X = 17;
     public static final int GAUGE_STEP = 40;
     public static final int GAUGE_Y = 18;
     public static final int GAUGE_W = 22;
     public static final int GAUGE_H = 52;
     public static final int TRASH_Y = GAUGE_Y + GAUGE_H + 3;
+    public static final int OPTION_Y = TRASH_Y + 17;
+    public static final int OPTION_SIZE = 9;
+    public static final int OVERFILL_X = 8;
+    public static final int DRAIN_ALL_X = 92;
     public static final int INV_X = 8;
-    public static final int INV_Y = 100;
-    public static final int HOTBAR_Y = 158;
+    public static final int INV_Y = 112;
+    public static final int HOTBAR_Y = INV_Y + 58;
     public static final int INV_LABEL_Y = INV_Y - 11;
 
     /** {@link #clickMenuButton} id = tank * ACTIONS + action. */
@@ -56,6 +63,9 @@ public class PhantomTankMenu extends AbstractContainerMenu {
     public static final int ACTION_VOID = 2;
     public static final int ACTION_SELECT = 3;
     public static final int ACTIONS = 4;
+    /** Checkbox ids, past every tank's actions. */
+    public static final int BUTTON_OVERFILL = PhantomTanks.TANKS * ACTIONS;
+    public static final int BUTTON_DRAIN_ALL = BUTTON_OVERFILL + 1;
 
     private static final int INV_SLOTS = 27;
     private static final int HOTBAR_END = INV_SLOTS + 9;
@@ -68,6 +78,8 @@ public class PhantomTankMenu extends AbstractContainerMenu {
     @Nullable
     private List<FluidStack> lastSent;
     private int lastActive = -1;
+    private boolean lastOverfill;
+    private boolean lastDrainAll;
 
     /** Client constructor; contents arrive by {@link TankSyncPayload}. */
     public PhantomTankMenu(int windowId, Inventory playerInventory) {
@@ -111,9 +123,17 @@ public class PhantomTankMenu extends AbstractContainerMenu {
         return this.tanks.getActive();
     }
 
+    public boolean isOverfill() {
+        return this.tanks.isOverfill();
+    }
+
+    public boolean isDrainAll() {
+        return this.tanks.isDrainAll();
+    }
+
     /** Client: apply a {@link TankSyncPayload}. */
-    public void receive(List<FluidStack> fluids, int active) {
-        this.tanks.set(fluids, active);
+    public void receive(List<FluidStack> fluids, int active, boolean overfill, boolean drainAll) {
+        this.tanks.set(fluids, active, overfill, drainAll);
     }
 
     @Override
@@ -130,7 +150,8 @@ public class PhantomTankMenu extends AbstractContainerMenu {
             return;
         }
         List<FluidStack> current = new ArrayList<>(PhantomTanks.TANKS);
-        boolean changed = this.lastSent == null || this.lastActive != this.tanks.getActive();
+        boolean changed = this.lastSent == null || this.lastActive != this.tanks.getActive()
+                || this.lastOverfill != this.tanks.isOverfill() || this.lastDrainAll != this.tanks.isDrainAll();
         for (int i = 0; i < PhantomTanks.TANKS; i++) {
             FluidStack fluid = this.tanks.getFluidInTank(i);
             current.add(fluid.copy());
@@ -141,7 +162,10 @@ public class PhantomTankMenu extends AbstractContainerMenu {
         if (changed) {
             this.lastSent = current;
             this.lastActive = this.tanks.getActive();
-            PacketDistributor.sendToPlayer(serverPlayer, new TankSyncPayload(this.containerId, current, this.lastActive));
+            this.lastOverfill = this.tanks.isOverfill();
+            this.lastDrainAll = this.tanks.isDrainAll();
+            PacketDistributor.sendToPlayer(serverPlayer, new TankSyncPayload(
+                    this.containerId, current, this.lastActive, this.lastOverfill, this.lastDrainAll));
         }
     }
 
@@ -149,6 +173,14 @@ public class PhantomTankMenu extends AbstractContainerMenu {
 
     @Override
     public boolean clickMenuButton(Player player, int id) {
+        if (id == BUTTON_OVERFILL) {
+            this.tanks.setOverfill(!this.tanks.isOverfill());
+            return true;
+        }
+        if (id == BUTTON_DRAIN_ALL) {
+            this.tanks.setDrainAll(!this.tanks.isDrainAll());
+            return true;
+        }
         int index = id / ACTIONS;
         if (id < 0 || index >= PhantomTanks.TANKS) {
             return false;

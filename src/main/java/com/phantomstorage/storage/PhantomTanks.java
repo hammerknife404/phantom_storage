@@ -1,6 +1,7 @@
 package com.phantomstorage.storage;
 
 import java.util.List;
+import java.util.function.Function;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -25,12 +26,18 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     private static final String KEY_TANKS = "Tanks";
     private static final String KEY_ACTIVE = "Active";
     private static final String KEY_STYLE = "Style";
+    private static final String KEY_OVERFILL = "Overfill";
+    private static final String KEY_DRAIN_ALL = "DrainAll";
 
     private final FluidTank[] tanks = new FluidTank[TANKS];
     private final IFluidHandler selected = new Selected();
     private int active;
     /** Index into {@code TankStyle}; only the look of the pet. */
     private int style;
+    /** Bucket use on the pet: pours may spill into other tanks. Off ("protected") by default. */
+    private boolean overfill;
+    /** Bucket use on the pet: pulls continue into the next tank once the active one is empty. Off by default. */
+    private boolean drainAll;
 
     public PhantomTanks() {
         for (int i = 0; i < TANKS; i++) {
@@ -43,11 +50,29 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     }
 
     /** Client copy: replace contents with what the server sent. */
-    public void set(List<FluidStack> fluids, int active) {
+    public void set(List<FluidStack> fluids, int active, boolean overfill, boolean drainAll) {
         for (int i = 0; i < TANKS; i++) {
             this.tanks[i].setFluid(i < fluids.size() ? fluids.get(i).copy() : FluidStack.EMPTY);
         }
         this.setActive(active);
+        this.overfill = overfill;
+        this.drainAll = drainAll;
+    }
+
+    public boolean isOverfill() {
+        return this.overfill;
+    }
+
+    public void setOverfill(boolean overfill) {
+        this.overfill = overfill;
+    }
+
+    public boolean isDrainAll() {
+        return this.drainAll;
+    }
+
+    public void setDrainAll(boolean drainAll) {
+        this.drainAll = drainAll;
     }
 
     /** The tank that bucket use on the pet works with first. */
@@ -75,9 +100,11 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
     }
 
     /**
-     * The handler for bucket use on the pet. Drains come only from the active tank, so the player
-     * always knows what they'll get. Fills go into the active tank, or wherever {@link #fill} would
-     * put them when it holds another fluid or is full, so a pour never fails just for that.
+     * The handler for bucket use on the pet, around the active tank. Protected (both options off):
+     * pours go only into the active tank and pulls come only from it. {@link #isOverfill() Overfill}
+     * lets a pour that doesn't fit spill to the next tank with that fluid, else the next empty one;
+     * {@link #isDrainAll() drain all} lets pulls carry on into the next non-empty tank once the active
+     * one is empty. Either way the tank used becomes active, so the player can see where it went.
      */
     public IFluidHandler selected() {
         return this.selected;
@@ -169,6 +196,8 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
         tag.put(KEY_TANKS, list);
         tag.putInt(KEY_ACTIVE, this.active);
         tag.putInt(KEY_STYLE, this.style);
+        tag.putBoolean(KEY_OVERFILL, this.overfill);
+        tag.putBoolean(KEY_DRAIN_ALL, this.drainAll);
         return tag;
     }
 
@@ -183,6 +212,8 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
         }
         this.setActive(tag.getInt(KEY_ACTIVE));
         this.style = tag.getInt(KEY_STYLE);
+        this.overfill = tag.getBoolean(KEY_OVERFILL);
+        this.drainAll = tag.getBoolean(KEY_DRAIN_ALL);
     }
 
     private final class Selected implements IFluidHandler {
@@ -212,22 +243,70 @@ public class PhantomTanks implements IFluidHandler, INBTSerializable<CompoundTag
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
-            // All or nothing in the active tank, so one bucket isn't split across two tanks.
-            FluidTank tank = this.activeTank();
-            if (tank.fill(resource, FluidAction.SIMULATE) == resource.getAmount()) {
-                return tank.fill(resource, action);
+            // All or nothing per tank, so one bucket isn't split across two tanks.
+            if (fitsWhole(this.activeTank(), resource)) {
+                return this.activeTank().fill(resource, action);
             }
-            return PhantomTanks.this.fill(resource, action);
+            if (!PhantomTanks.this.overfill) {
+                return 0;
+            }
+            // Overfill: the next tank along holding this fluid with room, else the next empty one.
+            int target = -1;
+            for (int step = 1; step < TANKS && target < 0; step++) {
+                int i = (PhantomTanks.this.active + step) % TANKS;
+                FluidTank tank = PhantomTanks.this.tanks[i];
+                if (!tank.isEmpty() && fitsWhole(tank, resource)) {
+                    target = i;
+                }
+            }
+            for (int step = 1; step < TANKS && target < 0; step++) {
+                int i = (PhantomTanks.this.active + step) % TANKS;
+                if (PhantomTanks.this.tanks[i].isEmpty()) {
+                    target = i;
+                }
+            }
+            if (target < 0) {
+                return 0;
+            }
+            int filled = PhantomTanks.this.tanks[target].fill(resource, action);
+            if (filled > 0 && action.execute()) {
+                PhantomTanks.this.active = target;
+            }
+            return filled;
         }
 
         @Override
         public FluidStack drain(FluidStack resource, FluidAction action) {
-            return this.activeTank().drain(resource, action);
+            return this.drainChained(tank -> tank.drain(resource, action), action);
         }
 
         @Override
         public FluidStack drain(int maxDrain, FluidAction action) {
-            return this.activeTank().drain(maxDrain, action);
+            return this.drainChained(tank -> tank.drain(maxDrain, action), action);
+        }
+
+        /** The active tank; with "drain all" on and the active tank empty, the next non-empty one, which becomes active. */
+        private FluidStack drainChained(Function<FluidTank, FluidStack> drain, FluidAction action) {
+            FluidTank active = this.activeTank();
+            if (!active.isEmpty() || !PhantomTanks.this.drainAll) {
+                return drain.apply(active);
+            }
+            for (int step = 1; step < TANKS; step++) {
+                int i = (PhantomTanks.this.active + step) % TANKS;
+                FluidTank tank = PhantomTanks.this.tanks[i];
+                if (!tank.isEmpty()) {
+                    FluidStack drained = drain.apply(tank);
+                    if (!drained.isEmpty() && action.execute()) {
+                        PhantomTanks.this.active = i;
+                    }
+                    return drained;
+                }
+            }
+            return FluidStack.EMPTY;
+        }
+
+        private static boolean fitsWhole(FluidTank tank, FluidStack resource) {
+            return tank.fill(resource, FluidAction.SIMULATE) == resource.getAmount();
         }
     }
 }
