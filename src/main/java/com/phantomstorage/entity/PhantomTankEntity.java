@@ -92,6 +92,10 @@ public class PhantomTankEntity extends PhantomPetEntity {
                 owner.setItemInHand(hand, ItemUtils.createFilledResult(held, owner, result.getResult()));
             }
             this.updateDisplay(tanks);
+            // The active tank's level, so the GUI isn't needed for exact numbers. Shown even when
+            // nothing moved (full, wrong fluid), which says why. Overfill/drain all move the active
+            // tank to the one actually used, so this is always the tank that changed.
+            owner.displayClientMessage(levelMessage(tanks, tanks.getActive()), true);
             return;
         }
         owner.openMenu(new SimpleMenuProvider(
@@ -104,6 +108,16 @@ public class PhantomTankEntity extends PhantomPetEntity {
         SoundEvent sound = OPEN_SOUNDS.get(this.random.nextInt(OPEN_SOUNDS.size()));
         this.level().playSound(null, this.getX(), this.getY() + 0.5, this.getZ(),
                 sound, SoundSource.NEUTRAL, 1.0F, 0.8F + this.random.nextFloat() * 0.4F);
+    }
+
+    /** "Tank 2: Water — 12,000 / 32,000 mB", or "Tank 2: Empty". */
+    private static Component levelMessage(PhantomTanks tanks, int tank) {
+        FluidStack fluid = tanks.getFluidInTank(tank);
+        if (fluid.isEmpty()) {
+            return Component.translatable("message.phantomstorage.tank.level_empty", tank + 1);
+        }
+        return Component.translatable("message.phantomstorage.tank.level", tank + 1, fluid.getHoverName(),
+                String.format("%,d", fluid.getAmount()), String.format("%,d", PhantomTanks.CAPACITY));
     }
 
     /** Sneak-use with a fluid container cycles the active tank; empty-handed it still toggles stay. */

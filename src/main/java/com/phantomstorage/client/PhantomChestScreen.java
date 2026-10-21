@@ -5,7 +5,9 @@ import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.menu.VoidSlot;
+import com.phantomstorage.storage.SortMode;
 import java.util.List;
+import java.util.Locale;
 import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -55,7 +57,6 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
 
     private static final Component CRAFTING = Component.translatable("container.phantomstorage.crafting");
     private static final Component VOID = Component.translatable("container.phantomstorage.void");
-    private static final List<Component> SORT_TOOLTIP = tooltip("sort");
     private static final List<Component> TRASH_TOOLTIP = tooltip("trash");
     private static final List<Component> VOID_TOOLTIP = tooltip("void_slot");
     private static final List<Component> RESULT_TOOLTIP = tooltip("result");
@@ -161,7 +162,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
     private List<Component> extraTooltip(int mouseX, int mouseY) {
         Icon icon = this.iconAt(mouseX, mouseY);
         if (icon == Icon.SORT) {
-            return SORT_TOOLTIP;
+            return this.sortTooltip();
         }
         if (icon == Icon.TRASH) {
             return TRASH_TOOLTIP;
@@ -179,19 +180,57 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         return null;
     }
 
+    /** "Sort: Name, A → Z" and the controls. */
+    private List<Component> sortTooltip() {
+        SortMode mode = this.menu.getSortMode();
+        String direction = this.menu.isSortDescending() ? "desc" : "asc";
+        return List.of(
+                Component.translatable("tooltip.phantomstorage.sort.mode", mode.displayName(),
+                        Component.translatable("sort.phantomstorage." + mode.name().toLowerCase(Locale.ROOT) + "." + direction)),
+                Component.translatable("tooltip.phantomstorage.sort.click").withStyle(ChatFormatting.GRAY),
+                Component.translatable("tooltip.phantomstorage.sort.cycle").withStyle(ChatFormatting.GRAY),
+                Component.translatable("tooltip.phantomstorage.sort.reverse").withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * Sort icon: left-click sorts, shift + left-click flips the direction, right-click cycles the mode.
+     * Trash: left-click.
+     */
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        Icon icon = button == 0 ? this.iconAt(mouseX, mouseY) : null;
-        int menuButton = icon == Icon.SORT ? PhantomChestMenu.BUTTON_SORT
-                : icon == Icon.TRASH ? PhantomChestMenu.BUTTON_TRASH
-                : -1;
-        if (menuButton >= 0 && this.minecraft != null && this.minecraft.gameMode != null) {
-            // The server validates the menu and does the work; see PhantomChestMenu#clickMenuButton.
-            this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, menuButton);
-            this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        Icon icon = this.iconAt(mouseX, mouseY);
+        int menuButton = -1;
+        if (icon == Icon.SORT && button == 0) {
+            menuButton = hasShiftDown() ? PhantomChestMenu.BUTTON_SORT_DIRECTION : PhantomChestMenu.BUTTON_SORT;
+        } else if (icon == Icon.SORT && button == 1) {
+            menuButton = PhantomChestMenu.BUTTON_SORT_NEXT_MODE;
+        } else if (icon == Icon.TRASH && button == 0) {
+            menuButton = PhantomChestMenu.BUTTON_TRASH;
+        }
+        if (menuButton >= 0 && this.pressMenuButton(menuButton)) {
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /** Scrolling over the sort icon cycles its mode. */
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (scrollY != 0.0 && this.iconAt(mouseX, mouseY) == Icon.SORT && this.pressMenuButton(
+                scrollY < 0.0 ? PhantomChestMenu.BUTTON_SORT_NEXT_MODE : PhantomChestMenu.BUTTON_SORT_PREVIOUS_MODE)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    }
+
+    /** The server validates the menu and does the work; see PhantomChestMenu#clickMenuButton. */
+    private boolean pressMenuButton(int menuButton) {
+        if (this.minecraft == null || this.minecraft.gameMode == null) {
+            return false;
+        }
+        this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, menuButton);
+        this.minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        return true;
     }
 
     private boolean isShown(Icon icon) {
@@ -234,7 +273,7 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         int body = hovered ? ICON_BODY_HOVER : ICON_BODY;
         int detail = hovered ? ICON_DETAIL_HOVER : ICON_DETAIL;
         switch (icon) {
-            case SORT -> drawSort(g, x, y, body);
+            case SORT -> drawSort(g, x, y, body, this.menu.isSortDescending());
             case TRASH -> drawTrash(g, x, y, body, detail);
             case RECIPES -> drawPlus(g, x, y, body);
         }
@@ -304,9 +343,9 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         }
     }
 
-    /** 12x12: three bars, longest to shortest. */
-    private static void drawSort(GuiGraphics g, int x, int y, int body) {
-        int[] widths = {10, 7, 4};
+    /** 12x12: three bars, longest to shortest top-down for ascending, shortest to longest for descending. */
+    private static void drawSort(GuiGraphics g, int x, int y, int body, boolean descending) {
+        int[] widths = descending ? new int[] {4, 7, 10} : new int[] {10, 7, 4};
         for (int i = 0; i < widths.length; i++) {
             int top = y + i * 4;
             g.fill(x, top, x + widths[i] + 2, top + 4, ICON_OUTLINE);

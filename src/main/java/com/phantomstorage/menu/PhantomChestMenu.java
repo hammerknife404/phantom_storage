@@ -3,13 +3,13 @@ package com.phantomstorage.menu;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.registry.ModRegistries;
 import com.phantomstorage.storage.PhantomInventory;
+import com.phantomstorage.storage.SortMode;
 import com.phantomstorage.storage.StackCompactor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -19,6 +19,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.ResultSlot;
 import net.minecraft.world.inventory.Slot;
@@ -51,13 +52,9 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     /** {@link #clickMenuButton} ids. */
     public static final int BUTTON_TRASH = 0;
     public static final int BUTTON_SORT = 1;
-
-    /** Sort order: item id, then name (separates enchanted books etc.), then damage, fullest first. */
-    private static final Comparator<ItemStack> SORT_ORDER = Comparator
-            .comparing((ItemStack stack) -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString())
-            .thenComparing(stack -> stack.getHoverName().getString())
-            .thenComparingInt(ItemStack::getDamageValue)
-            .thenComparing(Comparator.comparingInt(ItemStack::getCount).reversed());
+    public static final int BUTTON_SORT_NEXT_MODE = 2;
+    public static final int BUTTON_SORT_PREVIOUS_MODE = 3;
+    public static final int BUTTON_SORT_DIRECTION = 4;
 
     private final Player player;
     private final PhantomLayout layout;
@@ -67,6 +64,8 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     private final TransientCraftingContainer craftSlots = new TransientCraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
     private final SimpleContainer voidSlots = new SimpleContainer(9);
+    /** Sort mode and direction ({@link PhantomInventory#packedSort()}), synced so the button can show them. */
+    private final DataSlot sortState;
 
     /** Client constructor. */
     public PhantomChestMenu(int windowId, Inventory playerInventory) {
@@ -86,6 +85,22 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         this.layout = layout;
         this.storage = storage;
         this.chest = chest;
+        if (storage instanceof PhantomInventory phantom) {
+            this.sortState = new DataSlot() {
+                @Override
+                public int get() {
+                    return phantom.packedSort();
+                }
+
+                @Override
+                public void set(int value) {
+                    // Server side: changed only through the sort buttons.
+                }
+            };
+        } else {
+            this.sortState = DataSlot.standalone(); // client copy, fed by vanilla data-slot sync
+        }
+        this.addDataSlot(this.sortState);
 
         for (int row = 0; row < PhantomInventory.ROWS; row++) {
             for (int col = 0; col < PhantomInventory.COLUMNS; col++) {
@@ -188,8 +203,33 @@ public class PhantomChestMenu extends AbstractContainerMenu {
                 this.sortStorage();
                 yield true;
             }
+            case BUTTON_SORT_NEXT_MODE, BUTTON_SORT_PREVIOUS_MODE -> {
+                if (this.storage instanceof PhantomInventory phantom) {
+                    phantom.cycleSortMode(id == BUTTON_SORT_NEXT_MODE);
+                }
+                yield true;
+            }
+            case BUTTON_SORT_DIRECTION -> {
+                if (this.storage instanceof PhantomInventory phantom) {
+                    phantom.toggleSortDirection();
+                }
+                yield true;
+            }
             default -> false;
         };
+    }
+
+    private Comparator<ItemStack> sortOrder(List<ItemStack> contents) {
+        return PhantomInventory.unpackSortMode(this.sortState.get())
+                .comparator(contents, PhantomInventory.unpackSortDescending(this.sortState.get()));
+    }
+
+    public SortMode getSortMode() {
+        return PhantomInventory.unpackSortMode(this.sortState.get());
+    }
+
+    public boolean isSortDescending() {
+        return PhantomInventory.unpackSortDescending(this.sortState.get());
     }
 
     private void sortStorage() {
@@ -223,7 +263,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
             public ItemStack withCount(ItemStack stack, int count) {
                 return stack.copyWithCount(count);
             }
-        }, SORT_ORDER);
+        }, this.sortOrder(contents));
         if (sorted.size() > size) {
             return; // over-stacked input would need more slots than exist: leave it untouched
         }

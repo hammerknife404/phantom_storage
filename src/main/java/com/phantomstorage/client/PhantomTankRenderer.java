@@ -26,7 +26,7 @@ import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtension
  * fluid inside, stacked bottom-up in tank order with the active tank's layer moved to the top, each
  * layer a quarter of the fluid space when its tank is full. Bobs like the chest. Everything is drawn
  * from vanilla textures (block atlas, or the ender chest's own model texture), so there is no model
- * or texture to maintain. Never darker than light level 7, or the brightest fluid's own light (lava).
+ * or texture to maintain. Opacity and the light-level-7 floor come from {@link PhantomClientConfig}; a glowing fluid (lava) lights it regardless.
  *
  * <pre>
  *  ┌────────────┐ rim    1 px      phantom style: ghostly ender chest base and lid,
@@ -37,9 +37,9 @@ import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtension
  */
 public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final ResourceLocation GLASS = ResourceLocation.withDefaultNamespace("block/tinted_glass");
-    /** ARGB: extra translucency only; the texture already carries the violet tint. */
-    private static final int GLASS_COLOR = 0xB0FFFFFF;
-    private static final int FLUID_ALPHA = 0xD0;
+    /** Glass and fluid alpha relative to the frame's: a touch clearer, and a touch more solid. */
+    private static final float GLASS_FACTOR = 0xB0 / (float) 0xCC;
+    private static final float FLUID_FACTOR = 0xD0 / (float) 0xCC;
     private static final int MIN_BLOCK_LIGHT = 7;
     private static final float PX = 1.0F / 16.0F;
     private static final float HALF = 11.0F / 32.0F;
@@ -57,8 +57,6 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float[] ENDER_BASE_TOP = px(14, 19, 28, 33);
     private static final float[] ENDER_BASE_UNDER = px(28, 19, 42, 33);
     private static final float[] ENDER_BASE_SIDE = px(14, 40, 28, 43);
-    /** ARGB: the ender chest parts are ghostly, like the chest pet. */
-    private static final int GHOST_COLOR = 0xCCFFFFFF;
 
     private static final ResourceLocation PHANTOM = ResourceLocation.withDefaultNamespace("textures/entity/phantom.png");
     private static final ResourceLocation PHANTOM_EYES = ResourceLocation.withDefaultNamespace("textures/entity/phantom_eyes.png");
@@ -96,7 +94,11 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         float bodyYaw = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
         poseStack.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
 
-        int blockLight = Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT);
+        float alpha = PhantomClientConfig.tankAlpha();
+        int ghost = PhantomClientConfig.white(alpha, 1.0F);
+        int fluidAlpha = PhantomClientConfig.white(alpha, FLUID_FACTOR) & 0xFF000000;
+        int blockLight = PhantomClientConfig.tankGlows()
+                ? Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT) : LightTexture.block(packedLight);
         for (int i = 0; i < PhantomTanks.TANKS; i++) {
             Fluid fluid = entity.getDisplayFluid(i);
             if (fluid != Fluids.EMPTY) {
@@ -123,7 +125,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
             // A sliver of fluid still shows as a thin layer.
             float top = bottom + layerMax * Math.max(fill, MIN_LAYER);
             IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(fluid);
-            int color = FLUID_ALPHA << 24 | (ext.getTintColor() & 0xFFFFFF);
+            int color = fluidAlpha | (ext.getTintColor() & 0xFFFFFF);
             box(pose, consumer, sprite(ext.getStillTexture()), -inner, bottom, -inner, inner, top, inner, color, light);
             bottom = top;
         }
@@ -132,17 +134,17 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
             case PHANTOM -> {
                 VertexConsumer ender = buffer.getBuffer(RenderType.entityTranslucent(ENDER_CHEST));
                 uvBox(pose, ender, -HALF, 0.0F, -HALF, HALF, BASE, HALF,
-                        ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, GHOST_COLOR, light);
+                        ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, ghost, light);
                 uvBox(pose, ender, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF,
-                        ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, GHOST_COLOR, light);
+                        ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, ghost, light);
                 VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(PHANTOM));
                 float flap = Mth.sin(age * FLAP_SPEED) * FLAP_DEGREES;
-                wing(pose, wings, 1, flap, light);
-                wing(pose, wings, -1, flap, light);
+                wing(pose, wings, 1, flap, ghost, light);
+                wing(pose, wings, -1, flap, ghost, light);
                 consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
             }
         }
-        box(pose, consumer, sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, GLASS_COLOR, light);
+        box(pose, consumer, sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, PhantomClientConfig.white(alpha, GLASS_FACTOR), light);
         if (entity.getDisplayStyle() == TankStyle.PHANTOM) {
             // Glowing eyes on the front of the glass, just under the rim; full-bright like a phantom's.
             VertexConsumer eyes = buffer.getBuffer(RenderType.eyes(PHANTOM_EYES));
@@ -168,7 +170,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
      * wing texture, so the wing bends there instead of looking bolted together. Drawn once; the render
      * type doesn't cull, so it shows from above and below.
      */
-    private static void wing(PoseStack.Pose pose, VertexConsumer c, int side, float flap, int light) {
+    private static void wing(PoseStack.Pose pose, VertexConsumer c, int side, float flap, int color, int light) {
         float a = flap * Mth.DEG_TO_RAD;
         float rootX = HALF - WING_TUCK;
         float rootY = HEIGHT - RIM * 0.5F;
@@ -186,7 +188,6 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         float v0 = WING[1];
         float v1 = WING[3];
         float vTip0 = Mth.lerp(WING_TAPER, v0, v1);
-        int color = GHOST_COLOR;
         // Inner half: root -> joint.
         vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z0, u0, v0);
         vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z1, u0, v1);
