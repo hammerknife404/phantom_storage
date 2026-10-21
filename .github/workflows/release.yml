@@ -88,6 +88,5 @@ jobs:
 
             **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner.
             **Unlocks:** the Phantom Tank needs the advancement *Not Quite "Nine" Lives* (charge a respawn anchor).
-            **Phantoms keep their distance** while you carry the charm or have a pet within 16 blocks of them.
             **Client config** (Mods → Phantom Storage → Config): opacity for all pets or each one, and glow on/off per pet.
           generate_release_notes: true

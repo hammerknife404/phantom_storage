@@ -102,6 +102,5 @@ public class PhantomCharmItem extends Item {
         tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.summon").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.dismiss").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.cycle").withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.repel").withStyle(ChatFormatting.DARK_PURPLE));
     }
 }

@@ -25,7 +25,6 @@
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
 - Look at one for half a second and it comes within reach
 - Stay / follow toggle, recall to your side, name them with a name tag
-- **Phantoms keep their distance**, like with cats: carry the charm, or keep a pet near, and they won't swoop
 - Owner-only: nobody else can open, move or lead them
 - Invulnerable to everything but `/kill`
 - Storage lives on the player, so it survives death, logout and dimension changes
