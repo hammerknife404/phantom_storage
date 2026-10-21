@@ -9,7 +9,7 @@
 - **108 slots** (12×9) of personal storage
 - **3×3 crafting grid**, with one-click recipe fill when JEI or REI is installed
 - **9-slot void filter** plus a trash button for junk
-- **Sort** button that merges stacks and orders by item
+- **Sort** button: by name, amount or mod, ascending or descending, all from one button
 
 ## 🫙 Phantom Tank
 

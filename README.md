@@ -21,7 +21,7 @@ Chest:
 
 | Icon | Does |
 |---|---|
-| Sort (bars, after the title) | Merges stacks and orders storage by item |
+| Sort (bars, after the title) | Click: merge stacks and sort. Right-click or scroll: mode (Name, Amount, Mod). Shift + click: ascending / descending (the bars flip). Saved with your storage |
 | Trash (by the void grid) | Destroys everything in the void slots |
 | `+` (by the crafting output, JEI/REI only) | Opens crafting recipes; the viewer's own `+` fills the grid from storage and inventory |
 
