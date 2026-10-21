@@ -30,6 +30,7 @@
 - Invulnerable to everything but `/kill`
 - Storage lives on the player, so it survives death, logout and dimension changes
 - Never darker than light level 7; light up their surroundings with [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights)
+- **Client config** (in-game from the Mods list): opacity for all pets or each one, and glow on/off per pet
 
 ---
 

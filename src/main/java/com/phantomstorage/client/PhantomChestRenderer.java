@@ -18,13 +18,11 @@ import net.minecraft.util.Mth;
 
 /**
  * Renders the vanilla chest model with the Phantom Chest texture, translucent and gently bobbing.
- * It never renders darker than light level 7 (a redstone torch).
+ * Opacity and the light-level-7 floor (a redstone torch) come from {@link PhantomClientConfig}.
  * Real surrounding light comes only from LambDynamicLights, via assets/phantomstorage/dynamiclights/entity.
  */
 public class PhantomChestRenderer extends EntityRenderer<PhantomChestEntity> {
     private static final ResourceLocation TEXTURE = PhantomStorage.id("textures/entity/phantom_chest.png");
-    /** ARGB: ~80% opacity, no tint (the texture carries the colour). */
-    private static final int GHOST_COLOR = 0xCCFFFFFF;
     private static final int MIN_BLOCK_LIGHT = 7;
 
     private final ModelPart bottom;
@@ -56,12 +54,14 @@ public class PhantomChestRenderer extends EntityRenderer<PhantomChestEntity> {
         this.lid.xRot = -(open * ((float) Math.PI / 2.0F));
         this.lock.xRot = this.lid.xRot;
 
-        int light = LightTexture.pack(
-                Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT), LightTexture.sky(packedLight));
+        int blockLight = PhantomClientConfig.chestGlows()
+                ? Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT) : LightTexture.block(packedLight);
+        int light = LightTexture.pack(blockLight, LightTexture.sky(packedLight));
+        int ghost = PhantomClientConfig.white(PhantomClientConfig.chestAlpha(), 1.0F);
         VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucentCull(TEXTURE));
-        this.lid.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, GHOST_COLOR);
-        this.lock.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, GHOST_COLOR);
-        this.bottom.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, GHOST_COLOR);
+        this.lid.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, ghost);
+        this.lock.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, ghost);
+        this.bottom.render(poseStack, consumer, light, OverlayTexture.NO_OVERLAY, ghost);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);

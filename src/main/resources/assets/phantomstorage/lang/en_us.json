@@ -52,5 +52,16 @@
   "message.phantomstorage.tank.level_empty": "Tank %s: Empty",
   "message.phantomstorage.charm.mode": "Phantom Charm: %s",
   "message.phantomstorage.locked": "%s is locked. Earn the advancement \"%s\" to unlock it",
-  "message.phantomstorage.unlocked": "Phantom %s unlocked! Sneak + scroll your Phantom Charm to switch to it"
+  "message.phantomstorage.unlocked": "Phantom %s unlocked! Sneak + scroll your Phantom Charm to switch to it",
+  "phantomstorage.configuration.title": "Phantom Storage",
+  "phantomstorage.configuration.section.phantomstorage.client.toml": "Pet appearance",
+  "phantomstorage.configuration.section.phantomstorage.client.toml.title": "Pet appearance",
+  "phantomstorage.configuration.opacity": "Opacity",
+  "phantomstorage.configuration.opacity.tooltip": "How see-through the pets are, in percent",
+  "phantomstorage.configuration.allPets": "All pets",
+  "phantomstorage.configuration.allPets.tooltip": "Multiplies the chest and tank values",
+  "phantomstorage.configuration.chest": "Phantom Chest",
+  "phantomstorage.configuration.tank": "Phantom Tank",
+  "phantomstorage.configuration.glow": "Glow",
+  "phantomstorage.configuration.glow.tooltip": "Never render darker than light level 7"
 }

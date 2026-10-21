@@ -11,9 +11,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -21,7 +25,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 @Mod(value = PhantomStorage.MODID, dist = Dist.CLIENT)
 public final class PhantomStorageClient {
-    public PhantomStorageClient(IEventBus modBus) {
+    public PhantomStorageClient(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.CLIENT, PhantomClientConfig.SPEC);
+        container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         modBus.addListener(PhantomStorageClient::onRegisterRenderers);
         modBus.addListener(PhantomStorageClient::onRegisterScreens);
         modBus.addListener(PhantomStorageClient::onClientSetup);

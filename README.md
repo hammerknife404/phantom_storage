@@ -60,6 +60,19 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
 - Pets are dismissed automatically on logout or dimension change; re-summon them with the charm.
 
+## Client config
+
+Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → Phantom Storage → Config**. Changes show at once.
+
+| Option | Default | Does |
+|---|---|---|
+| Opacity: All pets | 100% | Multiplies the two values below |
+| Opacity: Phantom Chest | 80% | How see-through the chest is (10–100%) |
+| Opacity: Phantom Tank | 80% | The tank's frame and wings; glass and fluid scale with it |
+| Glow: Phantom Chest / Tank | on | Never render darker than light level 7 (the tank's eyes always glow) |
+
+Light cast onto surroundings comes from LambDynamicLights and is toggled in its own settings.
+
 ## Build
 
 ```sh
