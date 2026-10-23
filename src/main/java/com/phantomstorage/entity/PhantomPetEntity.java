@@ -50,13 +50,18 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     private static final double TELEPORT_RING = 2.0;
     private static final int TELEPORT_ATTEMPTS = 8;
     private static final double MENU_REACH_SQR = 64.0;
+    /** Missed this many ticks: it sits in a chunk that no longer ticks (see {@link PetManager#rescueStranded}). */
+    private static final long STRANDED_TICKS = 20;
 
     private int openCount;
     /** Set by a recall; the follow goal picks it up and settles in place instead of wandering off. */
     private boolean recalled;
+    /** Game time of the last server tick. */
+    private long lastTickTime;
 
     protected PhantomPetEntity(EntityType<? extends PhantomPetEntity> type, Level level) {
         super(type, level);
+        this.lastTickTime = level.getGameTime();
         this.moveControl = new PhantomMoveControl(this);
         this.noPhysics = true;
         this.setNoGravity(true);
@@ -113,6 +118,14 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
     public void onSummoned(ServerPlayer owner) {}
 
+    /**
+     * Server-side, instead of {@link #onSummoned}, when this pet replaces a stranded one
+     * ({@link PetManager#rescueStranded}): keep its look, without summon side effects.
+     */
+    public void inheritFrom(PhantomPetEntity old, ServerPlayer owner) {
+        this.setCustomName(old.getCustomName());
+    }
+
     /** Whether {@code player} may keep a menu on this pet open. */
     public boolean canBeUsedBy(Player player) {
         return player.isAlive()
@@ -134,9 +147,17 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     public void tick() {
         this.noPhysics = true;
         super.tick();
-        if (!this.level().isClientSide() && this.tickCount % OWNER_CHECK_INTERVAL == 0) {
-            this.validateOwner();
+        if (!this.level().isClientSide()) {
+            this.lastTickTime = this.level().getGameTime();
+            if (this.tickCount % OWNER_CHECK_INTERVAL == 0) {
+                this.validateOwner();
+            }
         }
+    }
+
+    /** Server-side: hasn't ticked for a second while the level has, i.e. left behind in a non-ticking chunk. */
+    public boolean isStranded() {
+        return this.level().getGameTime() - this.lastTickTime > STRANDED_TICKS;
     }
 
     /**

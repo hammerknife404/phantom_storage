@@ -82,6 +82,13 @@ public class PhantomTankEntity extends PhantomPetEntity {
         this.updateDisplay(tanks);
     }
 
+    /** A stand-in for a stranded tank keeps the current style rather than stepping to the next. */
+    @Override
+    public void inheritFrom(PhantomPetEntity old, ServerPlayer owner) {
+        super.inheritFrom(old, owner);
+        this.updateDisplay(owner.getData(ModRegistries.TANKS));
+    }
+
     @Override
     public void interact(ServerPlayer owner, InteractionHand hand) {
         PhantomTanks tanks = owner.getData(ModRegistries.TANKS);

@@ -81,7 +81,7 @@ public class PhantomCharmItem extends Item {
                 PetManager.dismiss(kind, serverPlayer, false);
                 serverPlayer.displayClientMessage(Component.translatable(kind.message("dismissed")), true);
             } else if (active.level() == serverPlayer.level()) {
-                active.recallTo(serverPlayer);
+                PetManager.recall(kind, serverPlayer, active);
                 serverPlayer.displayClientMessage(Component.translatable(kind.message("recalled")), true);
             } else {
                 return InteractionResultHolder.fail(stack);
