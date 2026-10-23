@@ -45,13 +45,59 @@ public final class PetManager {
         if (!player.isAlive() || player.isSpectator() || getActive(kind, player.getUUID()) != null) {
             return false;
         }
+        return spawn(kind, player, null) != null;
+    }
+
+    /** Charm recall: pull the pet beside the owner. A stranded pet is replaced instead, which always works. */
+    public static void recall(PetKind kind, ServerPlayer player, PhantomPetEntity pet) {
+        PhantomPetEntity target = pet.isStranded() ? replace(kind, player, pet) : pet;
+        if (target != null) {
+            target.recallTo(player);
+        }
+    }
+
+    /**
+     * Owner-driven watchdog, run from the owner's tick. A pet left behind by a same-dimension teleport
+     * (waystones, /tp, modded warps) sits in a chunk that no longer ticks, so neither its follow goal
+     * nor its owner check can run; only the owner can notice. Pets told to stay are left alone.
+     */
+    public static void rescueStranded(ServerPlayer player) {
+        if (!player.isAlive() || player.isSpectator()) {
+            return;
+        }
+        for (PetKind kind : PetKind.values()) {
+            PhantomPetEntity pet = getActive(kind, player.getUUID());
+            if (pet != null && pet.level() == player.level() && !pet.isOrderedToSit() && pet.isStranded()) {
+                replace(kind, player, pet);
+            }
+        }
+    }
+
+    /** Swaps a stranded pet for a fresh one beside the owner. Safe because pets hold no contents. */
+    @Nullable
+    private static PhantomPetEntity replace(PetKind kind, ServerPlayer player, PhantomPetEntity old) {
+        if (kind.isMenu(player.containerMenu)) {
+            player.closeContainer();
+        }
+        ACTIVE.get(kind).remove(player.getUUID(), old);
+        old.discard();
+        return spawn(kind, player, old);
+    }
+
+    /** @param replacing the stranded pet this one takes over from, or null for a plain summon. */
+    @Nullable
+    private static PhantomPetEntity spawn(PetKind kind, ServerPlayer player, @Nullable PhantomPetEntity replacing) {
         ServerLevel level = player.serverLevel();
         PhantomPetEntity pet = kind.entityType().create(level);
         if (pet == null) {
-            return false;
+            return null;
         }
         pet.bindOwner(player);
-        pet.onSummoned(player);
+        if (replacing == null) {
+            pet.onSummoned(player);
+        } else {
+            pet.inheritFrom(replacing, player);
+        }
 
         Vec3 look = player.getLookAngle();
         Vec3 flat = new Vec3(look.x, 0.0, look.z);
@@ -64,13 +110,13 @@ public final class PetManager {
         pet.yHeadRot = pet.getYRot();
 
         if (!level.addFreshEntity(pet)) {
-            return false;
+            return null;
         }
         ACTIVE.get(kind).put(player.getUUID(), pet);
 
         level.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y + 0.45, z, 24, 0.3, 0.3, 0.3, 0.05);
         level.playSound(null, x, y, z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.NEUTRAL, 0.5F, 1.4F);
-        return true;
+        return pet;
     }
 
     /**

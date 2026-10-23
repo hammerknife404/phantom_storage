@@ -14,8 +14,11 @@ import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 public final class PhantomPetEvents {
+    private static final int STRANDED_CHECK_INTERVAL = 10;
+
     private PhantomPetEvents() {}
 
     public static void register(IEventBus bus) {
@@ -26,6 +29,7 @@ public final class PhantomPetEvents {
         bus.addListener(PhantomPetEvents::onDeath);
         bus.addListener(PhantomPetEvents::onServerStopped);
         bus.addListener(PhantomPetEvents::onAdvancementEarned);
+        bus.addListener(PhantomPetEvents::onPlayerTick);
     }
 
     /**
@@ -116,6 +120,12 @@ public final class PhantomPetEvents {
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
             }
+        }
+    }
+
+    private static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player && player.tickCount % STRANDED_CHECK_INTERVAL == 0) {
+            PetManager.rescueStranded(player);
         }
     }
 

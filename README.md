@@ -57,7 +57,7 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
 - One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm.
+- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
 ## Client config
 
