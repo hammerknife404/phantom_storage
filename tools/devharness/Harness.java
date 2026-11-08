@@ -43,7 +43,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * src/main/java/com/phantomstorage/devharness/ (gitignored) to use it, and delete it before a release
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
- * anchor, collector and gateway at full and at 10% opacity. It creates a flat creative world,
+ * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
+ * collector's filter clicked through their screens. It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -159,6 +160,8 @@ public final class Harness {
                 gatewayScript();
             } else if ("void".equals(System.getenv("PHANTOM_HARNESS"))) {
                 voidScript();
+            } else if ("filters".equals(System.getenv("PHANTOM_HARNESS"))) {
+                filtersScript();
             } else {
                 script();
             }
@@ -512,6 +515,144 @@ public final class Harness {
         step(20, () -> mc().stop());
     }
 
+    /** Clicks menu slot {@code index} as a player does: press and release over it on the open screen. */
+    private static void clickSlot(int index, int button) {
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            check("a container screen is open (got " + mc().screen + ")", false);
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double x = screen.getGuiLeft() + slot.x + 8;
+        double y = screen.getGuiTop() + slot.y + 8;
+        screen.mouseClicked(x, y, button);
+        screen.mouseReleased(x, y, button);
+    }
+
+    /** Places the cursor on a slot: 0 left click, 1 right click, 2 left press that drifts 2 px before release. */
+    private static void placeOn(int index, int gesture) {
+        if (gesture < 2) {
+            clickSlot(index, gesture);
+            return;
+        }
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            check("a container screen is open (got " + mc().screen + ")", false);
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double x = screen.getGuiLeft() + slot.x + 6;
+        double y = screen.getGuiTop() + slot.y + 6;
+        screen.mouseClicked(x, y, 0);
+        screen.mouseDragged(x + 2, y + 1, 0, 2, 1);
+        screen.mouseReleased(x + 2, y + 1, 0);
+    }
+
+    /**
+     * For each test item: pick its stack up from the first inventory row, click filter entry k with it,
+     * put the stack back; then the entry should hold one ghost copy on both sides and the stack be whole.
+     */
+    private static void filterCases(String name, int filterStart, int invStart, int gesture,
+                                    java.util.function.Supplier<net.minecraft.world.Container> serverFilter) {
+        // A local, not a static: the scripts are built from this class's static initializer.
+        net.minecraft.world.item.Item[] items = {Items.COBBLESTONE, Items.DIAMOND, Items.STICK, Items.DIAMOND_SWORD, Items.ROTTEN_FLESH};
+        step(2, () -> server(() -> serverFilter.get().clearContent()));
+        for (int k = 0; k < items.length; k++) {
+            int i = k;
+            net.minecraft.world.item.Item item = items[k];
+            int[] before = new int[1];
+            step(4, () -> {
+                before[0] = p().getInventory().countItem(item);
+                clickSlot(invStart + i, 0);
+                log(name + " " + item + ": carried " + p().containerMenu.getCarried());
+            });
+            step(4, () -> placeOn(filterStart + i, gesture));
+            step(4, () -> clickSlot(invStart + i, 0));
+            step(6, () -> {
+                ItemStack client = p().containerMenu.slots.get(filterStart + i).getItem();
+                ItemStack[] server = new ItemStack[1];
+                server(() -> server[0] = serverFilter.get().getItem(i).copy());
+                log(name + " entry " + i + ": client " + client + " server " + server[0]
+                        + " carried " + p().containerMenu.getCarried() + " held " + p().getInventory().countItem(item));
+                check(name + " takes a ghost " + item, client.is(item) && client.getCount() == 1
+                        && server[0].is(item) && server[0].getCount() == 1
+                        && p().containerMenu.getCarried().isEmpty() && p().getInventory().countItem(item) == before[0]);
+            });
+        }
+        // Clicking an entry empty-handed clears it.
+        step(4, () -> clickSlot(filterStart, 0));
+        step(6, () -> {
+            ItemStack[] server = new ItemStack[1];
+            server(() -> server[0] = serverFilter.get().getItem(0).copy());
+            check(name + " entry clears on an empty-handed click", server[0].isEmpty()
+                    && p().containerMenu.slots.get(filterStart).getItem().isEmpty());
+        });
+    }
+
+    /**
+     * The chest's void grid and the collector's filter, filled through their screens with blocks, items
+     * and a tool: left click, right click and a drifting press in survival, and left click in creative.
+     */
+    private static void filtersScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"chest\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"collector\"]");
+            cmd("item replace entity @s inventory.0 with minecraft:cobblestone 16");
+            cmd("item replace entity @s inventory.1 with minecraft:diamond 3");
+            cmd("item replace entity @s inventory.2 with minecraft:stick 8");
+            cmd("item replace entity @s inventory.3 with minecraft:diamond_sword");
+            cmd("item replace entity @s inventory.4 with minecraft:rotten_flesh 5");
+            cmd("tp @s 0.5 -60 0.5 180 0");
+            cmd("gamemode survival");
+        });
+        step(20, () -> {
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            use();
+        });
+        step(20, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        String[] variants = {"left click", "right click", "drag", "creative left click"};
+        for (int v = 0; v < variants.length; v++) {
+            int gesture = v == 3 ? 0 : v;
+            String label = variants[v];
+            boolean creative = v == 3;
+            step(5, () -> {
+                cmd(creative ? "gamemode creative" : "gamemode survival");
+                log("--- " + label);
+            });
+            step(20, () -> server(() -> PetManager.getActive(PetKind.CHEST, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> log("screen " + mc().screen));
+            filterCases("chest void (" + label + ")", com.phantomstorage.menu.PhantomChestMenu.VOID_START,
+                    com.phantomstorage.menu.PhantomChestMenu.INV_START, gesture,
+                    () -> sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter());
+            if (v == 0) {
+                step(10, () -> shot("f1_chest_void"));
+            }
+            step(5, () -> p().closeContainer());
+            step(20, () -> server(() -> PetManager.getActive(PetKind.COLLECTOR, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> log("screen " + mc().screen));
+            filterCases("collector (" + label + ")", com.phantomstorage.menu.PhantomCollectorMenu.FILTER_START,
+                    com.phantomstorage.menu.PhantomCollectorMenu.INV_START, gesture,
+                    () -> sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR).filter());
+            if (v == 0) {
+                step(10, () -> shot("f2_collector"));
+            }
+            step(5, () -> p().closeContainer());
+        }
+        step(5, () -> {
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
     private static void script() {
         until(() -> p() != null && mc().level != null && mc().screen == null);
         step(60, () -> {
@@ -739,7 +880,6 @@ public final class Harness {
         }));
         step(20, () -> shot("07_chest_panel"));
         step(5, () -> {
-            p().closeContainer();
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());
