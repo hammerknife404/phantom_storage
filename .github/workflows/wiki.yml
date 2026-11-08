@@ -1,0 +1,45 @@
+name: Wiki
+
+# Mirrors docs/wiki/ to the repository's GitHub wiki, so the wiki is edited like code.
+# The wiki's own repository only exists once it has a page: create any page once on
+# github.com (Wiki tab), then re-run this workflow; it replaces that page.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/wiki/**', '.github/workflows/wiki.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Push docs/wiki to the wiki
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          if ! git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki; then
+            echo "::error::Could not clone the wiki. Create any page once on github.com (Wiki tab) so its repository exists, then re-run this workflow."
+            exit 1
+          fi
+          rsync -a --delete --exclude .git docs/wiki/ wiki/
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki already matches docs/wiki"
+            exit 0
+          fi
+          git commit -m "Sync from docs/wiki at ${GITHUB_SHA::7}"
+          git push
