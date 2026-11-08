@@ -38,3 +38,9 @@ run/
 **/src/generated/**/.cache/
 repo/
 !**/src/**/repo/
+
+### Dev harness (copied in from tools/devharness while testing; never committed or released) ###
+src/main/java/com/phantomstorage/devharness/
+
+### Python ###
+__pycache__/
