@@ -22,7 +22,7 @@
 
 ## ⚓ Phantom Anchor
 
-- A ghostly **lodestone with windows onto the End's sky** and phantom wings, following you like the others
+- A ghostly **lodestone with windows onto the End portal's starfield** and phantom wings, following you like the others
 - **Teleport to it** with the charm: you land on a safe spot within 3 blocks of it
 - Tell it to stay and it's **anchored**: its chunk stays loaded and ticking while you're online, and the charm takes you back to it from anywhere, **even another dimension**
 - **Look at it** (up to 32 blocks, through walls) and use the charm to **swap places**
@@ -31,11 +31,11 @@
 
 ## 🌀 Phantom Collector
 
-- A small **orb of the End's sky** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
+- A small **orb of the End portal's starfield** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
 - Following, it collects round you; **anchored**, it keeps collecting round its spot (a mob farm, say) wherever you are, its chunk loaded while you're online
 - **Experience** comes to you while it follows (Mending works); anchored, it's **banked** to take from its panel
 - Its panel: **range** (3–12 blocks), a **filter** of what to take or skip, the XP bank, *Stay here* and dismiss
-- Never takes what you threw away, and the chest's void filter destroys your listed junk on the way in
+- What you throw yourself waits 5 seconds first (time to hand it to a friend), and the chest's void filter destroys your listed junk on the way in
 
 ## 🐎 Phantom Saddle
 
