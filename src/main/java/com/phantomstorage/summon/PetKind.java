@@ -1,18 +1,14 @@
 package com.phantomstorage.summon;
 
-import com.mojang.serialization.Codec;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.menu.PhantomAnchorMenu;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomCollectorMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.registry.ModRegistries;
-import io.netty.buffer.ByteBuf;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -28,9 +24,6 @@ public enum PetKind implements StringRepresentable {
     ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, PhantomAnchorMenu.class, true),
     /** Told to stay, it anchors like the anchor and keeps collecting there. */
     COLLECTOR("collector", ModRegistries.PHANTOM_COLLECTOR, PhantomCollectorMenu.class, true);
-
-    public static final Codec<PetKind> CODEC = StringRepresentable.fromEnum(PetKind::values);
-    public static final StreamCodec<ByteBuf, PetKind> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], PetKind::ordinal);
 
     private final String key;
     private final Supplier<? extends EntityType<? extends PhantomPetEntity>> type;
@@ -78,10 +71,6 @@ public enum PetKind implements StringRepresentable {
         return this.entityType().getDescription();
     }
 
-    /** "Chest" / "Tank" / "Anchor", from {@code pet.phantomstorage.<kind>}. */
-    public Component displayName() {
-        return Component.translatable("pet.phantomstorage." + this.key);
-    }
 
     /** {@code message.phantomstorage.<kind>.<what>} */
     public String message(String what) {

@@ -77,7 +77,7 @@ Gateway:
 
 | What | Does |
 |---|---|
-| Opens | 2 blocks ahead of you, facing you: a 1.5 × 2 block doorway of the End gateway's starfield in a ghostly lodestone frame, the phantom eyes peering out of the void. Needs your Phantom Anchor anchored (told to stay) |
+| Opens | 2 blocks ahead of you, facing you: a 1.5 × 2 block doorway of the End portal's starfield in a ghostly lodestone frame, the phantom eyes peering out of the void. Needs your Phantom Anchor anchored (told to stay) |
 | Goes through | Whatever steps in: you, other players, mobs, items. Everyone lands on a safe spot within 3 blocks of the anchor, in whatever dimension it is (same rules as anchor teleports) |
 | Your pets | Don't go through themselves. Following pets catch up as usual; if you crossed to another dimension, they're re-summoned beside you |
 | Closes | After 15 s, on sneak + use, when you open another, log out, or the anchor stops being anchored |
@@ -114,7 +114,7 @@ For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|bell|
 - The anchor is a small ghostly lodestone whose sides are windows onto the void: the End portal's own starfield, drifting as in the portal block, with the same wings and eyes. The void looks the same by day and night. Anchored, it hangs still with its wings folded.
 - The collector is a small orb of the End portal's starfield with the same glowing eyes and no wings; items it takes fly into it.
 - One of each pet per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Every charm mode shows a pre-render of its pet, drawn as the game draws it, with the same outline.
+- Every charm mode shows a pre-render of what it calls up (its pet, the saddled chest, the gateway, the bell), drawn as the game draws it, with the same outline.
 - Pets are dismissed automatically on logout or dimension change, except an anchored anchor or collector (and following pets brought through your gateway); re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
 ## Client config
@@ -126,9 +126,9 @@ Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → P
 | Opacity: All pets | 100% | Multiplies the values below. Every part of a pet fades with it, eyes included, except the End portal void of the anchor, collector and gateway |
 | Opacity: Phantom Chest | 80% | How see-through the chest is (10–100%) |
 | Opacity: Phantom Tank | 80% | The tank's frame and wings; glass and fluid scale with it |
-| Opacity: Phantom Anchor | 80% | How see-through the anchor's stone and wings are (its End portal windows stay solid) |
+| Opacity: Phantom Anchor | 80% | How see-through the anchor's stone and wings are, and the gateway's frame (End portal windows stay solid) |
 | Opacity: Phantom Collector | 80% | Dims the collector's eyes (its End portal orb stays solid) |
-| Glow: Phantom Chest / Tank / Anchor | on | Never render darker than light level 7 (the tank's and anchor's eyes always glow, dimmed only by opacity) |
+| Glow: Phantom Chest / Tank / Anchor | on | Never render darker than light level 7; the anchor's setting also covers the gateway's frame (the eyes always glow, dimmed only by opacity) |
 
 Light cast onto surroundings comes from LambDynamicLights and is toggled in its own settings.
 

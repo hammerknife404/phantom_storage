@@ -9,9 +9,12 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="hammerknife404"
 description='''
-Summonable, ghostly flying pets that follow their owner.
-The Phantom Chest: 108 slots of personal storage, a crafting grid, and a void filter.
-The Phantom Tank: 4 fluid tanks of 32 buckets each.
+Summonable, ghostly flying pets that carry your stuff, all from one Phantom Charm.
+Phantom Chest: 108 slots of personal storage, a crafting grid and a void filter.
+Phantom Tank: 4 fluid tanks of 32 buckets each.
+Phantom Anchor: a waypoint you teleport to, from any dimension.
+Phantom Collector: gathers dropped items and experience into your storage.
+Charm modes unlocked by advancements: ride the chest (Saddle), open a doorway to your anchor (Gateway), call every pet at once (Bell).
 '''
 
 [[dependencies.${mod_id}]]
