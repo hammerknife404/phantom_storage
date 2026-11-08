@@ -70,7 +70,7 @@ For testing, `/phantomstorage unlock <tank|anchor|all>` grants a pet's unlock ad
 - Buckets used on the tank work with the active tank only, unless you tick Overfill or Drain all in the GUI.
 - All pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
-- The anchor is a small ghostly lodestone with the same wings and eyes. Anchored, it hangs still with its wings folded.
+- The anchor is a small ghostly lodestone whose sides are windows onto the End's sky, with the same wings and eyes. The void drifts slowly and glows faintly at night. Anchored, it hangs still with its wings folded.
 - One of each pet per player. Only the owner can open or move them, and only `/kill` can kill them.
 - Pets are dismissed automatically on logout or dimension change, except an anchored anchor; re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
@@ -80,11 +80,11 @@ Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → P
 
 | Option | Default | Does |
 |---|---|---|
-| Opacity: All pets | 100% | Multiplies the values below |
+| Opacity: All pets | 100% | Multiplies the values below. Every part of a pet fades with it, eyes included |
 | Opacity: Phantom Chest | 80% | How see-through the chest is (10–100%) |
 | Opacity: Phantom Tank | 80% | The tank's frame and wings; glass and fluid scale with it |
 | Opacity: Phantom Anchor | 80% | How see-through the anchor is |
-| Glow: Phantom Chest / Tank / Anchor | on | Never render darker than light level 7 (the tank's and anchor's eyes always glow) |
+| Glow: Phantom Chest / Tank / Anchor | on | Never render darker than light level 7 (the tank's and anchor's eyes always glow, dimmed only by opacity) |
 
 Light cast onto surroundings comes from LambDynamicLights and is toggled in its own settings.
 

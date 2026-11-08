@@ -15,19 +15,34 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
 
 /**
- * A small ghostly lodestone with the tank's phantom wings and glowing eyes. While it follows it bobs
- * and flaps like the other pets; anchored, it hangs still with its wings folded down. Drawn from
- * vanilla textures, so there is no model or texture to maintain. Opacity and the light-level-7 floor
- * come from {@link PhantomClientConfig}.
+ * A small ghostly lodestone whose sides are windows onto the void: a lodestone frame round a pane of
+ * the End's sky, which drifts slowly and glows faintly in the dark. It wears the tank's phantom wings
+ * and glowing eyes. While it follows it bobs and flaps like the other pets; anchored, it hangs still
+ * with its wings folded down. Drawn from vanilla textures, so there is no model or texture to maintain.
+ * Opacity (eyes included) and the light-level-7 floor come from {@link PhantomClientConfig}.
+ *
+ * <p>Drawn with the mod's own {@link PhantomRenderTypes#ghost} like the chest, never with vanilla's
+ * {@code entityTranslucentCull(blocks)}: that one is the translucent block-item sheet, which the game
+ * draws from a fixed buffer in a pass of its own and render mods may batch apart.
  */
 public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
     private static final ResourceLocation LODESTONE_TOP = ResourceLocation.withDefaultNamespace("block/lodestone_top");
     private static final ResourceLocation LODESTONE_SIDE = ResourceLocation.withDefaultNamespace("block/lodestone_side");
+    /** The End's sky box: the void. */
+    private static final ResourceLocation END_SKY = ResourceLocation.withDefaultNamespace("textures/environment/end_sky.png");
+    /** The sky texture is 128 px; a pane shows one texel per model pixel, like a block. */
+    private static final float SKY_TEXEL = 1.0F / 128.0F;
+    /** Texels per tick the void drifts across its panes. */
+    private static final float SKY_DRIFT = 0.04F;
+    /** The raw sky is bright; the game darkens it too. Dim violet, still readable in daylight. */
+    private static final int VOID_TINT = 0x8070A0;
     private static final int MIN_BLOCK_LIGHT = 7;
     private static final float PX = GhostQuads.PX;
     /** A 10 px cube inside the 0.75 entity box. */
     private static final float HALF = 5.0F * PX;
     private static final float HEIGHT = 10.0F * PX;
+    /** The lodestone frame round each side's pane, in px. */
+    private static final float FRAME = 2.0F;
     /** The wing roots sit just inside the top edges, so the wings grow out of the stone. */
     private static final float WING_TUCK = PX;
     /** Anchored: wings hang down the sides (the outer half at twice this). */
@@ -50,48 +65,93 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
         float bodyYaw = Mth.rotLerp(partialTick, entity.yBodyRotO, entity.yBodyRot);
         poseStack.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
 
-        int ghost = PhantomClientConfig.white(PhantomClientConfig.anchorAlpha(), 1.0F);
+        float alpha = PhantomClientConfig.anchorAlpha();
+        int ghost = PhantomClientConfig.white(alpha, 1.0F);
         int blockLight = PhantomClientConfig.anchorGlows()
                 ? Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT) : LightTexture.block(packedLight);
         int light = LightTexture.pack(blockLight, LightTexture.sky(packedLight));
         PoseStack.Pose pose = poseStack.last();
 
-        // Back faces culled: a convex box then shows only its outer shell, never the far faces through it.
-        cube(pose, buffer.getBuffer(RenderType.entityTranslucentCull(InventoryMenu.BLOCK_ATLAS)),
-                GhostQuads.sprite(LODESTONE_TOP), GhostQuads.sprite(LODESTONE_SIDE), ghost, light);
+        VertexConsumer stone = buffer.getBuffer(PhantomRenderTypes.ghost(InventoryMenu.BLOCK_ATLAS));
+        stoneEnds(pose, stone, GhostQuads.sprite(LODESTONE_TOP), ghost, light);
+        stoneFrames(pose, stone, GhostQuads.sprite(LODESTONE_SIDE), ghost, light);
+        voidPanes(pose, buffer.getBuffer(PhantomRenderTypes.ghost(END_SKY)), (ghost & 0xFF000000) | VOID_TINT,
+                age * SKY_DRIFT * SKY_TEXEL);
+
         VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(GhostQuads.PHANTOM));
         float flap = anchored ? FOLDED_DEGREES : GhostQuads.flap(age);
         GhostQuads.wing(pose, wings, 1, flap, HALF - WING_TUCK, HEIGHT - 0.5F * PX, ghost, light);
         GhostQuads.wing(pose, wings, -1, flap, HALF - WING_TUCK, HEIGHT - 0.5F * PX, ghost, light);
-        GhostQuads.eyes(pose, buffer, HALF + 0.002F, HEIGHT - 2.0F * PX);
+        GhostQuads.eyes(pose, buffer, HALF + 0.002F, HEIGHT - 2.0F * PX, alpha);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 
-    /** The lodestone: its top texture on the top and bottom, its side texture all round, each face whole. */
-    private static void cube(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite end, TextureAtlasSprite side,
-                             int color, int light) {
-        float x0 = -HALF;
-        float x1 = HALF;
-        float z0 = -HALF;
-        float z1 = HALF;
-        float y0 = 0.0F;
-        float y1 = HEIGHT;
-        float eu0 = end.getU0();
-        float eu1 = end.getU1();
-        float ev0 = end.getV0();
-        float ev1 = end.getV1();
-        float su0 = side.getU0();
-        float su1 = side.getU1();
-        float sv0 = side.getV0();
-        float sv1 = side.getV1();
-        GhostQuads.quad(pose, c, color, light, 0, 1, 0, eu0, ev0, eu1, ev1, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
-        GhostQuads.quad(pose, c, color, light, 0, -1, 0, eu0, ev0, eu1, ev1, x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
-        GhostQuads.quad(pose, c, color, light, 0, 0, -1, su0, sv0, su1, sv1, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
-        GhostQuads.quad(pose, c, color, light, 0, 0, 1, su0, sv0, su1, sv1, x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
-        GhostQuads.quad(pose, c, color, light, -1, 0, 0, su0, sv0, su1, sv1, x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
-        GhostQuads.quad(pose, c, color, light, 1, 0, 0, su0, sv0, su1, sv1, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+    /** Top and bottom faces, the lodestone's top texture. */
+    private static void stoneEnds(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite top, int color, int light) {
+        float u0 = top.getU0();
+        float u1 = top.getU1();
+        float v0 = top.getV0();
+        float v1 = top.getV1();
+        GhostQuads.quad(pose, c, color, light, 0, 1, 0, u0, v0, u1, v1, -HALF, HEIGHT, -HALF, -HALF, HEIGHT, HALF, HALF, HEIGHT, HALF, HALF, HEIGHT, -HALF);
+        GhostQuads.quad(pose, c, color, light, 0, -1, 0, u0, v0, u1, v1, -HALF, 0, HALF, -HALF, 0, -HALF, HALF, 0, -HALF, HALF, 0, HALF);
+    }
+
+    /**
+     * Each side as a lodestone frame {@link #FRAME} px wide round an open centre: four strips, each
+     * showing the matching part of the side texture.
+     */
+    private static void stoneFrames(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite side, int color, int light) {
+        float f = FRAME / (2.0F * HALF / PX); // the frame as a fraction of the face
+        // Strips as (a0, b0, a1, b1) in face fractions: a along the face, b up from the base.
+        float[][] strips = {{0, 0, 1, f}, {0, 1 - f, 1, 1}, {0, f, f, 1 - f}, {1 - f, f, 1, 1 - f}};
+        for (int face = 0; face < 4; face++) {
+            for (float[] s : strips) {
+                sideRect(pose, c, face, s[0], s[1], s[2], s[3],
+                        side.getU(s[0]), side.getV(1 - s[3]), side.getU(s[2]), side.getV(1 - s[1]), color, light);
+            }
+        }
+    }
+
+    /**
+     * The open centre of each side, filled with the End sky. Full-bright, so the void reads the same by
+     * day and glows faintly at night; each side shows a different patch, drifting by {@code drift}.
+     */
+    private static void voidPanes(PoseStack.Pose pose, VertexConsumer c, int color, float drift) {
+        float size = 2.0F * HALF / PX;
+        float f = FRAME / size;
+        float span = (size - 2.0F * FRAME) * SKY_TEXEL;
+        for (int face = 0; face < 4; face++) {
+            float u = face * 0.25F + drift;
+            float v = face * 0.17F + drift * 0.5F;
+            sideRect(pose, c, face, f, f, 1 - f, 1 - f, u, v, u + span, v + span, color, LightTexture.FULL_BRIGHT);
+        }
+    }
+
+    /**
+     * A rectangle on side {@code face} (0 north, 1 south, 2 west, 3 east), in face fractions: {@code a}
+     * along the face (u runs the same way on every side), {@code b} up from the base. Corners go round
+     * counter-clockwise seen from outside, so culling keeps the outer face.
+     */
+    private static void sideRect(PoseStack.Pose pose, VertexConsumer c, int face, float a0, float b0, float a1, float b1,
+                                 float u0, float vTop, float u1, float vBottom, int color, int light) {
+        float y0 = b0 * HEIGHT;
+        float y1 = b1 * HEIGHT;
+        float up0 = -HALF + a0 * 2.0F * HALF; // runs with the axis
+        float up1 = -HALF + a1 * 2.0F * HALF;
+        float down0 = HALF - a0 * 2.0F * HALF; // runs against it
+        float down1 = HALF - a1 * 2.0F * HALF;
+        switch (face) {
+            case 0 -> GhostQuads.quad(pose, c, color, light, 0, 0, -1, u0, vTop, u1, vBottom,
+                    up0, y0, -HALF, up0, y1, -HALF, up1, y1, -HALF, up1, y0, -HALF);
+            case 1 -> GhostQuads.quad(pose, c, color, light, 0, 0, 1, u0, vTop, u1, vBottom,
+                    down0, y0, HALF, down0, y1, HALF, down1, y1, HALF, down1, y0, HALF);
+            case 2 -> GhostQuads.quad(pose, c, color, light, -1, 0, 0, u0, vTop, u1, vBottom,
+                    -HALF, y0, down0, -HALF, y1, down0, -HALF, y1, down1, -HALF, y0, down1);
+            default -> GhostQuads.quad(pose, c, color, light, 1, 0, 0, u0, vTop, u1, vBottom,
+                    HALF, y0, up0, HALF, y1, up0, HALF, y1, up1, HALF, y0, up1);
+        }
     }
 
     @Override

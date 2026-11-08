@@ -128,7 +128,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         box(pose, consumer, GhostQuads.sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, PhantomClientConfig.white(alpha, GLASS_FACTOR), light);
         if (entity.getDisplayStyle() == TankStyle.PHANTOM) {
             // Glowing eyes on the front of the glass, just under the rim; full-bright like a phantom's.
-            GhostQuads.eyes(pose, buffer, glass + 0.002F, HEIGHT - RIM - 0.5F * PX);
+            GhostQuads.eyes(pose, buffer, glass + 0.002F, HEIGHT - RIM - 0.5F * PX, alpha);
         }
         poseStack.popPose();
 

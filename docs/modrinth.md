@@ -22,7 +22,7 @@
 
 ## ⚓ Phantom Anchor
 
-- A ghostly **lodestone with phantom wings** that follows you like the others
+- A ghostly **lodestone with windows onto the End's sky** and phantom wings, following you like the others
 - **Teleport to it** with the charm: you land on a safe spot within 3 blocks of it
 - Tell it to stay and it's **anchored**: its chunk stays loaded and ticking while you're online, and the charm takes you back to it from anywhere, **even another dimension**
 - **Look at it** (up to 32 blocks, through walls) and use the charm to **swap places**

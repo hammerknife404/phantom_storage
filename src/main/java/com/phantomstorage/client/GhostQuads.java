@@ -79,15 +79,21 @@ final class GhostQuads {
         vertex(pose, c, color, light, 0, 1, 0, side * tipX, tipY, tipZ0, u1, vTip0);
     }
 
-    /** Full-bright phantom eyes on a front face at {@code z}, centred, their top edge at {@code top}. */
-    static void eyes(PoseStack.Pose pose, MultiBufferSource buffer, float z, float top) {
+    /**
+     * Full-bright phantom eyes on a front face at {@code z}, centred, their top edge at {@code top}, faded
+     * with the pet's {@code alpha}. The eyes render type adds its colour rather than blending by alpha,
+     * so fading means dimming the colour.
+     */
+    static void eyes(PoseStack.Pose pose, MultiBufferSource buffer, float z, float top, float alpha) {
         VertexConsumer eyes = buffer.getBuffer(RenderType.eyes(PHANTOM_EYES));
+        int level = Mth.clamp(Math.round(alpha * 255.0F), 0, 255);
+        int color = 0xFF000000 | level << 16 | level << 8 | level;
         // The eyes render type culls back faces, so wind counter-clockwise as seen from the front.
         int bright = LightTexture.FULL_BRIGHT;
-        vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top - EYES_H, z, EYES[0], EYES[3]);
-        vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top - EYES_H, z, EYES[2], EYES[3]);
-        vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top, z, EYES[2], EYES[1]);
-        vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top, z, EYES[0], EYES[1]);
+        vertex(pose, eyes, color, bright, 0, 0, 1, -EYES_HALF_W, top - EYES_H, z, EYES[0], EYES[3]);
+        vertex(pose, eyes, color, bright, 0, 0, 1, EYES_HALF_W, top - EYES_H, z, EYES[2], EYES[3]);
+        vertex(pose, eyes, color, bright, 0, 0, 1, EYES_HALF_W, top, z, EYES[2], EYES[1]);
+        vertex(pose, eyes, color, bright, 0, 0, 1, -EYES_HALF_W, top, z, EYES[0], EYES[1]);
     }
 
     /** Pixel rectangle on a 64x64 texture as u0, v0, u1, v1 fractions. */

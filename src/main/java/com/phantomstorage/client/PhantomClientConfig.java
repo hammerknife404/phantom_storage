@@ -39,10 +39,10 @@ public final class PhantomClientConfig {
                 .comment("Never render the Phantom Chest darker than light level 7.")
                 .define("chest", true);
         TANK_GLOW = builder
-                .comment("Never render the Phantom Tank darker than light level 7 (its eyes always glow).")
+                .comment("Never render the Phantom Tank darker than light level 7 (its eyes always glow, dimmed only by opacity).")
                 .define("tank", true);
         ANCHOR_GLOW = builder
-                .comment("Never render the Phantom Anchor darker than light level 7 (its eyes always glow).")
+                .comment("Never render the Phantom Anchor darker than light level 7 (its eyes always glow, dimmed only by opacity).")
                 .define("anchor", true);
         builder.pop();
         SPEC = builder.build();
