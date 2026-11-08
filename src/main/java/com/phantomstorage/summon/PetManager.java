@@ -49,8 +49,12 @@ public final class PetManager {
         return spawn(kind, player, null) != null;
     }
 
-    /** Charm recall: pull the pet beside the owner. A stranded pet is replaced instead, which always works. */
+    /**
+     * Charm recall: pull the pet beside the owner, following again (an anchored pet lets its spot go).
+     * A stranded pet is replaced instead, which always works.
+     */
     public static void recall(PetKind kind, ServerPlayer player, PhantomPetEntity pet) {
+        AnchorManager.release(player, kind);
         PhantomPetEntity target = pet.isStranded() ? replace(kind, player, pet) : pet;
         if (target != null) {
             target.recallTo(player);
@@ -116,14 +120,14 @@ public final class PetManager {
     }
 
     /**
-     * Re-creates an anchored Phantom Anchor at its saved spot, told to stay (after a login or restart).
-     * Quietly: its owner is usually far away.
+     * Re-creates an anchored pet at its saved spot, told to stay (after a login or restart). Quietly:
+     * its owner is usually far away.
      */
-    static void restoreAnchor(ServerPlayer owner, ServerLevel level, Vec3 pos, @Nullable Component name) {
-        if (getActive(PetKind.ANCHOR, owner.getUUID()) != null) {
+    static void restoreAnchored(PetKind kind, ServerPlayer owner, ServerLevel level, Vec3 pos, @Nullable Component name) {
+        if (getActive(kind, owner.getUUID()) != null) {
             return;
         }
-        PhantomPetEntity pet = PetKind.ANCHOR.entityType().create(level);
+        PhantomPetEntity pet = kind.entityType().create(level);
         if (pet == null) {
             return;
         }
@@ -131,7 +135,7 @@ public final class PetManager {
         pet.setCustomName(name);
         pet.setOrderedToSit(true);
         pet.setInSittingPose(true);
-        add(PetKind.ANCHOR, owner, level, pet, pos.x, pos.y, pos.z, 0.0F);
+        add(kind, owner, level, pet, pos.x, pos.y, pos.z, 0.0F);
     }
 
     /** Places a new pet, adds it to the level and makes it the owner's pet of that kind. */
@@ -148,7 +152,7 @@ public final class PetManager {
     }
 
     /**
-     * Removes the player's pet of this kind (if any), for good: an anchored anchor's spot goes too.
+     * Removes the player's pet of this kind (if any), for good: an anchored pet's spot goes too.
      * Closes its menu first so the crafting grid and cursor stack return to the player before anything
      * else happens.
      *
@@ -166,24 +170,22 @@ public final class PetManager {
         if (pet != null && !pet.isRemoved()) {
             pet.vanish();
         }
-        if (kind == PetKind.ANCHOR) {
-            AnchorManager.release(player);
-        }
+        AnchorManager.release(player, kind);
     }
 
     /**
-     * Logout or dimension change: every pet goes, except an anchored anchor, which stays where it is.
+     * Logout or dimension change: every pet goes, except an anchored one, which stays where it is.
      * On logout only its entity and loaded chunk go; the spot is kept and it comes back on next login.
      */
     public static void dismissAll(ServerPlayer player, boolean disconnecting) {
         for (PetKind kind : PetKind.values()) {
-            if (kind == PetKind.ANCHOR && AnchorManager.isAnchored(player)) {
+            if (AnchorManager.isAnchored(player, kind)) {
                 if (disconnecting) {
                     PhantomPetEntity anchor = ACTIVE.get(kind).remove(player.getUUID());
                     if (anchor != null && anchor.isRemoved()) {
                         anchor = null;
                     }
-                    AnchorManager.suspend(player, anchor);
+                    AnchorManager.suspend(player, kind, anchor);
                     if (anchor != null) {
                         anchor.discard();
                     }

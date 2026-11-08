@@ -60,11 +60,13 @@ public final class PhantomStorageClient {
         event.registerEntityRenderer(ModRegistries.PHANTOM_CHEST.get(), PhantomChestRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_TANK.get(), PhantomTankRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_ANCHOR.get(), PhantomAnchorRenderer::new);
+        event.registerEntityRenderer(ModRegistries.PHANTOM_COLLECTOR.get(), PhantomCollectorRenderer::new);
     }
 
     private static void onRegisterScreens(RegisterMenuScreensEvent event) {
         event.register(ModRegistries.PHANTOM_CHEST_MENU.get(), PhantomChestScreen::new);
         event.register(ModRegistries.PHANTOM_TANK_MENU.get(), PhantomTankScreen::new);
         event.register(ModRegistries.PHANTOM_ANCHOR_MENU.get(), PhantomAnchorScreen::new);
+        event.register(ModRegistries.PHANTOM_COLLECTOR_MENU.get(), PhantomCollectorScreen::new);
     }
 }

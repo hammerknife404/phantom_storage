@@ -87,4 +87,51 @@ class PetPanelLayoutTest {
                 box(PhantomLayout.TITLE_X, PhantomLayout.TITLE_Y, AnchorLayout.MAX_TITLE_WIDTH, FONT_HEIGHT),
                 info, stay, dismiss), "anchor");
     }
+
+    @Test
+    void collectorPanelFits() {
+        int w = CollectorLayout.WIDTH;
+        int h = CollectorLayout.HEIGHT;
+        PhantomLayout.Box filter = CollectorLayout.filterWell();
+        PhantomLayout.Box info = CollectorLayout.infoWell();
+        PhantomLayout.Box inventory = CollectorLayout.inventoryWell();
+        assertInsidePanel(filter, w, h, "filter well");
+        assertInsidePanel(info, w, h, "info well");
+        assertInsidePanel(inventory, w, h, "inventory well");
+
+        PhantomLayout.Box grid = box(CollectorLayout.FILTER_X - 1, CollectorLayout.FILTER_Y - 1, 3 * 18, 3 * 18);
+        PhantomLayout.Box skip = box(CollectorLayout.SKIP_X, CollectorLayout.SKIP_Y, CollectorLayout.SKIP_W, CollectorLayout.OPTION_SIZE);
+        assertTrue(filter.contains(grid), "filter grid sticks out of its well");
+        assertTrue(filter.contains(skip), "Skip checkbox sticks out of the filter well");
+
+        int icon = PhantomLayout.ICON_SIZE;
+        PhantomLayout.Box minus = box(CollectorLayout.MINUS_X, CollectorLayout.RANGE_ICON_Y, icon, icon);
+        PhantomLayout.Box plus = box(CollectorLayout.PLUS_X, CollectorLayout.RANGE_ICON_Y, icon, icon);
+        PhantomLayout.Box take = box(CollectorLayout.TAKE_X, CollectorLayout.TAKE_Y, icon, icon);
+        // Status, coordinates and dimension lines, from the text column to the well's inner edge.
+        PhantomLayout.Box lines = box(CollectorLayout.TEXT_X, CollectorLayout.STATUS_Y,
+                info.right() - 1 - CollectorLayout.TEXT_X, 2 * CollectorLayout.LINE_H + FONT_HEIGHT);
+        PhantomLayout.Box rangeLabel = box(CollectorLayout.TEXT_X, CollectorLayout.RANGE_Y, "Range".length() * CHAR_WIDTH, FONT_HEIGHT);
+        // The longest the total can read: just under a million, or the int limit shortened.
+        int xpWidth = Math.max(("XP " + CollectorLayout.formatXp(999_999)).length(),
+                ("XP " + CollectorLayout.formatXp(Integer.MAX_VALUE)).length()) * CHAR_WIDTH;
+        PhantomLayout.Box xpLabel = box(CollectorLayout.TEXT_X, CollectorLayout.XP_Y, xpWidth, FONT_HEIGHT);
+        for (PhantomLayout.Box b : List.of(minus, plus, take, lines, rangeLabel)) {
+            assertTrue(info.contains(b), b + " sticks out of the info well");
+        }
+        assertApart(List.of(minus, plus, take, lines, rangeLabel), "info well");
+        assertFalse(xpLabel.overlaps(take), "XP total runs into the take button");
+
+        PhantomLayout.Box invSlots = box(CollectorLayout.INV_X - 1, CollectorLayout.INV_Y - 1, 9 * 18,
+                CollectorLayout.HOTBAR_Y + 17 - CollectorLayout.INV_Y);
+        assertTrue(inventory.contains(invSlots), "inventory slots stick out of their well");
+        PhantomLayout.Box stay = box(CollectorLayout.STAY_X, CollectorLayout.STAY_Y, CollectorLayout.STAY_W, CollectorLayout.OPTION_SIZE);
+        PhantomLayout.Box dismiss = box(CollectorLayout.DISMISS_X, CollectorLayout.DISMISS_Y, icon, icon);
+        assertApart(List.of(
+                PhantomLayout.headerIconBox(),
+                box(PhantomLayout.TITLE_X, PhantomLayout.TITLE_Y, CollectorLayout.MAX_TITLE_WIDTH, FONT_HEIGHT),
+                filter, info, stay, dismiss,
+                box(CollectorLayout.INV_X, CollectorLayout.INV_LABEL_Y, "Inventory".length() * CHAR_WIDTH, FONT_HEIGHT),
+                inventory), "collector");
+    }
 }

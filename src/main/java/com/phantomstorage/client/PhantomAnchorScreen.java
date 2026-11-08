@@ -86,7 +86,7 @@ public class PhantomAnchorScreen extends AbstractContainerScreen<PhantomAnchorMe
     }
 
     /** "Overworld", "The Nether", "The End"; another mod's dimension by its id unless it's translated. */
-    private static Component dimensionName(ResourceLocation id) {
+    static Component dimensionName(ResourceLocation id) {
         return Component.translatableWithFallback("dimension.phantomstorage." + id.getNamespace() + "." + id.getPath(), id.toString());
     }
 

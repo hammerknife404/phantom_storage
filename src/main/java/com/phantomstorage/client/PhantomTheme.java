@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.Slot;
 import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 
 /**
@@ -118,6 +119,20 @@ public final class PhantomTheme {
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
     }
 
+    /**
+     * A veil over a filter entry's item so it reads as a ghost, not stock: the slot's own fill at half
+     * strength, above the item and its count. Call after the vanilla slot drawing.
+     */
+    public static void drawGhostVeil(GuiGraphics g, Slot slot, int slotFill) {
+        if (!slot.hasItem()) {
+            return;
+        }
+        g.pose().pushPose();
+        g.pose().translate(0.0F, 0.0F, 350.0F);
+        g.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, (slotFill & 0xFFFFFF) | 0x90000000);
+        g.pose().popPose();
+    }
+
     /** A checkbox the size of {@code size}: a small slot, lit with the accent when on. */
     public static void drawCheckbox(GuiGraphics g, int x, int y, int size, boolean on) {
         drawSlot(g, x, y, size, size, SLOT_FILL);
@@ -184,6 +199,12 @@ public final class PhantomTheme {
         g.fill(x + 1, y + 5, x + 11, y + 7, body);
     }
 
+    /** 12x12 minus sign. */
+    public static void drawMinus(GuiGraphics g, int x, int y, boolean hovered) {
+        g.fill(x, y + 4, x + 12, y + 8, ICON_OUTLINE);
+        g.fill(x + 1, y + 5, x + 11, y + 7, body(hovered));
+    }
+
     private static int body(boolean hovered) {
         return hovered ? ACCENT : ICON_BODY;
     }
@@ -209,6 +230,7 @@ public final class PhantomTheme {
     private static boolean isPetScreen() {
         return Minecraft.getInstance().screen instanceof PhantomChestScreen
                 || Minecraft.getInstance().screen instanceof PhantomTankScreen
-                || Minecraft.getInstance().screen instanceof PhantomAnchorScreen;
+                || Minecraft.getInstance().screen instanceof PhantomAnchorScreen
+                || Minecraft.getInstance().screen instanceof PhantomCollectorScreen;
     }
 }

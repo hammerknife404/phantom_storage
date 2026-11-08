@@ -2,6 +2,7 @@ package com.phantomstorage.menu;
 
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.registry.ModRegistries;
+import com.phantomstorage.storage.ItemFilter;
 import com.phantomstorage.storage.PhantomInventory;
 import com.phantomstorage.storage.SortMode;
 import com.phantomstorage.storage.StackCompactor;
@@ -19,6 +20,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.ResultContainer;
 import net.minecraft.world.inventory.ResultSlot;
@@ -32,8 +34,8 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 
 /**
- * One screen: 12x9 storage, a 3x3 crafting grid, and a 3x3 void filter.
- * All state is server-authoritative; the client copy is a dummy container fed by vanilla sync.
+ * One screen: 12x9 storage, a 3x3 crafting grid, and a 3x3 void filter of ghost entries (saved with
+ * the storage). All state is server-authoritative; the client copy is a dummy container fed by vanilla sync.
  */
 public class PhantomChestMenu extends AbstractContainerMenu {
     // Slot index ranges (end-exclusive).
@@ -63,7 +65,8 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     private final PhantomChestEntity chest;
     private final TransientCraftingContainer craftSlots = new TransientCraftingContainer(this, 3, 3);
     private final ResultContainer resultSlots = new ResultContainer();
-    private final SimpleContainer voidSlots = new SimpleContainer(9);
+    /** The owner's void filter on the server; a dummy fed by slot sync on the client. */
+    private final Container voidFilter;
     /** Sort mode and direction ({@link PhantomInventory#packedSort()}), synced so the button can show them. */
     private final DataSlot sortState;
 
@@ -85,6 +88,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         this.layout = layout;
         this.storage = storage;
         this.chest = chest;
+        this.voidFilter = storage instanceof PhantomInventory phantom ? phantom.voidFilter() : new ItemFilter();
         if (storage instanceof PhantomInventory phantom) {
             this.sortState = new DataSlot() {
                 @Override
@@ -118,7 +122,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
-                this.addSlot(new VoidSlot(this.voidSlots, col + row * 3, layout.voidX() + col * 18, layout.voidY() + row * 18));
+                this.addSlot(new VoidSlot(this.voidFilter, col + row * 3, layout.voidX() + col * 18, layout.voidY() + row * 18));
             }
         }
 
@@ -196,7 +200,7 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     public boolean clickMenuButton(Player player, int id) {
         return switch (id) {
             case BUTTON_TRASH -> {
-                this.emptyVoid(player);
+                this.trashCarried(player);
                 yield true;
             }
             case BUTTON_SORT -> {
@@ -273,11 +277,22 @@ public class PhantomChestMenu extends AbstractContainerMenu {
         this.storage.setChanged();
     }
 
-    private void emptyVoid(Player player) {
-        if (!this.voidSlots.isEmpty()) {
-            this.voidSlots.clearContent();
+    /** The trash can destroys whatever the player is holding on the cursor. */
+    private void trashCarried(Player player) {
+        if (!this.getCarried().isEmpty()) {
+            this.setCarried(ItemStack.EMPTY);
             player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.8F, 0.9F + player.getRandom().nextFloat() * 0.2F);
+        }
+    }
+
+    // ---- ghost slots ---------------------------------------------------------------------------
+
+    /** Void filter entries are ghosts: set from the cursor or cleared, never real items moving. */
+    @Override
+    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+        if (!GhostSlot.click(this, slotId, clickType)) {
+            super.clicked(slotId, button, clickType, player);
         }
     }
 
@@ -302,11 +317,13 @@ public class PhantomChestMenu extends AbstractContainerMenu {
             if (!this.moveToPlayer(stack)) {
                 return ItemStack.EMPTY;
             }
-        } else if (index < VOID_END) {
-            // Crafting grid and void filter: back to the player first, then storage.
+        } else if (index < CRAFT_END) {
+            // Crafting grid: back to the player first, then storage.
             if (!this.moveToPlayerThenStorage(stack)) {
                 return ItemStack.EMPTY;
             }
+        } else if (index < VOID_END) {
+            return ItemStack.EMPTY; // ghost entries; clicks on them never reach here
         } else {
             // Player inventory: into storage (never into the void filter), else swap inventory <-> hotbar.
             if (!this.moveTo(stack, STORAGE_START, STORAGE_END, false)) {
@@ -352,16 +369,14 @@ public class PhantomChestMenu extends AbstractContainerMenu {
     @Override
     public void removed(Player player) {
         if (!player.level().isClientSide()) {
-            // Cursor stack, crafting grid and void filter all go back to the player. Only the trash can
-            // destroys items. Done here rather than via vanilla's clearContainer, which drops everything
-            // on the ground when the player is disconnecting (logout closes this menu).
+            // Cursor stack and crafting grid go back to the player (the void filter only holds ghosts).
+            // Done here rather than via vanilla's clearContainer, which drops everything on the ground
+            // when the player is disconnecting (logout closes this menu).
             ItemStack carried = this.getCarried();
             this.setCarried(ItemStack.EMPTY);
             this.returnToPlayer(player, carried);
-            for (Container container : List.of(this.craftSlots, this.voidSlots)) {
-                for (int i = 0; i < container.getContainerSize(); i++) {
-                    this.returnToPlayer(player, container.removeItemNoUpdate(i));
-                }
+            for (int i = 0; i < this.craftSlots.getContainerSize(); i++) {
+                this.returnToPlayer(player, this.craftSlots.removeItemNoUpdate(i));
             }
             this.resultSlots.clearContent();
             if (this.chest != null) {

@@ -8,7 +8,7 @@
 
 - **108 slots** (12×9) of personal storage
 - **3×3 crafting grid**, with one-click recipe fill when JEI or REI is installed
-- **9-slot void filter** plus a trash button for junk
+- **Void filter**: list junk once (cobblestone, rotten flesh...) and it's destroyed whenever you or your Collector pick it up; drop anything on the trash can to destroy it
 - **Sort** button: by name, amount or mod, ascending or descending, all from one button
 
 ## 🫙 Phantom Tank
@@ -29,6 +29,14 @@
 - An anchored anchor stays put through logouts, deaths, dimension changes and restarts
 - Right-click it for its **panel**: where it is, a *Stay here* toggle and a dismiss button
 
+## 🌀 Phantom Collector
+
+- A small **orb of the End's sky** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
+- Following, it collects round you; **anchored**, it keeps collecting round its spot (a mob farm, say) wherever you are, its chunk loaded while you're online
+- **Experience** comes to you while it follows (Mending works); anchored, it's **banked** to take from its panel
+- Its panel: **range** (3–12 blocks), a **filter** of what to take or skip, the XP bank, *Stay here* and dismiss
+- Never takes what you threw away, and the chest's void filter destroys your listed junk on the way in
+
 ## ✨ All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
@@ -47,7 +55,7 @@
 
 | With the **Phantom Charm** | |
 |---|---|
-| Sneak + scroll | Switch mode: Chest / Tank / Anchor |
+| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector |
 | Use | Summon, or recall if it's already out. Anchor: teleport to it |
 | Use, looking at the anchor | Swap places with it |
 | Sneak + use | Dismiss |
@@ -78,8 +86,9 @@ No extra recipes; new pets unlock through vanilla advancements.
 | Phantom Chest | Available from the start |
 | Phantom Tank | *Local Brewery* (brew a potion); *Not Quite "Nine" Lives* also still counts |
 | Phantom Anchor | *Remote Getaway* (enter an End gateway) |
+| Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
 
-Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|all>` (creative only) grants a pet's unlock advancement.
+Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|all>` (creative only) grants a pet's unlock advancement.
 
 ---
 

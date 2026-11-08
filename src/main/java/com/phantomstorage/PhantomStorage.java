@@ -39,6 +39,7 @@ public final class PhantomStorage {
         event.put(ModRegistries.PHANTOM_CHEST.get(), PhantomPetEntity.createAttributes().build());
         event.put(ModRegistries.PHANTOM_TANK.get(), PhantomPetEntity.createAttributes().build());
         event.put(ModRegistries.PHANTOM_ANCHOR.get(), PhantomPetEntity.createAttributes().build());
+        event.put(ModRegistries.PHANTOM_COLLECTOR.get(), PhantomPetEntity.createAttributes().build());
     }
 
     private static void onCreativeTabs(BuildCreativeModeTabContentsEvent event) {

@@ -103,6 +103,15 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         }
     }
 
+    /** Void filter entries are ghosts: veiled so they never read as stock. */
+    @Override
+    protected void renderSlot(GuiGraphics graphics, Slot slot) {
+        super.renderSlot(graphics, slot);
+        if (slot instanceof VoidSlot) {
+            PhantomTheme.drawGhostVeil(graphics, slot, PhantomTheme.VOID_FILL);
+        }
+    }
+
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         // Long custom names are cut short rather than running under the sort button.

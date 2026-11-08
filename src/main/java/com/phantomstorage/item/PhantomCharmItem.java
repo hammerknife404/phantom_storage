@@ -80,12 +80,12 @@ public class PhantomCharmItem extends Item {
         }
         PhantomPetEntity active = PetManager.getActive(kind, serverPlayer.getUUID());
         // Anchored, but its entity isn't back yet (just logged in; its chunk is still loading).
-        boolean anchorLoading = active == null && kind == PetKind.ANCHOR && AnchorManager.isAnchored(serverPlayer);
+        boolean anchorLoading = active == null && AnchorManager.isAnchored(serverPlayer, kind);
         if (serverPlayer.isShiftKeyDown() && (active != null || anchorLoading)) {
             PetManager.dismiss(kind, serverPlayer, false);
             serverPlayer.displayClientMessage(Component.translatable(kind.message("dismissed")), true);
         } else if (anchorLoading) {
-            serverPlayer.displayClientMessage(Component.translatable("message.phantomstorage.anchor.loading"), true);
+            serverPlayer.displayClientMessage(Component.translatable(kind.message("loading")), true);
             return InteractionResultHolder.fail(stack);
         } else if (active == null) {
             if (!PetManager.summon(kind, serverPlayer)) {

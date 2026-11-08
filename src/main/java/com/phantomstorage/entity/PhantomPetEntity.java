@@ -2,6 +2,7 @@ package com.phantomstorage.entity;
 
 import com.phantomstorage.entity.goal.PhantomFollowOwnerGoal;
 import com.phantomstorage.entity.goal.PhantomStayGoal;
+import com.phantomstorage.summon.AnchorManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
 import java.util.UUID;
@@ -118,15 +119,21 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         player.displayClientMessage(Component.translatable(this.kind().message(stay ? "stay" : "follow")), true);
     }
 
-    /** Server-side, right after the owner toggled stay / follow. */
-    protected void onStayToggled(ServerPlayer owner, boolean stay) {}
+    /** Server-side, right after the owner toggled stay / follow: a pet that can anchor anchors or lets go. */
+    protected void onStayToggled(ServerPlayer owner, boolean stay) {
+        if (stay) {
+            AnchorManager.anchor(owner, this);
+        } else {
+            AnchorManager.release(owner, this.kind());
+        }
+    }
 
     /**
      * Whether this pet holds its place while its owner is away, even in another dimension, instead of
-     * being dismissed. Only an anchored Phantom Anchor does.
+     * being dismissed: one that {@linkplain PetKind#canAnchor() can anchor} and was told to stay.
      */
     public boolean isAnchored() {
-        return false;
+        return this.kind().canAnchor() && this.isOrderedToSit();
     }
 
     /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
@@ -201,6 +208,13 @@ public abstract class PhantomPetEntity extends TamableAnimal {
 
     @Override
     public void remove(RemovalReason reason) {
+        // /kill is the only way to destroy a pet; an anchored one's spot goes too, or it would come back.
+        UUID ownerId = this.getOwnerUUID();
+        MinecraftServer server = this.level().getServer();
+        if (reason == RemovalReason.KILLED && this.kind().canAnchor() && ownerId != null && server != null
+                && !this.isRemoved() && server.getPlayerList().getPlayer(ownerId) instanceof ServerPlayer owner) {
+            AnchorManager.onKilled(owner, this);
+        }
         super.remove(reason);
         if (!this.level().isClientSide()) {
             PetManager.forget(this);

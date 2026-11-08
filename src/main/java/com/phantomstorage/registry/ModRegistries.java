@@ -3,12 +3,15 @@ package com.phantomstorage.registry;
 import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomAnchorEntity;
 import com.phantomstorage.entity.PhantomChestEntity;
+import com.phantomstorage.entity.PhantomCollectorEntity;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.menu.PhantomAnchorMenu;
 import com.phantomstorage.menu.PhantomChestMenu;
+import com.phantomstorage.menu.PhantomCollectorMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.storage.AnchorSpot;
+import com.phantomstorage.storage.CollectorSettings;
 import com.phantomstorage.storage.PhantomInventory;
 import com.phantomstorage.storage.PhantomTanks;
 import com.phantomstorage.summon.PetKind;
@@ -93,6 +96,16 @@ public final class ModRegistries {
                     .updateInterval(2)
                     .build("phantom_anchor"));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<PhantomCollectorEntity>> PHANTOM_COLLECTOR =
+            ENTITY_TYPES.register("phantom_collector", () -> EntityType.Builder
+                    .<PhantomCollectorEntity>of(PhantomCollectorEntity::new, MobCategory.MISC)
+                    .sized(0.625F, 0.625F)
+                    .fireImmune()
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(2)
+                    .build("phantom_collector"));
+
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomChestMenu>> PHANTOM_CHEST_MENU =
             MENU_TYPES.register("phantom_chest",
                     () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomChestMenu(windowId, inventory)));
@@ -101,6 +114,8 @@ public final class ModRegistries {
                     () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomTankMenu(windowId, inventory)));
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomAnchorMenu>> PHANTOM_ANCHOR_MENU =
             MENU_TYPES.register("phantom_anchor", () -> IMenuTypeExtension.create(PhantomAnchorMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<PhantomCollectorMenu>> PHANTOM_COLLECTOR_MENU =
+            MENU_TYPES.register("phantom_collector", () -> IMenuTypeExtension.create(PhantomCollectorMenu::new));
 
     // The storage lives on the player (saved inside the player's own .dat, like the ender chest),
     // never on the entity. Summon/unsummon/dimension change can't lose or duplicate contents.
@@ -111,6 +126,12 @@ public final class ModRegistries {
     /** Where the player's Phantom Anchor is anchored; its entity is re-created from this. */
     public static final Supplier<AttachmentType<AnchorSpot>> ANCHOR = ATTACHMENT_TYPES.register("anchor",
             () -> AttachmentType.serializable(() -> new AnchorSpot()).copyOnDeath().build());
+    /** Where the player's Phantom Collector is anchored, likewise. */
+    public static final Supplier<AttachmentType<AnchorSpot>> COLLECTOR_SPOT = ATTACHMENT_TYPES.register("collector_spot",
+            () -> AttachmentType.serializable(() -> new AnchorSpot()).copyOnDeath().build());
+    /** The Phantom Collector's range, filter and banked experience. */
+    public static final Supplier<AttachmentType<CollectorSettings>> COLLECTOR = ATTACHMENT_TYPES.register("collector",
+            () -> AttachmentType.serializable(() -> new CollectorSettings()).copyOnDeath().build());
 
     private ModRegistries() {}
 

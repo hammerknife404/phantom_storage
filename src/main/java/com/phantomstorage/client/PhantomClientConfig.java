@@ -14,6 +14,7 @@ public final class PhantomClientConfig {
     private static final ModConfigSpec.IntValue CHEST_OPACITY;
     private static final ModConfigSpec.IntValue TANK_OPACITY;
     private static final ModConfigSpec.IntValue ANCHOR_OPACITY;
+    private static final ModConfigSpec.IntValue COLLECTOR_OPACITY;
     private static final ModConfigSpec.BooleanValue CHEST_GLOW;
     private static final ModConfigSpec.BooleanValue TANK_GLOW;
     private static final ModConfigSpec.BooleanValue ANCHOR_GLOW;
@@ -33,6 +34,9 @@ public final class PhantomClientConfig {
         ANCHOR_OPACITY = builder
                 .comment("Phantom Anchor opacity, in percent.")
                 .defineInRange("anchor", 80, 10, 100);
+        COLLECTOR_OPACITY = builder
+                .comment("Phantom Collector opacity, in percent.")
+                .defineInRange("collector", 80, 10, 100);
         builder.pop();
         builder.push("glow");
         CHEST_GLOW = builder
@@ -63,6 +67,11 @@ public final class PhantomClientConfig {
     /** 0..1: the anchor's opacity times the all-pets opacity. */
     public static float anchorAlpha() {
         return alpha(ANCHOR_OPACITY);
+    }
+
+    /** 0..1: the collector's opacity times the all-pets opacity. */
+    public static float collectorAlpha() {
+        return alpha(COLLECTOR_OPACITY);
     }
 
     public static boolean chestGlows() {

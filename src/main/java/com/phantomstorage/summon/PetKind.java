@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.menu.PhantomAnchorMenu;
 import com.phantomstorage.menu.PhantomChestMenu;
+import com.phantomstorage.menu.PhantomCollectorMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.registry.ModRegistries;
 import io.netty.buffer.ByteBuf;
@@ -29,17 +30,23 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
  * charm stores its mode by ordinal over the network.
  */
 public enum PetKind implements StringRepresentable {
-    CHEST("chest", ModRegistries.PHANTOM_CHEST, PhantomChestMenu.class),
+    CHEST("chest", ModRegistries.PHANTOM_CHEST, PhantomChestMenu.class, false),
     /**
      * "Local Brewery": brew a potion (blaze rods, so a Nether trip). "Not Quite "Nine" Lives" (charge a
      * respawn anchor) was the unlock before 2.9.0 and still counts, so nobody who had the tank loses it.
      */
-    TANK("tank", ModRegistries.PHANTOM_TANK, PhantomTankMenu.class,
+    TANK("tank", ModRegistries.PHANTOM_TANK, PhantomTankMenu.class, false,
             ResourceLocation.withDefaultNamespace("nether/brew_potion"),
             ResourceLocation.withDefaultNamespace("nether/charge_respawn_anchor")),
     /** "Remote Getaway": enter an End gateway, i.e. after the dragon. Its panel shows where it is. */
-    ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, PhantomAnchorMenu.class,
-            ResourceLocation.withDefaultNamespace("end/enter_end_gateway"));
+    ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, PhantomAnchorMenu.class, true,
+            ResourceLocation.withDefaultNamespace("end/enter_end_gateway")),
+    /**
+     * "You've Got a Friend in Me": have an Allay deliver you an item, vanilla's own collector. Told to
+     * stay, it anchors like the anchor and keeps collecting there.
+     */
+    COLLECTOR("collector", ModRegistries.PHANTOM_COLLECTOR, PhantomCollectorMenu.class, true,
+            ResourceLocation.withDefaultNamespace("husbandry/allay_deliver_item_to_player"));
 
     public static final Codec<PetKind> CODEC = StringRepresentable.fromEnum(PetKind::values);
     public static final StreamCodec<ByteBuf, PetKind> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], PetKind::ordinal);
@@ -48,14 +55,16 @@ public enum PetKind implements StringRepresentable {
     private final Supplier<? extends EntityType<? extends PhantomPetEntity>> type;
     @Nullable
     private final Class<? extends AbstractContainerMenu> menuClass;
+    private final boolean canAnchor;
     /** Any one of these unlocks the pet; the first is the one named while it's locked. */
     private final List<ResourceLocation> unlocks;
 
     PetKind(String key, Supplier<? extends EntityType<? extends PhantomPetEntity>> type,
-            @Nullable Class<? extends AbstractContainerMenu> menuClass, ResourceLocation... unlocks) {
+            @Nullable Class<? extends AbstractContainerMenu> menuClass, boolean canAnchor, ResourceLocation... unlocks) {
         this.key = key;
         this.type = type;
         this.menuClass = menuClass;
+        this.canAnchor = canAnchor;
         this.unlocks = List.of(unlocks);
     }
 
@@ -84,6 +93,14 @@ public enum PetKind implements StringRepresentable {
     public boolean isEarned(ServerPlayer player) {
         List<AdvancementHolder> advancements = this.unlockAdvancements(player);
         return advancements.isEmpty() || advancements.stream().anyMatch(a -> isDone(player, a));
+    }
+
+    /**
+     * Whether, told to stay, this pet is anchored: it keeps its spot through its owner's logouts,
+     * deaths, dimension changes and restarts, and its chunk loaded while they're online ({@link AnchorManager}).
+     */
+    public boolean canAnchor() {
+        return this.canAnchor;
     }
 
     /** Whether this pet starts locked at all (the chest doesn't). */
