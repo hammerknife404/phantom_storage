@@ -6,19 +6,18 @@ import com.mojang.math.Axis;
 import com.phantomstorage.entity.PhantomGatewayEntity;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
-import org.joml.Matrix4f;
 
 /**
  * The Phantom Gateway: a doorway of the End portal's starfield in a ghostly lodestone frame, the
  * Phantom Anchor's own stone, with the phantom eyes peering out of the void on both sides. It swells
- * open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}). The frame follows the
- * anchor's opacity and glow settings. Drawn from vanilla textures and shaders, like the anchor.
+ * open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}). It follows the
+ * anchor's opacity setting, void included, and the frame its glow setting. Drawn from vanilla textures,
+ * like the anchor, the void with {@link PhantomVoid}.
  */
 public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity> {
     private static final ResourceLocation LODESTONE_SIDE = ResourceLocation.withDefaultNamespace("block/lodestone_side");
@@ -29,6 +28,7 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
     /** Half the frame's thickness, front to back. */
     private static final float DEPTH = 1.0F * PX;
     private static final int MIN_BLOCK_LIGHT = 7;
+    private static final PhantomVoid PANE = pane();
 
     public PhantomGatewayRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -50,9 +50,9 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         poseStack.translate(0.0F, -HEIGHT / 2.0F, 0.0F);
         PoseStack.Pose pose = poseStack.last();
 
-        pane(pose.pose(), buffer.getBuffer(RenderType.endPortal()));
-
         float alpha = PhantomClientConfig.anchorAlpha();
+        PANE.draw(pose, buffer, alpha);
+
         int ghost = PhantomClientConfig.white(alpha, 1.0F);
         int blockLight = PhantomClientConfig.anchorGlows()
                 ? Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT) : LightTexture.block(packedLight);
@@ -70,20 +70,19 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 
-    /** The starfield inside the frame, both faces (the shader's render type culls). */
-    private static void pane(Matrix4f m, VertexConsumer c) {
+    /**
+     * The starfield inside the frame, both faces (the passes cull), cut 4 x 6 so a doorway this big
+     * still holds its stars to the screen up close. Corners: a, a + up, a + up + across, a + across.
+     */
+    private static PhantomVoid pane() {
         float x0 = -HALF_WIDTH + FRAME;
-        float x1 = HALF_WIDTH - FRAME;
+        float width = 2.0F * (HALF_WIDTH - FRAME);
         float y0 = FRAME;
-        float y1 = HEIGHT - FRAME;
-        c.addVertex(m, x0, y0, 0.0F);
-        c.addVertex(m, x1, y0, 0.0F);
-        c.addVertex(m, x1, y1, 0.0F);
-        c.addVertex(m, x0, y1, 0.0F);
-        c.addVertex(m, x0, y1, 0.0F);
-        c.addVertex(m, x1, y1, 0.0F);
-        c.addVertex(m, x1, y0, 0.0F);
-        c.addVertex(m, x0, y0, 0.0F);
+        float height = HEIGHT - 2.0F * FRAME;
+        return PhantomVoid.builder()
+                .grid(x0, y0, 0.0F, width, 0, 0, 0, height, 0, 4, 6, 0, 0, 1)
+                .grid(x0, y0 + height, 0.0F, width, 0, 0, 0, -height, 0, 4, 6, 0, 0, -1)
+                .build();
     }
 
     /** Two posts and two bars, each built of pieces at most a block long so the texture repeats rather than stretches. */

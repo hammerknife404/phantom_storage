@@ -32,10 +32,10 @@ public final class PhantomClientConfig {
                 .comment("Phantom Tank opacity, in percent: frame and wings; the glass and fluid scale with it.")
                 .defineInRange("tank", 80, 10, 100);
         ANCHOR_OPACITY = builder
-                .comment("Phantom Anchor opacity, in percent: its stone and wings, and the Phantom Gateway's frame. End portal windows stay solid.")
+                .comment("Phantom Anchor opacity, in percent: its stone, wings and End portal windows, and the whole Phantom Gateway.")
                 .defineInRange("anchor", 80, 10, 100);
         COLLECTOR_OPACITY = builder
-                .comment("Phantom Collector opacity, in percent: its eyes. Its End portal orb stays solid.")
+                .comment("Phantom Collector opacity, in percent: its End portal orb and its eyes.")
                 .defineInRange("collector", 80, 10, 100);
         builder.pop();
         builder.push("glow");

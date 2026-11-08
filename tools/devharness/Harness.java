@@ -42,7 +42,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * Scripted in-game checks for the dev client. Lives in tools/ so it never ships: copy it to
  * src/main/java/com/phantomstorage/devharness/ (gitignored) to use it, and delete it before a release
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
- * look from every side, "collector" the collector + bell script. It creates a flat creative world,
+ * look from every side, "collector" the collector + bell script, "void" the End portal void of the
+ * anchor, collector and gateway at full and at 10% opacity. It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -156,6 +157,8 @@ public final class Harness {
                 collectorScript();
             } else if ("gateway".equals(System.getenv("PHANTOM_HARNESS"))) {
                 gatewayScript();
+            } else if ("void".equals(System.getenv("PHANTOM_HARNESS"))) {
+                voidScript();
             } else {
                 script();
             }
@@ -406,6 +409,106 @@ public final class Harness {
         step(5, () -> cmd("tp @s 141.5 -60 3.5 130 0"));
         step(10, () -> shot("g5_front_angle"));
         step(5, () -> log("DONE failures=" + failures));
+        step(20, () -> mc().stop());
+    }
+
+    /** Sets the all-pets opacity, in percent, as the config screen would. */
+    private static void opacity(int percent) {
+        try {
+            java.lang.reflect.Field f = com.phantomstorage.client.PhantomClientConfig.class.getDeclaredField("ALL_PETS_OPACITY");
+            f.setAccessible(true);
+            ((net.neoforged.neoforge.common.ModConfigSpec.IntValue) f.get(null)).set(percent);
+            log("all-pets opacity " + percent + "%");
+        } catch (ReflectiveOperationException e) {
+            check("set opacity: " + e, false);
+        }
+    }
+
+    /** Holds the owner's pet of {@code kind} (already staying) at (x, y, z), facing south (+z). */
+    private static void place(PetKind kind, double x, double y, double z) {
+        server(() -> {
+            PhantomPetEntity pet = PetManager.getActive(kind, p().getUUID());
+            if (pet == null) {
+                check(kind + " is out", false);
+                return;
+            }
+            if (!pet.isOrderedToSit()) {
+                pet.toggleStay(sp());
+            }
+            pet.setYRot(0.0F);
+            pet.yBodyRot = 0.0F;
+            pet.yHeadRot = 0.0F;
+            pet.relocate(x, y, z);
+        });
+    }
+
+    /**
+     * The End portal void of the anchor, collector and gateway at full and at 10% all-pets opacity,
+     * from the front and from below. Run it with a shader pack too: see CLAUDE.md.
+     */
+    private static void voidScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(100, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"collector\"]");
+            cmd("item replace entity @s hotbar.2 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 0.5 -60 0.5 180 0");
+            opacity(100);
+        });
+        step(20, () -> {
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            use();
+        });
+        step(20, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        step(20, () -> {
+            place(PetKind.ANCHOR, -0.3, -58.9, -1.0);
+            place(PetKind.COLLECTOR, 1.0, -58.9, -1.0);
+        });
+        // Front, eye level, 1.5 blocks away.
+        step(60, () -> cmd("tp @s 0.35 -60 0.5 180 6"));
+        step(40, () -> shot("v1_front_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v2_front_10pct"));
+        // From below and to the side, like looking up at them in the sky.
+        step(5, () -> {
+            opacity(100);
+            place(PetKind.ANCHOR, -0.3, -57.2, -1.0);
+            place(PetKind.COLLECTOR, 1.0, -57.2, -1.0);
+            cmd("tp @s 1.6 -60 0.2 134 -42");
+        });
+        step(60, () -> shot("v3_below_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v4_below_10pct"));
+        // Gateway, front, at full and at 10%.
+        step(5, () -> {
+            opacity(100);
+            cmd("tp @s 20.5 -60 0.5 90 0");
+        });
+        step(30, () -> {
+            p().getInventory().selected = 2;
+            server(() -> sp().getInventory().selected = 2);
+            look(90, 0);
+            use();
+        });
+        step(20, () -> cmd("tp @s 21.5 -60 2.0 110 0"));
+        step(30, () -> shot("v5_gateway_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v6_gateway_10pct"));
+        step(5, () -> {
+            opacity(100);
+            log("DONE failures=" + failures);
+        });
         step(20, () -> mc().stop());
     }
 
