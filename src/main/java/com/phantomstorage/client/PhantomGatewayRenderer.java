@@ -15,7 +15,7 @@ import net.minecraft.world.inventory.InventoryMenu;
 import org.joml.Matrix4f;
 
 /**
- * The Phantom Gateway: a doorway of the End gateway's starfield in a ghostly lodestone frame, the
+ * The Phantom Gateway: a doorway of the End portal's starfield in a ghostly lodestone frame, the
  * Phantom Anchor's own stone, with the phantom eyes peering out of the void on both sides. It swells
  * open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}). The frame follows the
  * anchor's opacity and glow settings. Drawn from vanilla textures and shaders, like the anchor.
@@ -50,7 +50,7 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         poseStack.translate(0.0F, -HEIGHT / 2.0F, 0.0F);
         PoseStack.Pose pose = poseStack.last();
 
-        pane(pose.pose(), buffer.getBuffer(RenderType.endGateway()));
+        pane(pose.pose(), buffer.getBuffer(RenderType.endPortal()));
 
         float alpha = PhantomClientConfig.anchorAlpha();
         int ghost = PhantomClientConfig.white(alpha, 1.0F);

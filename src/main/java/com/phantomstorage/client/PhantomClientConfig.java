@@ -32,10 +32,10 @@ public final class PhantomClientConfig {
                 .comment("Phantom Tank opacity, in percent: frame and wings; the glass and fluid scale with it.")
                 .defineInRange("tank", 80, 10, 100);
         ANCHOR_OPACITY = builder
-                .comment("Phantom Anchor opacity, in percent.")
+                .comment("Phantom Anchor opacity, in percent: its stone and wings, and the Phantom Gateway's frame. End portal windows stay solid.")
                 .defineInRange("anchor", 80, 10, 100);
         COLLECTOR_OPACITY = builder
-                .comment("Phantom Collector opacity, in percent.")
+                .comment("Phantom Collector opacity, in percent: its eyes. Its End portal orb stays solid.")
                 .defineInRange("collector", 80, 10, 100);
         builder.pop();
         builder.push("glow");
@@ -46,7 +46,7 @@ public final class PhantomClientConfig {
                 .comment("Never render the Phantom Tank darker than light level 7 (its eyes always glow, dimmed only by opacity).")
                 .define("tank", true);
         ANCHOR_GLOW = builder
-                .comment("Never render the Phantom Anchor darker than light level 7 (its eyes always glow, dimmed only by opacity).")
+                .comment("Never render the Phantom Anchor or the Phantom Gateway's frame darker than light level 7 (the eyes always glow, dimmed only by opacity).")
                 .define("anchor", true);
         builder.pop();
         SPEC = builder.build();

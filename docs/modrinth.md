@@ -46,7 +46,7 @@
 
 ## 🚪 Phantom Gateway
 
-- A **doorway of the End gateway's starfield** in a ghostly lodestone frame, the phantom eyes peering out of the void
+- A **doorway of the End portal's starfield** in a ghostly lodestone frame, the phantom eyes peering out of the void
 - Opens in front of you for 15 seconds and leads to your **anchored Phantom Anchor**, **across dimensions**
 - **Anyone can step through**: you, friends, mobs, even dropped items
 - Your following pets are brought along when you cross to another dimension
@@ -123,4 +123,6 @@ Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor
 - Required on **both client and server**
 - Optional: **JEI** or **REI** (recipe lookup and crafting-grid fill), **LambDynamicLights**
 
+> **Upgrading from 2.x:** 3.0 keeps your storage, tanks and charms.
+>
 > **Upgrading from 1.x:** 2.x is a rewrite. 1.x storage, summoners and blocks are not carried over; start fresh or empty your 1.x chest first.
