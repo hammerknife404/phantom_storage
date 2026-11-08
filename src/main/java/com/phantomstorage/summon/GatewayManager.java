@@ -128,6 +128,16 @@ public final class GatewayManager {
         return null;
     }
 
+    /** The phantom bell: closes the player's gateway if one is open; true if it was. */
+    public static boolean closeFor(ServerPlayer player) {
+        PhantomGatewayEntity open = getOpen(player.getUUID());
+        if (open == null) {
+            return false;
+        }
+        close(open);
+        return true;
+    }
+
     /** Closes it with a flourish. */
     public static void close(PhantomGatewayEntity gate) {
         if (gate.level() instanceof ServerLevel level && !gate.isRemoved()) {

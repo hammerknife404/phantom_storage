@@ -22,7 +22,7 @@
 
 ## ⚓ Phantom Anchor
 
-- A ghostly **lodestone with windows onto the End's sky** and phantom wings, following you like the others
+- A ghostly **lodestone with windows onto the End portal's starfield** and phantom wings, following you like the others
 - **Teleport to it** with the charm: you land on a safe spot within 3 blocks of it
 - Tell it to stay and it's **anchored**: its chunk stays loaded and ticking while you're online, and the charm takes you back to it from anywhere, **even another dimension**
 - **Look at it** (up to 32 blocks, through walls) and use the charm to **swap places**
@@ -31,11 +31,11 @@
 
 ## 🌀 Phantom Collector
 
-- A small **orb of the End's sky** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
+- A small **orb of the End portal's starfield** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
 - Following, it collects round you; **anchored**, it keeps collecting round its spot (a mob farm, say) wherever you are, its chunk loaded while you're online
 - **Experience** comes to you while it follows (Mending works); anchored, it's **banked** to take from its panel
 - Its panel: **range** (3–12 blocks), a **filter** of what to take or skip, the XP bank, *Stay here* and dismiss
-- Never takes what you threw away, and the chest's void filter destroys your listed junk on the way in
+- What you throw yourself waits 5 seconds first (time to hand it to a friend), and the chest's void filter destroys your listed junk on the way in
 
 ## 🐎 Phantom Saddle
 
@@ -50,6 +50,11 @@
 - Opens in front of you for 15 seconds and leads to your **anchored Phantom Anchor**, **across dimensions**
 - **Anyone can step through**: you, friends, mobs, even dropped items
 - Your following pets are brought along when you cross to another dimension
+
+## 🔔 Phantom Bell
+
+- One ring **summons every pet you've unlocked**; sneak + ring **sends every following pet home** and closes your gateway
+- Anchored pets keep their spots
 
 ## ✨ All pets
 
@@ -69,12 +74,13 @@
 
 | With the **Phantom Charm** | |
 |---|---|
-| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector / Saddle / Gateway |
+| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector / Saddle / Gateway / Bell |
 | Use | Summon, or recall if it's already out. Anchor: teleport to it |
 | Use, looking at the anchor | Swap places with it |
 | Sneak + use | Dismiss (Gateway: close it) |
 | Use, Saddle mode | Ride the chest / get off |
 | Use, Gateway mode | Open a gateway to your anchored anchor |
+| Use / sneak + use, Bell mode | Summon every pet at once / dismiss every following pet |
 
 | On a pet | |
 |---|---|
@@ -105,8 +111,9 @@ No extra recipes; every charm mode unlocks through a vanilla advancement.
 | Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
 | Phantom Saddle | *Great View From Up Here* (levitate 50 blocks from a shulker's attacks) |
 | Phantom Gateway | *The End... Again...* (respawn the Ender Dragon) |
+| Phantom Bell | *Hot Tourist Destinations* (explore all Nether biomes) |
 
-Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>` (creative only) grants a mode's unlock advancement.
+Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|bell|all>` (creative only) grants a mode's unlock advancement.
 
 ---
 

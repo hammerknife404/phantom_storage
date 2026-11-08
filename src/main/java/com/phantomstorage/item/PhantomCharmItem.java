@@ -8,6 +8,7 @@ import com.phantomstorage.summon.CharmMode;
 import com.phantomstorage.summon.GatewayManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
+import com.phantomstorage.summon.PhantomBell;
 import com.phantomstorage.summon.PhantomSaddle;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -29,7 +30,7 @@ import net.minecraft.world.level.Level;
  * Pet modes: use summons the owner's pet of that kind, or recalls it to their side if it's already out;
  * for the anchor, takes the owner to it instead, or swaps places with it when looked at ({@link AnchorTravel}).
  * Sneak-use dismisses it. The saddle rides the chest ({@link PhantomSaddle}); the gateway opens a portal
- * to the anchored anchor ({@link GatewayManager}). Never duplicates a pet or moves one across dimensions.
+ * to the anchored anchor ({@link GatewayManager}); the bell calls every pet at once ({@link PhantomBell}). Never duplicates a pet or moves one across dimensions.
  * All of these share one cooldown, whatever the mode.
  */
 public class PhantomCharmItem extends Item {
@@ -89,6 +90,7 @@ public class PhantomCharmItem extends Item {
         int cooldown = switch (mode) {
             case SADDLE -> PhantomSaddle.use(serverPlayer);
             case GATEWAY -> GatewayManager.use(serverPlayer);
+            case BELL -> PhantomBell.use(serverPlayer);
             default -> usePet(mode.pet(), serverPlayer);
         };
         if (cooldown == FAILED) {
@@ -140,6 +142,7 @@ public class PhantomCharmItem extends Item {
             case ANCHOR -> List.of("summon.anchor", "swap", "dismiss");
             case SADDLE -> List.of("saddle", "saddle.fly", "dismiss.chest");
             case GATEWAY -> List.of("gateway", "gateway.close");
+            case BELL -> List.of("bell", "bell.dismiss");
             default -> List.of("summon", "dismiss");
         };
         for (String line : lines) {

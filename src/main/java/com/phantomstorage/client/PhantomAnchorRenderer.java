@@ -13,10 +13,11 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
+import org.joml.Matrix4f;
 
 /**
  * A small ghostly lodestone whose sides are windows onto the void: a lodestone frame round a pane of
- * the End's sky, which drifts slowly and glows faintly in the dark. It wears the tank's phantom wings
+ * the End portal's starfield, which drifts like the portal block's and shows by day and night alike. It wears the tank's phantom wings
  * and glowing eyes. While it follows it bobs and flaps like the other pets; anchored, it hangs still
  * with its wings folded down. Drawn from vanilla textures, so there is no model or texture to maintain.
  * Opacity (eyes included) and the light-level-7 floor come from {@link PhantomClientConfig}.
@@ -28,14 +29,6 @@ import net.minecraft.world.inventory.InventoryMenu;
 public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
     private static final ResourceLocation LODESTONE_TOP = ResourceLocation.withDefaultNamespace("block/lodestone_top");
     private static final ResourceLocation LODESTONE_SIDE = ResourceLocation.withDefaultNamespace("block/lodestone_side");
-    /** The End's sky box: the void. */
-    private static final ResourceLocation END_SKY = ResourceLocation.withDefaultNamespace("textures/environment/end_sky.png");
-    /** The sky texture is 128 px; a pane shows one texel per model pixel, like a block. */
-    private static final float SKY_TEXEL = 1.0F / 128.0F;
-    /** Texels per tick the void drifts across its panes. */
-    private static final float SKY_DRIFT = 0.04F;
-    /** The raw sky is bright; the game darkens it too. Dim violet, still readable in daylight. */
-    private static final int VOID_TINT = 0x8070A0;
     private static final int MIN_BLOCK_LIGHT = 7;
     private static final float PX = GhostQuads.PX;
     /** A 10 px cube inside the 0.75 entity box. */
@@ -75,8 +68,7 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
         VertexConsumer stone = buffer.getBuffer(PhantomRenderTypes.ghost(InventoryMenu.BLOCK_ATLAS));
         stoneEnds(pose, stone, GhostQuads.sprite(LODESTONE_TOP), ghost, light);
         stoneFrames(pose, stone, GhostQuads.sprite(LODESTONE_SIDE), ghost, light);
-        voidPanes(pose, buffer.getBuffer(PhantomRenderTypes.ghost(END_SKY)), (ghost & 0xFF000000) | VOID_TINT,
-                age * SKY_DRIFT * SKY_TEXEL);
+        voidPanes(pose.pose(), buffer.getBuffer(RenderType.endPortal()));
 
         VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(GhostQuads.PHANTOM));
         float flap = anchored ? FOLDED_DEGREES : GhostQuads.flap(age);
@@ -115,18 +107,31 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
     }
 
     /**
-     * The open centre of each side, filled with the End sky. Full-bright, so the void reads the same by
-     * day and glows faintly at night; each side shows a different patch, drifting by {@code drift}.
+     * The open centre of each side: the End portal itself, its starfield drifting as in the portal
+     * block. The shader is opaque and its own light, so the void reads the same by day and night and
+     * stays whole at any opacity setting while the stone round it fades. Wound like {@link #sideRect}.
      */
-    private static void voidPanes(PoseStack.Pose pose, VertexConsumer c, int color, float drift) {
-        float size = 2.0F * HALF / PX;
-        float f = FRAME / size;
-        float span = (size - 2.0F * FRAME) * SKY_TEXEL;
+    private static void voidPanes(Matrix4f m, VertexConsumer c) {
+        float f = FRAME / (2.0F * HALF / PX);
+        float y0 = f * HEIGHT;
+        float y1 = (1.0F - f) * HEIGHT;
+        float in = HALF - 2.0F * HALF * f; // the pane's half-width
         for (int face = 0; face < 4; face++) {
-            float u = face * 0.25F + drift;
-            float v = face * 0.17F + drift * 0.5F;
-            sideRect(pose, c, face, f, f, 1 - f, 1 - f, u, v, u + span, v + span, color, LightTexture.FULL_BRIGHT);
+            switch (face) {
+                case 0 -> pane(m, c, -in, y0, -HALF, -in, y1, -HALF, in, y1, -HALF, in, y0, -HALF);
+                case 1 -> pane(m, c, in, y0, HALF, in, y1, HALF, -in, y1, HALF, -in, y0, HALF);
+                case 2 -> pane(m, c, -HALF, y0, in, -HALF, y1, in, -HALF, y1, -in, -HALF, y0, -in);
+                default -> pane(m, c, HALF, y0, -in, HALF, y1, -in, HALF, y1, in, HALF, y0, in);
+            }
         }
+    }
+
+    private static void pane(Matrix4f m, VertexConsumer c, float ax, float ay, float az, float bx, float by, float bz,
+                             float cx, float cy, float cz, float dx, float dy, float dz) {
+        c.addVertex(m, ax, ay, az);
+        c.addVertex(m, bx, by, bz);
+        c.addVertex(m, cx, cy, cz);
+        c.addVertex(m, dx, dy, dz);
     }
 
     /**
