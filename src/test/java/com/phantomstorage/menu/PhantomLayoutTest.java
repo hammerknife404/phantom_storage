@@ -58,7 +58,7 @@ class PhantomLayoutTest {
 
     private static List<Rect> labels(PhantomLayout l) {
         List<Rect> rects = new ArrayList<>();
-        rects.add(label("Phantom Chest", 8, 5));
+        rects.add(label("Phantom Chest", PhantomLayout.TITLE_X, PhantomLayout.TITLE_Y));
         rects.add(label("Crafting", l.craftLabelX(), l.craftLabelY()));
         rects.add(label("Void", l.voidLabelX(), l.voidLabelY()));
         if (l.invLabelX() >= 0) {
@@ -100,6 +100,22 @@ class PhantomLayoutTest {
             for (Rect slot : slotFrames(layout.value)) {
                 assertFalse(label.overlaps(slot), layout + ": " + label + " overlaps " + slot);
             }
+        }
+    }
+
+    /** The header's charm art sits inside the panel, left of the title, touching no slot, well or label. */
+    @ParameterizedTest
+    @EnumSource(Layout.class)
+    void headerIconStaysClear(Layout layout) {
+        PhantomLayout l = layout.value;
+        Rect icon = rect("headerIcon", PhantomLayout.headerIconBox());
+        assertTrue(icon.x() >= BORDER && icon.y() >= BORDER, layout + ": header icon leaves the panel");
+        assertTrue(icon.x() + icon.w() < PhantomLayout.TITLE_X, layout + ": header icon runs into the title");
+        List<Rect> occupied = new ArrayList<>(slotFrames(l));
+        occupied.addAll(wellRects(l));
+        occupied.addAll(labels(l));
+        for (Rect other : occupied) {
+            assertFalse(icon.overlaps(other), layout + ": " + icon + " overlaps " + other);
         }
     }
 

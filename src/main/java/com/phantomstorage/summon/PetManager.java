@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -48,8 +49,12 @@ public final class PetManager {
         return spawn(kind, player, null) != null;
     }
 
-    /** Charm recall: pull the pet beside the owner. A stranded pet is replaced instead, which always works. */
+    /**
+     * Charm recall: pull the pet beside the owner, following again (an anchored pet lets its spot go).
+     * A stranded pet is replaced instead, which always works.
+     */
     public static void recall(PetKind kind, ServerPlayer player, PhantomPetEntity pet) {
+        AnchorManager.release(player, kind);
         PhantomPetEntity target = pet.isStranded() ? replace(kind, player, pet) : pet;
         if (target != null) {
             target.recallTo(player);
@@ -105,14 +110,9 @@ public final class PetManager {
         double x = player.getX() + flat.x;
         double z = player.getZ() + flat.z;
         double y = HoverBounds.clampY(level, x, player.getY() + 1.0, z);
-        pet.moveTo(x, y, z, player.getYRot() + 180.0F, 0.0F);
-        pet.yBodyRot = pet.getYRot();
-        pet.yHeadRot = pet.getYRot();
-
-        if (!level.addFreshEntity(pet)) {
+        if (!add(kind, player, level, pet, x, y, z, player.getYRot() + 180.0F)) {
             return null;
         }
-        ACTIVE.get(kind).put(player.getUUID(), pet);
 
         level.sendParticles(ParticleTypes.REVERSE_PORTAL, x, y + 0.45, z, 24, 0.3, 0.3, 0.3, 0.05);
         level.playSound(null, x, y, z, SoundEvents.ENDERMAN_TELEPORT, SoundSource.NEUTRAL, 0.5F, 1.4F);
@@ -120,8 +120,41 @@ public final class PetManager {
     }
 
     /**
-     * Removes the player's pet of this kind (if any). Closes its menu first so the crafting grid and
-     * cursor stack return to the player before anything else happens.
+     * Re-creates an anchored pet at its saved spot, told to stay (after a login or restart). Quietly:
+     * its owner is usually far away.
+     */
+    static void restoreAnchored(PetKind kind, ServerPlayer owner, ServerLevel level, Vec3 pos, @Nullable Component name) {
+        if (getActive(kind, owner.getUUID()) != null) {
+            return;
+        }
+        PhantomPetEntity pet = kind.entityType().create(level);
+        if (pet == null) {
+            return;
+        }
+        pet.bindOwner(owner);
+        pet.setCustomName(name);
+        pet.setOrderedToSit(true);
+        pet.setInSittingPose(true);
+        add(kind, owner, level, pet, pos.x, pos.y, pos.z, 0.0F);
+    }
+
+    /** Places a new pet, adds it to the level and makes it the owner's pet of that kind. */
+    private static boolean add(PetKind kind, ServerPlayer owner, ServerLevel level, PhantomPetEntity pet,
+                               double x, double y, double z, float yaw) {
+        pet.moveTo(x, y, z, yaw, 0.0F);
+        pet.yBodyRot = pet.getYRot();
+        pet.yHeadRot = pet.getYRot();
+        if (!level.addFreshEntity(pet)) {
+            return false;
+        }
+        ACTIVE.get(kind).put(owner.getUUID(), pet);
+        return true;
+    }
+
+    /**
+     * Removes the player's pet of this kind (if any), for good: an anchored pet's spot goes too.
+     * Closes its menu first so the crafting grid and cursor stack return to the player before anything
+     * else happens.
      *
      * @param disconnecting true on logout: close without sending packets to a dying connection.
      */
@@ -137,10 +170,28 @@ public final class PetManager {
         if (pet != null && !pet.isRemoved()) {
             pet.vanish();
         }
+        AnchorManager.release(player, kind);
     }
 
+    /**
+     * Logout or dimension change: every pet goes, except an anchored one, which stays where it is.
+     * On logout only its entity and loaded chunk go; the spot is kept and it comes back on next login.
+     */
     public static void dismissAll(ServerPlayer player, boolean disconnecting) {
         for (PetKind kind : PetKind.values()) {
+            if (AnchorManager.isAnchored(player, kind)) {
+                if (disconnecting) {
+                    PhantomPetEntity anchor = ACTIVE.get(kind).remove(player.getUUID());
+                    if (anchor != null && anchor.isRemoved()) {
+                        anchor = null;
+                    }
+                    AnchorManager.suspend(player, kind, anchor);
+                    if (anchor != null) {
+                        anchor.discard();
+                    }
+                }
+                continue;
+            }
             dismiss(kind, player, disconnecting);
         }
     }

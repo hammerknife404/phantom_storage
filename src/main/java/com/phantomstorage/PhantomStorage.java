@@ -1,9 +1,11 @@
 package com.phantomstorage;
 
 import com.mojang.logging.LogUtils;
+import com.phantomstorage.command.PhantomCommands;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.network.ModNetwork;
 import com.phantomstorage.registry.ModRegistries;
+import com.phantomstorage.summon.AnchorManager;
 import com.phantomstorage.summon.PhantomPetEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -24,7 +26,9 @@ public final class PhantomStorage {
         modBus.addListener(PhantomStorage::onEntityAttributes);
         modBus.addListener(PhantomStorage::onCreativeTabs);
         modBus.addListener(ModNetwork::register);
+        modBus.addListener(AnchorManager::registerTickets);
         PhantomPetEvents.register(NeoForge.EVENT_BUS);
+        NeoForge.EVENT_BUS.addListener(PhantomCommands::register);
     }
 
     public static ResourceLocation id(String path) {
@@ -34,6 +38,8 @@ public final class PhantomStorage {
     private static void onEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModRegistries.PHANTOM_CHEST.get(), PhantomPetEntity.createAttributes().build());
         event.put(ModRegistries.PHANTOM_TANK.get(), PhantomPetEntity.createAttributes().build());
+        event.put(ModRegistries.PHANTOM_ANCHOR.get(), PhantomPetEntity.createAttributes().build());
+        event.put(ModRegistries.PHANTOM_COLLECTOR.get(), PhantomPetEntity.createAttributes().build());
     }
 
     private static void onCreativeTabs(BuildCreativeModeTabContentsEvent event) {

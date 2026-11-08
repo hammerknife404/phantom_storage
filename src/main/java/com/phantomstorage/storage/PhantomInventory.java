@@ -4,12 +4,14 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.util.INBTSerializable;
 
 /**
  * A player's 12x9 phantom storage. Attached to the player and persisted in the player's data file,
  * so it is written in the same atomic save as the player's own inventory: an item is never in both
- * or neither after a crash.
+ * or neither after a crash. Also holds the void filter: items matching it are destroyed when the
+ * player or their collector picks them up.
  */
 public class PhantomInventory extends SimpleContainer implements INBTSerializable<CompoundTag> {
     public static final int COLUMNS = 12;
@@ -17,12 +19,23 @@ public class PhantomInventory extends SimpleContainer implements INBTSerializabl
     public static final int SIZE = COLUMNS * ROWS;
     private static final String KEY_SORT_MODE = "SortMode";
     private static final String KEY_SORT_DESCENDING = "SortDescending";
+    private static final String KEY_VOID_FILTER = "VoidFilter";
 
     private SortMode sortMode = SortMode.NAME;
     private boolean sortDescending;
+    private final ItemFilter voidFilter = new ItemFilter();
 
     public PhantomInventory() {
         super(SIZE);
+    }
+
+    public ItemFilter voidFilter() {
+        return this.voidFilter;
+    }
+
+    /** Whether picking {@code stack} up should destroy it instead. */
+    public boolean isVoided(ItemStack stack) {
+        return this.voidFilter.matches(stack);
     }
 
     public SortMode getSortMode() {
@@ -66,6 +79,7 @@ public class PhantomInventory extends SimpleContainer implements INBTSerializabl
         ContainerHelper.saveAllItems(tag, getItems(), provider);
         tag.putString(KEY_SORT_MODE, this.sortMode.name());
         tag.putBoolean(KEY_SORT_DESCENDING, this.sortDescending);
+        tag.put(KEY_VOID_FILTER, this.voidFilter.save(provider));
         return tag;
     }
 
@@ -80,5 +94,6 @@ public class PhantomInventory extends SimpleContainer implements INBTSerializabl
             }
         }
         this.sortDescending = tag.getBoolean(KEY_SORT_DESCENDING);
+        this.voidFilter.load(provider, tag.getCompound(KEY_VOID_FILTER));
     }
 }

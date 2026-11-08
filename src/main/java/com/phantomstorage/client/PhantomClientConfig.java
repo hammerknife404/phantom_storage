@@ -13,8 +13,11 @@ public final class PhantomClientConfig {
     private static final ModConfigSpec.IntValue ALL_PETS_OPACITY;
     private static final ModConfigSpec.IntValue CHEST_OPACITY;
     private static final ModConfigSpec.IntValue TANK_OPACITY;
+    private static final ModConfigSpec.IntValue ANCHOR_OPACITY;
+    private static final ModConfigSpec.IntValue COLLECTOR_OPACITY;
     private static final ModConfigSpec.BooleanValue CHEST_GLOW;
     private static final ModConfigSpec.BooleanValue TANK_GLOW;
+    private static final ModConfigSpec.BooleanValue ANCHOR_GLOW;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -28,14 +31,23 @@ public final class PhantomClientConfig {
         TANK_OPACITY = builder
                 .comment("Phantom Tank opacity, in percent: frame and wings; the glass and fluid scale with it.")
                 .defineInRange("tank", 80, 10, 100);
+        ANCHOR_OPACITY = builder
+                .comment("Phantom Anchor opacity, in percent.")
+                .defineInRange("anchor", 80, 10, 100);
+        COLLECTOR_OPACITY = builder
+                .comment("Phantom Collector opacity, in percent.")
+                .defineInRange("collector", 80, 10, 100);
         builder.pop();
         builder.push("glow");
         CHEST_GLOW = builder
                 .comment("Never render the Phantom Chest darker than light level 7.")
                 .define("chest", true);
         TANK_GLOW = builder
-                .comment("Never render the Phantom Tank darker than light level 7 (its eyes always glow).")
+                .comment("Never render the Phantom Tank darker than light level 7 (its eyes always glow, dimmed only by opacity).")
                 .define("tank", true);
+        ANCHOR_GLOW = builder
+                .comment("Never render the Phantom Anchor darker than light level 7 (its eyes always glow, dimmed only by opacity).")
+                .define("anchor", true);
         builder.pop();
         SPEC = builder.build();
     }
@@ -52,12 +64,26 @@ public final class PhantomClientConfig {
         return alpha(TANK_OPACITY);
     }
 
+    /** 0..1: the anchor's opacity times the all-pets opacity. */
+    public static float anchorAlpha() {
+        return alpha(ANCHOR_OPACITY);
+    }
+
+    /** 0..1: the collector's opacity times the all-pets opacity. */
+    public static float collectorAlpha() {
+        return alpha(COLLECTOR_OPACITY);
+    }
+
     public static boolean chestGlows() {
         return CHEST_GLOW.get();
     }
 
     public static boolean tankGlows() {
         return TANK_GLOW.get();
+    }
+
+    public static boolean anchorGlows() {
+        return ANCHOR_GLOW.get();
     }
 
     /** {@code alpha} (0..1) in the top byte of an otherwise white ARGB colour, scaled by {@code factor}. */

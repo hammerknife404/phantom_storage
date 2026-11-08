@@ -159,7 +159,8 @@ public class PhantomFollowOwnerGoal extends Goal {
     @Override
     public void tick() {
         Player player = this.owner;
-        if (player == null) {
+        // Told to stay this tick: the goal stops on the next update; don't teleport after the owner meanwhile.
+        if (player == null || this.pet.isOrderedToSit()) {
             return;
         }
         if (++this.sampleTimer >= SAMPLE_TICKS) {

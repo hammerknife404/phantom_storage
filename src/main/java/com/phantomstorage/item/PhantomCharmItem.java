@@ -2,6 +2,8 @@ package com.phantomstorage.item;
 
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.registry.ModRegistries;
+import com.phantomstorage.summon.AnchorManager;
+import com.phantomstorage.summon.AnchorTravel;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
 import java.util.List;
@@ -21,9 +23,10 @@ import net.minecraft.world.level.Level;
 /**
  * The one summoner for every pet. Its mode ({@link ModRegistries#CHARM_MODE}) picks the pet; sneak +
  * scroll cycles it (see {@code CharmModePayload}), skipping pets the player hasn't unlocked yet.
- * Use: summons the owner's pet of that kind, or recalls it to their side if it's already out.
- * Sneak-use: dismisses it. Never duplicates a pet or moves it across dimensions.
- * All three share one cooldown, whatever the mode.
+ * Use: summons the owner's pet of that kind, or recalls it to their side if it's already out; for the
+ * anchor, takes the owner to it instead, or swaps places with it when looked at ({@link AnchorTravel}).
+ * Sneak-use: dismisses it. Never duplicates a pet or moves a pet across dimensions.
+ * All of these share one cooldown, whatever the mode.
  */
 public class PhantomCharmItem extends Item {
     public static final int COOLDOWN_TICKS = 5 * 20;
@@ -76,17 +79,26 @@ public class PhantomCharmItem extends Item {
             return InteractionResultHolder.fail(stack);
         }
         PhantomPetEntity active = PetManager.getActive(kind, serverPlayer.getUUID());
-        if (active != null) {
-            if (serverPlayer.isShiftKeyDown()) {
-                PetManager.dismiss(kind, serverPlayer, false);
-                serverPlayer.displayClientMessage(Component.translatable(kind.message("dismissed")), true);
-            } else if (active.level() == serverPlayer.level()) {
-                PetManager.recall(kind, serverPlayer, active);
-                serverPlayer.displayClientMessage(Component.translatable(kind.message("recalled")), true);
-            } else {
+        // Anchored, but its entity isn't back yet (just logged in; its chunk is still loading).
+        boolean anchorLoading = active == null && AnchorManager.isAnchored(serverPlayer, kind);
+        if (serverPlayer.isShiftKeyDown() && (active != null || anchorLoading)) {
+            PetManager.dismiss(kind, serverPlayer, false);
+            serverPlayer.displayClientMessage(Component.translatable(kind.message("dismissed")), true);
+        } else if (anchorLoading) {
+            serverPlayer.displayClientMessage(Component.translatable(kind.message("loading")), true);
+            return InteractionResultHolder.fail(stack);
+        } else if (active == null) {
+            if (!PetManager.summon(kind, serverPlayer)) {
                 return InteractionResultHolder.fail(stack);
             }
-        } else if (!PetManager.summon(kind, serverPlayer)) {
+        } else if (kind == PetKind.ANCHOR) {
+            if (!AnchorTravel.use(serverPlayer, active)) {
+                return InteractionResultHolder.fail(stack);
+            }
+        } else if (active.level() == serverPlayer.level()) {
+            PetManager.recall(kind, serverPlayer, active);
+            serverPlayer.displayClientMessage(Component.translatable(kind.message("recalled")), true);
+        } else {
             return InteractionResultHolder.fail(stack);
         }
         // Cooldown covers both summon and dismiss, so the pair can't be spammed.
@@ -97,9 +109,15 @@ public class PhantomCharmItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.mode", getMode(stack).displayName())
+        PetKind mode = getMode(stack);
+        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.mode", mode.displayName())
                 .withStyle(ChatFormatting.LIGHT_PURPLE));
-        tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.summon").withStyle(ChatFormatting.GRAY));
+        if (mode == PetKind.ANCHOR) {
+            tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.summon.anchor").withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.swap").withStyle(ChatFormatting.GRAY));
+        } else {
+            tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.summon").withStyle(ChatFormatting.GRAY));
+        }
         tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.dismiss").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("item.phantomstorage.phantom_charm.tooltip.cycle").withStyle(ChatFormatting.GRAY));
     }

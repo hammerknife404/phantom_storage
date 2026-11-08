@@ -2,6 +2,7 @@ package com.phantomstorage.entity;
 
 import com.phantomstorage.entity.goal.PhantomFollowOwnerGoal;
 import com.phantomstorage.entity.goal.PhantomStayGoal;
+import com.phantomstorage.summon.AnchorManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
 import java.util.UUID;
@@ -56,6 +57,8 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     private int openCount;
     /** Set by a recall; the follow goal picks it up and settles in place instead of wandering off. */
     private boolean recalled;
+    /** Set by {@link #relocate}; the stay goal picks it up and holds the new spot. */
+    private boolean relocated;
     /** Game time of the last server tick. */
     private long lastTickTime;
 
@@ -112,7 +115,25 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         this.setOrderedToSit(stay);
         this.setInSittingPose(stay);
         this.navigation.stop();
+        this.onStayToggled(player, stay);
         player.displayClientMessage(Component.translatable(this.kind().message(stay ? "stay" : "follow")), true);
+    }
+
+    /** Server-side, right after the owner toggled stay / follow: a pet that can anchor anchors or lets go. */
+    protected void onStayToggled(ServerPlayer owner, boolean stay) {
+        if (stay) {
+            AnchorManager.anchor(owner, this);
+        } else {
+            AnchorManager.release(owner, this.kind());
+        }
+    }
+
+    /**
+     * Whether this pet holds its place while its owner is away, even in another dimension, instead of
+     * being dismissed: one that {@linkplain PetKind#canAnchor() can anchor} and was told to stay.
+     */
+    public boolean isAnchored() {
+        return this.kind().canAnchor() && this.isOrderedToSit();
     }
 
     /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
@@ -168,7 +189,9 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         UUID ownerId = this.getOwnerUUID();
         MinecraftServer server = this.level().getServer();
         ServerPlayer owner = ownerId == null || server == null ? null : server.getPlayerList().getPlayer(ownerId);
-        if (owner == null || owner.level() != this.level() || PetManager.getActive(this.kind(), ownerId) != this) {
+        if (owner == null
+                || (owner.level() != this.level() && !this.isAnchored())
+                || PetManager.getActive(this.kind(), ownerId) != this) {
             this.discard();
         }
     }
@@ -185,6 +208,13 @@ public abstract class PhantomPetEntity extends TamableAnimal {
 
     @Override
     public void remove(RemovalReason reason) {
+        // /kill is the only way to destroy a pet; an anchored one's spot goes too, or it would come back.
+        UUID ownerId = this.getOwnerUUID();
+        MinecraftServer server = this.level().getServer();
+        if (reason == RemovalReason.KILLED && this.kind().canAnchor() && ownerId != null && server != null
+                && !this.isRemoved() && server.getPlayerList().getPlayer(ownerId) instanceof ServerPlayer owner) {
+            AnchorManager.onKilled(owner, this);
+        }
         super.remove(reason);
         if (!this.level().isClientSide()) {
             PetManager.forget(this);
@@ -239,6 +269,19 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     public boolean takeRecall() {
         boolean was = this.recalled;
         this.recalled = false;
+        return was;
+    }
+
+    /** Server-side: blink straight to (x, y, z), e.g. to swap places with the owner. A pet told to stay stays there. */
+    public void relocate(double x, double y, double z) {
+        this.blinkTo(x, y, z);
+        this.relocated = true;
+    }
+
+    /** Consumed by the stay goal. */
+    public boolean takeRelocated() {
+        boolean was = this.relocated;
+        this.relocated = false;
         return was;
     }
 

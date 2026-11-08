@@ -32,13 +32,14 @@ public final class PhantomStorageClient {
         modBus.addListener(PhantomStorageClient::onRegisterScreens);
         modBus.addListener(PhantomStorageClient::onClientSetup);
         NeoForge.EVENT_BUS.addListener(PhantomStorageClient::onScroll);
+        NeoForge.EVENT_BUS.addListener(PhantomTheme::onTooltipColor);
         PhantomLayout.setClientSelector(() -> {
             Window window = Minecraft.getInstance().getWindow();
             return PhantomLayout.choose(window.getGuiScaledWidth(), window.getGuiScaledHeight());
         });
     }
 
-    /** The charm's model swaps to the tank art in tank mode (overrides in models/item/phantom_charm.json). */
+    /** The charm's model swaps to each pet's art by mode (overrides in models/item/phantom_charm.json). */
     private static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> ItemProperties.register(ModRegistries.PHANTOM_CHARM.get(), PhantomStorage.id("mode"),
                 (stack, level, entity, seed) -> PhantomCharmItem.getMode(stack).ordinal()));
@@ -58,10 +59,14 @@ public final class PhantomStorageClient {
     private static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModRegistries.PHANTOM_CHEST.get(), PhantomChestRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_TANK.get(), PhantomTankRenderer::new);
+        event.registerEntityRenderer(ModRegistries.PHANTOM_ANCHOR.get(), PhantomAnchorRenderer::new);
+        event.registerEntityRenderer(ModRegistries.PHANTOM_COLLECTOR.get(), PhantomCollectorRenderer::new);
     }
 
     private static void onRegisterScreens(RegisterMenuScreensEvent event) {
         event.register(ModRegistries.PHANTOM_CHEST_MENU.get(), PhantomChestScreen::new);
         event.register(ModRegistries.PHANTOM_TANK_MENU.get(), PhantomTankScreen::new);
+        event.register(ModRegistries.PHANTOM_ANCHOR_MENU.get(), PhantomAnchorScreen::new);
+        event.register(ModRegistries.PHANTOM_COLLECTOR_MENU.get(), PhantomCollectorScreen::new);
     }
 }

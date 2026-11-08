@@ -7,10 +7,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Items;
+import com.phantomstorage.registry.ModRegistries;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -30,6 +34,7 @@ public final class PhantomPetEvents {
         bus.addListener(PhantomPetEvents::onServerStopped);
         bus.addListener(PhantomPetEvents::onAdvancementEarned);
         bus.addListener(PhantomPetEvents::onPlayerTick);
+        bus.addListener(PhantomPetEvents::onItemPickup);
     }
 
     /**
@@ -85,11 +90,12 @@ public final class PhantomPetEvents {
         }
     }
 
+    /** Respawned in another dimension: pets there are left behind, except an anchored anchor. */
     private static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             for (PetKind kind : PetKind.values()) {
                 PhantomPetEntity pet = PetManager.getActive(kind, player.getUUID());
-                if (pet != null && pet.level() != player.level()) {
+                if (pet != null && pet.level() != player.level() && !pet.isAnchored()) {
                     PetManager.dismiss(kind, player, false);
                 }
             }
@@ -111,11 +117,11 @@ public final class PhantomPetEvents {
         }
     }
 
-    /** Tells the player when an advancement unlocks a pet for their charm. */
+    /** Tells the player when an advancement unlocks a pet for their charm (once, if several can). */
     private static void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             for (PetKind kind : PetKind.values()) {
-                if (kind.isUnlockedBy(event.getAdvancement().id())) {
+                if (kind.isNewlyUnlockedBy(player, event.getAdvancement().id())) {
                     player.sendSystemMessage(Component.translatable("message.phantomstorage.unlocked", kind.displayName())
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
@@ -126,10 +132,28 @@ public final class PhantomPetEvents {
     private static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player && player.tickCount % STRANDED_CHECK_INTERVAL == 0) {
             PetManager.rescueStranded(player);
+            AnchorManager.tick(player);
+        }
+    }
+
+    /**
+     * The void filter: an item the player picks up that matches it is destroyed instead, with the
+     * usual pickup animation. Respects the item's pickup delay and target, like vanilla's own pickup.
+     */
+    private static void onItemPickup(ItemEntityPickupEvent.Pre event) {
+        ItemEntity item = event.getItemEntity();
+        if (event.getPlayer() instanceof ServerPlayer player
+                && !item.hasPickUpDelay()
+                && (item.getTarget() == null || item.getTarget().equals(player.getUUID()))
+                && player.getData(ModRegistries.STORAGE).isVoided(item.getItem())) {
+            player.take(item, item.getItem().getCount());
+            item.discard();
+            event.setCanPickup(TriState.FALSE);
         }
     }
 
     private static void onServerStopped(ServerStoppedEvent event) {
         PetManager.clear();
+        AnchorManager.clear();
     }
 }
