@@ -1,6 +1,6 @@
 # Phantom Storage
 
-**Ghostly flying pets that carry your stuff.** Summon a Phantom Chest for items and a Phantom Tank for fluids. They follow you like an Allay, survive everything but `/kill`, and their contents are tied to *you*, not the pet.
+**Ghostly flying pets that carry your stuff.** Summon a Phantom Chest for items, a Phantom Tank for fluids and a Phantom Anchor to teleport to. They follow you like an Allay, survive everything but `/kill`, and their contents are tied to *you*, not the pet.
 
 ---
 
@@ -20,7 +20,15 @@
 - **Overfill / Drain all** options: spill into or draw from the next tank automatically. Both are off by default, so nothing goes where you didn't expect.
 - Rings like amethyst when you open it
 
-## ✨ Both pets
+## ⚓ Phantom Anchor
+
+- A ghostly **lodestone with phantom wings** that follows you like the others
+- **Teleport to it** with the charm: you land on a safe spot within 3 blocks of it
+- Tell it to stay and it's **anchored**: its chunk stays loaded and ticking while you're online, and the charm takes you back to it from anywhere, **even another dimension**
+- **Look at it** (up to 32 blocks, through walls) and use the charm to **swap places**
+- An anchored anchor stays put through logouts, deaths, dimension changes and restarts
+
+## ✨ All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
 - Look at one for half a second and it comes within reach
@@ -37,13 +45,14 @@
 
 | With the **Phantom Charm** | |
 |---|---|
-| Sneak + scroll | Switch mode: Chest / Tank |
-| Use | Summon, or recall if it's already out |
+| Sneak + scroll | Switch mode: Chest / Tank / Anchor |
+| Use | Summon, or recall if it's already out. Anchor: teleport to it |
+| Use, looking at the anchor | Swap places with it |
 | Sneak + use | Dismiss |
 
 | On a pet | |
 |---|---|
-| Right-click | Open it |
+| Right-click | Open it (the anchor shows where it is) |
 | Right-click the tank with a bucket / bottle | Pour in or fill, no GUI |
 | Sneak + right-click the tank with a bucket | Cycle the active tank |
 | Sneak + right-click (empty hand) | Stay / follow |
@@ -65,7 +74,8 @@ No extra recipes; new pets unlock through vanilla advancements.
 | Pet | Unlocked by |
 |---|---|
 | Phantom Chest | Available from the start |
-| Phantom Tank | *Not Quite "Nine" Lives* (charge a respawn anchor) |
+| Phantom Tank | *Local Brewery* (brew a potion); *Not Quite "Nine" Lives* also still counts |
+| Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 
 Creative mode ignores unlocks.
 

@@ -6,6 +6,8 @@ import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.registry.ModRegistries;
 import io.netty.buffer.ByteBuf;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.advancements.AdvancementHolder;
@@ -21,54 +23,80 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 /**
  * The pets a player can have out at once (at most one of each), and the Phantom Charm's modes.
- * A pet with an unlock advancement can't be summoned until the player has earned it; that is the
- * only progression gate, so new pets need no recipes of their own.
+ * A pet with unlock advancements can't be summoned until the player has earned one of them; that is
+ * the only progression gate, so new pets need no recipes of their own. New kinds go at the end: the
+ * charm stores its mode by ordinal over the network.
  */
 public enum PetKind implements StringRepresentable {
-    CHEST("chest", ModRegistries.PHANTOM_CHEST, PhantomChestMenu.class, null),
+    CHEST("chest", ModRegistries.PHANTOM_CHEST, PhantomChestMenu.class),
     /**
-     * "Not Quite "Nine" Lives": charge a respawn anchor (crying obsidian, glowstone, the Nether).
-     * Past the charm's own recipe, which already needs obsidian for the ender chest.
+     * "Local Brewery": brew a potion (blaze rods, so a Nether trip). "Not Quite "Nine" Lives" (charge a
+     * respawn anchor) was the unlock before 2.9.0 and still counts, so nobody who had the tank loses it.
      */
     TANK("tank", ModRegistries.PHANTOM_TANK, PhantomTankMenu.class,
-            ResourceLocation.withDefaultNamespace("nether/charge_respawn_anchor"));
+            ResourceLocation.withDefaultNamespace("nether/brew_potion"),
+            ResourceLocation.withDefaultNamespace("nether/charge_respawn_anchor")),
+    /** "Remote Getaway": enter an End gateway, i.e. after the dragon. No menu: it carries nothing. */
+    ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, null,
+            ResourceLocation.withDefaultNamespace("end/enter_end_gateway"));
 
     public static final Codec<PetKind> CODEC = StringRepresentable.fromEnum(PetKind::values);
     public static final StreamCodec<ByteBuf, PetKind> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], PetKind::ordinal);
 
     private final String key;
     private final Supplier<? extends EntityType<? extends PhantomPetEntity>> type;
-    private final Class<? extends AbstractContainerMenu> menuClass;
     @Nullable
-    private final ResourceLocation unlock;
+    private final Class<? extends AbstractContainerMenu> menuClass;
+    /** Any one of these unlocks the pet; the first is the one named while it's locked. */
+    private final List<ResourceLocation> unlocks;
 
     PetKind(String key, Supplier<? extends EntityType<? extends PhantomPetEntity>> type,
-            Class<? extends AbstractContainerMenu> menuClass, @Nullable ResourceLocation unlock) {
+            @Nullable Class<? extends AbstractContainerMenu> menuClass, ResourceLocation... unlocks) {
         this.key = key;
         this.type = type;
         this.menuClass = menuClass;
-        this.unlock = unlock;
+        this.unlocks = List.of(unlocks);
     }
 
-    /** The advancement that unlocks this pet, if any and if it exists (a datapack may remove it). */
-    @Nullable
-    public AdvancementHolder unlockAdvancement(ServerPlayer player) {
-        return this.unlock == null ? null : player.server.getAdvancements().get(this.unlock);
+    /** The unlock advancements that exist (a datapack may remove any of them). */
+    private List<AdvancementHolder> unlockAdvancements(ServerPlayer player) {
+        List<AdvancementHolder> found = new ArrayList<>(this.unlocks.size());
+        for (ResourceLocation id : this.unlocks) {
+            AdvancementHolder advancement = player.server.getAdvancements().get(id);
+            if (advancement != null) {
+                found.add(advancement);
+            }
+        }
+        return found;
     }
 
     public boolean isUnlockedBy(ResourceLocation advancement) {
-        return advancement.equals(this.unlock);
+        return this.unlocks.contains(advancement);
     }
 
     /** Creative players and missing advancements never lock a pet. */
     public boolean isUnlocked(ServerPlayer player) {
-        AdvancementHolder advancement = this.unlockAdvancement(player);
-        return advancement == null || player.isCreative() || player.getAdvancements().getOrStartProgress(advancement).isDone();
+        if (player.isCreative()) {
+            return true;
+        }
+        List<AdvancementHolder> advancements = this.unlockAdvancements(player);
+        return advancements.isEmpty() || advancements.stream().anyMatch(a -> isDone(player, a));
     }
 
-    /** "Tank is locked. Earn the advancement "Not Quite "Nine" Lives" to unlock it." */
+    /** {@code earned} unlocks this pet and no other unlock advancement already had: say so once, not per advancement. */
+    public boolean isNewlyUnlockedBy(ServerPlayer player, ResourceLocation earned) {
+        return this.isUnlockedBy(earned)
+                && this.unlockAdvancements(player).stream().noneMatch(a -> !a.id().equals(earned) && isDone(player, a));
+    }
+
+    private static boolean isDone(ServerPlayer player, AdvancementHolder advancement) {
+        return player.getAdvancements().getOrStartProgress(advancement).isDone();
+    }
+
+    /** "Tank is locked. Earn the advancement "Local Brewery" to unlock it." */
     public Component lockedMessage(ServerPlayer player) {
-        AdvancementHolder advancement = this.unlockAdvancement(player);
+        List<AdvancementHolder> advancements = this.unlockAdvancements(player);
+        AdvancementHolder advancement = advancements.isEmpty() ? null : advancements.getFirst();
         Component title = advancement == null ? Component.empty()
                 : advancement.value().display().map(DisplayInfo::getTitle).orElse(Component.literal(advancement.id().toString()));
         return Component.translatable("message.phantomstorage.locked", this.displayName(), title);
@@ -80,7 +108,7 @@ public enum PetKind implements StringRepresentable {
 
     /** Whether {@code menu} is this kind's menu (it must close before the pet goes). */
     public boolean isMenu(AbstractContainerMenu menu) {
-        return this.menuClass.isInstance(menu);
+        return this.menuClass != null && this.menuClass.isInstance(menu);
     }
 
     @Override
@@ -88,7 +116,7 @@ public enum PetKind implements StringRepresentable {
         return this.key;
     }
 
-    /** "Chest" / "Tank", from {@code pet.phantomstorage.<kind>}. */
+    /** "Chest" / "Tank" / "Anchor", from {@code pet.phantomstorage.<kind>}. */
     public Component displayName() {
         return Component.translatable("pet.phantomstorage." + this.key);
     }

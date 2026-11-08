@@ -6,7 +6,10 @@ import java.util.EnumSet;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.phys.Vec3;
 
-/** Holds position while ordered to stay (vanilla tameable "sit" flag), within hover bounds. */
+/**
+ * Holds position while ordered to stay (vanilla tameable "sit" flag), within hover bounds. A
+ * {@linkplain PhantomPetEntity#relocate relocation} moves the spot it holds.
+ */
 public class PhantomStayGoal extends Goal {
     private static final int REFRESH_TICKS = 20;
 
@@ -36,6 +39,7 @@ public class PhantomStayGoal extends Goal {
 
     @Override
     public void start() {
+        this.pet.takeRelocated();
         this.anchor = this.pet.position();
         this.refreshTimer = 0;
         this.pet.getNavigation().stop();
@@ -43,6 +47,10 @@ public class PhantomStayGoal extends Goal {
 
     @Override
     public void tick() {
+        if (this.pet.takeRelocated()) {
+            this.anchor = this.pet.position();
+            this.refreshTimer = 0;
+        }
         if (--this.refreshTimer <= 0) {
             this.refreshTimer = REFRESH_TICKS;
             double y = HoverBounds.clampY(this.pet.level(), this.anchor.x, this.anchor.y, this.anchor.z);

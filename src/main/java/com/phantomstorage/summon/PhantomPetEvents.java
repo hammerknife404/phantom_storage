@@ -85,11 +85,12 @@ public final class PhantomPetEvents {
         }
     }
 
+    /** Respawned in another dimension: pets there are left behind, except an anchored anchor. */
     private static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             for (PetKind kind : PetKind.values()) {
                 PhantomPetEntity pet = PetManager.getActive(kind, player.getUUID());
-                if (pet != null && pet.level() != player.level()) {
+                if (pet != null && pet.level() != player.level() && !pet.isAnchored()) {
                     PetManager.dismiss(kind, player, false);
                 }
             }
@@ -111,11 +112,11 @@ public final class PhantomPetEvents {
         }
     }
 
-    /** Tells the player when an advancement unlocks a pet for their charm. */
+    /** Tells the player when an advancement unlocks a pet for their charm (once, if several can). */
     private static void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             for (PetKind kind : PetKind.values()) {
-                if (kind.isUnlockedBy(event.getAdvancement().id())) {
+                if (kind.isNewlyUnlockedBy(player, event.getAdvancement().id())) {
                     player.sendSystemMessage(Component.translatable("message.phantomstorage.unlocked", kind.displayName())
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
@@ -126,10 +127,12 @@ public final class PhantomPetEvents {
     private static void onPlayerTick(PlayerTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player && player.tickCount % STRANDED_CHECK_INTERVAL == 0) {
             PetManager.rescueStranded(player);
+            AnchorManager.tick(player);
         }
     }
 
     private static void onServerStopped(ServerStoppedEvent event) {
         PetManager.clear();
+        AnchorManager.clear();
     }
 }

@@ -1,11 +1,13 @@
 package com.phantomstorage.registry;
 
 import com.phantomstorage.PhantomStorage;
+import com.phantomstorage.entity.PhantomAnchorEntity;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
+import com.phantomstorage.storage.AnchorSpot;
 import com.phantomstorage.storage.PhantomInventory;
 import com.phantomstorage.storage.PhantomTanks;
 import com.phantomstorage.summon.PetKind;
@@ -80,6 +82,16 @@ public final class ModRegistries {
                     .updateInterval(2)
                     .build("phantom_tank"));
 
+    public static final DeferredHolder<EntityType<?>, EntityType<PhantomAnchorEntity>> PHANTOM_ANCHOR =
+            ENTITY_TYPES.register("phantom_anchor", () -> EntityType.Builder
+                    .<PhantomAnchorEntity>of(PhantomAnchorEntity::new, MobCategory.MISC)
+                    .sized(0.75F, 0.75F)
+                    .fireImmune()
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(2)
+                    .build("phantom_anchor"));
+
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomChestMenu>> PHANTOM_CHEST_MENU =
             MENU_TYPES.register("phantom_chest",
                     () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomChestMenu(windowId, inventory)));
@@ -93,6 +105,9 @@ public final class ModRegistries {
             () -> AttachmentType.serializable(() -> new PhantomInventory()).copyOnDeath().build());
     public static final Supplier<AttachmentType<PhantomTanks>> TANKS = ATTACHMENT_TYPES.register("tanks",
             () -> AttachmentType.serializable(() -> new PhantomTanks()).copyOnDeath().build());
+    /** Where the player's Phantom Anchor is anchored; its entity is re-created from this. */
+    public static final Supplier<AttachmentType<AnchorSpot>> ANCHOR = ATTACHMENT_TYPES.register("anchor",
+            () -> AttachmentType.serializable(() -> new AnchorSpot()).copyOnDeath().build());
 
     private ModRegistries() {}
 

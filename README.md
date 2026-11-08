@@ -1,15 +1,16 @@
 # Phantom Storage
 
-A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, and you can have both out at once.
+A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, the Phantom Anchor is a waypoint you can teleport to, and you can have all three out at once.
 
 ## Controls
 
 | Action | Result |
 |---|---|
-| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest or Tank (the charm's art changes to match) |
-| Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown) |
+| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest, Tank or Anchor (the charm's art changes to match) |
+| Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown). Anchor mode: teleport to the anchor instead |
+| Use the charm while looking at the anchor | Swap places with it (anchor mode, up to 32 blocks, through walls) |
 | Sneak + use the charm | Dismiss that pet (same cooldown) |
-| Right-click a pet | Open its storage |
+| Right-click a pet | Open its storage; the anchor shows where it is |
 | Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI; the action bar shows that tank's level |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
 | Sneak + right-click a pet (empty-handed) | Toggle stay / follow |
@@ -36,13 +37,24 @@ Tank:
 | **Overfill** checkbox (off by default) | Buckets on the tank: when the active tank is full or holds another fluid, pour into the next tank of that fluid or an empty one |
 | **Drain all** checkbox (off by default) | Buckets on the tank: when the active tank is empty, keep drawing from the next tank until all are empty |
 
+Anchor:
+
+| Mode | Charm use |
+|---|---|
+| Following (default) | Teleports you to a safe spot within 3 blocks of it |
+| Anchored (told to stay) | Teleports you to a safe spot within 3 blocks of it, from anywhere, other dimensions included. Its chunk stays loaded and ticking (farms, furnaces) while you're online |
+| Looking at it, either mode | You swap places; an anchored anchor stays anchored where you stood |
+
+A safe spot is solid ground the player fits on, with nothing harmful in it or next to it (fire, lava, cactus, powder snow and the like) and no portal or cobweb; surface water if there's nothing else. If there's none, the charm says so and nothing happens. An anchored anchor stays put through your logouts, deaths, dimension changes and server restarts; nothing is loaded while you're offline. Dismiss it with the charm (sneak + use, from anywhere) or tell it to follow again (sneak + right-click it).
+
 **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner. One charm summons every pet.
 
 **Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
 
 | Pet | Unlocked by |
 |---|---|
-| Phantom Tank | *Not Quite "Nine" Lives* (charge a respawn anchor) |
+| Phantom Tank | *Local Brewery* (brew a potion). *Not Quite "Nine" Lives* (charge a respawn anchor), the unlock before 2.9.0, still counts |
+| Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
 
@@ -54,10 +66,11 @@ Until then the charm skips that mode. Creative mode ignores unlocks.
 - The tank holds any fluid, modded ones included. It's tinted glass in a ghostly ender chest base and lid, with flapping phantom wings and glowing phantom eyes, and rings like amethyst when you open it.
 - The tank shows every tank's fluid stacked inside its glass, each layer filling a quarter of the height, with the active tank on top.
 - Buckets used on the tank work with the active tank only, unless you tick Overfill or Drain all in the GUI.
-- Both pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
+- All pets float like an Allay: trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Never render darker than a redstone torch (light level 7). With [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) installed they also light their surroundings at level 7.
-- One chest and one tank per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Pets are dismissed automatically on logout or dimension change; re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
+- The anchor is a small ghostly lodestone with the same wings and eyes. Anchored, it hangs still with its wings folded.
+- One of each pet per player. Only the owner can open or move them, and only `/kill` can kill them.
+- Pets are dismissed automatically on logout or dimension change, except an anchored anchor; re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
 ## Client config
 
@@ -65,10 +78,11 @@ Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → P
 
 | Option | Default | Does |
 |---|---|---|
-| Opacity: All pets | 100% | Multiplies the two values below |
+| Opacity: All pets | 100% | Multiplies the values below |
 | Opacity: Phantom Chest | 80% | How see-through the chest is (10–100%) |
 | Opacity: Phantom Tank | 80% | The tank's frame and wings; glass and fluid scale with it |
-| Glow: Phantom Chest / Tank | on | Never render darker than light level 7 (the tank's eyes always glow) |
+| Opacity: Phantom Anchor | 80% | How see-through the anchor is |
+| Glow: Phantom Chest / Tank / Anchor | on | Never render darker than light level 7 (the tank's and anchor's eyes always glow) |
 
 Light cast onto surroundings comes from LambDynamicLights and is toggled in its own settings.
 

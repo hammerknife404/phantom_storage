@@ -38,7 +38,7 @@ public final class PhantomStorageClient {
         });
     }
 
-    /** The charm's model swaps to the tank art in tank mode (overrides in models/item/phantom_charm.json). */
+    /** The charm's model swaps to each pet's art by mode (overrides in models/item/phantom_charm.json). */
     private static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> ItemProperties.register(ModRegistries.PHANTOM_CHARM.get(), PhantomStorage.id("mode"),
                 (stack, level, entity, seed) -> PhantomCharmItem.getMode(stack).ordinal()));
@@ -58,6 +58,7 @@ public final class PhantomStorageClient {
     private static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModRegistries.PHANTOM_CHEST.get(), PhantomChestRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_TANK.get(), PhantomTankRenderer::new);
+        event.registerEntityRenderer(ModRegistries.PHANTOM_ANCHOR.get(), PhantomAnchorRenderer::new);
     }
 
     private static void onRegisterScreens(RegisterMenuScreensEvent event) {

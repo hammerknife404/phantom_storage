@@ -6,13 +6,11 @@ import com.mojang.math.Axis;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.entity.TankStyle;
 import com.phantomstorage.storage.PhantomTanks;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -41,7 +39,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float GLASS_FACTOR = 0xB0 / (float) 0xCC;
     private static final float FLUID_FACTOR = 0xD0 / (float) 0xCC;
     private static final int MIN_BLOCK_LIGHT = 7;
-    private static final float PX = 1.0F / 16.0F;
+    private static final float PX = GhostQuads.PX;
     private static final float HALF = 11.0F / 32.0F;
     /** Matches the 0.75 entity height. */
     private static final float HEIGHT = 12.0F * PX;
@@ -51,31 +49,14 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     private static final float GLASS_INSET = 0.75F * PX;
     private static final ResourceLocation ENDER_CHEST = ResourceLocation.withDefaultNamespace("textures/entity/chest/ender.png");
     /** Ender chest texture regions (64x64 sheet, vanilla chest model UVs) as u0, v0, u1, v1 fractions. */
-    private static final float[] ENDER_LID_TOP = px(14, 0, 28, 14);
-    private static final float[] ENDER_LID_UNDER = px(28, 0, 42, 14);
-    private static final float[] ENDER_LID_SIDE = px(14, 15, 28, 18);
-    private static final float[] ENDER_BASE_TOP = px(14, 19, 28, 33);
-    private static final float[] ENDER_BASE_UNDER = px(28, 19, 42, 33);
-    private static final float[] ENDER_BASE_SIDE = px(14, 40, 28, 43);
-
-    private static final ResourceLocation PHANTOM = ResourceLocation.withDefaultNamespace("textures/entity/phantom.png");
-    private static final ResourceLocation PHANTOM_EYES = ResourceLocation.withDefaultNamespace("textures/entity/phantom_eyes.png");
-    /** Phantom model UVs (64x64): the wing tip's top face (13x9 at (25,24)) and the head front (7x3 at (5,5)). */
-    private static final float[] WING = px(25, 24, 38, 33);
-    private static final float[] EYES = px(5, 5, 12, 8);
-    /** Wings at half the phantom's size: 3 px inner half, 6.5 px outer half, 4.5 px deep at the root. */
-    private static final float WING_BASE = 3.0F * PX;
-    private static final float WING_TIP = 6.5F * PX;
-    private static final float WING_DEPTH = 4.5F * PX;
+    private static final float[] ENDER_LID_TOP = GhostQuads.px(14, 0, 28, 14);
+    private static final float[] ENDER_LID_UNDER = GhostQuads.px(28, 0, 42, 14);
+    private static final float[] ENDER_LID_SIDE = GhostQuads.px(14, 15, 28, 18);
+    private static final float[] ENDER_BASE_TOP = GhostQuads.px(14, 19, 28, 33);
+    private static final float[] ENDER_BASE_UNDER = GhostQuads.px(28, 19, 42, 33);
+    private static final float[] ENDER_BASE_SIDE = GhostQuads.px(14, 40, 28, 43);
     /** The wing root starts this far inside the lid edge, so it grows out from under the lid. */
     private static final float WING_TUCK = 1.5F * PX;
-    /** Fraction of the root depth the outer edge loses at the front: the tip tapers and sweeps back. */
-    private static final float WING_TAPER = 0.4F;
-    private static final float FLAP_SPEED = 0.18F;
-    private static final float FLAP_DEGREES = 18.0F;
-    /** Eyes at 1.5x the phantom's 7x3 px. */
-    private static final float EYES_HALF_W = 5.25F * PX;
-    private static final float EYES_H = 4.5F * PX;
     private static final float INSET = 1.0F / 32.0F;
     private static final float MIN_LAYER = 0.08F;
 
@@ -126,7 +107,7 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
             float top = bottom + layerMax * Math.max(fill, MIN_LAYER);
             IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(fluid);
             int color = fluidAlpha | (ext.getTintColor() & 0xFFFFFF);
-            box(pose, consumer, sprite(ext.getStillTexture()), -inner, bottom, -inner, inner, top, inner, color, light);
+            box(pose, consumer, GhostQuads.sprite(ext.getStillTexture()), -inner, bottom, -inner, inner, top, inner, color, light);
             bottom = top;
         }
         float glass = HALF - GLASS_INSET;
@@ -137,25 +118,17 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
                         ENDER_BASE_TOP, ENDER_BASE_UNDER, ENDER_BASE_SIDE, ghost, light);
                 uvBox(pose, ender, -HALF, HEIGHT - RIM, -HALF, HALF, HEIGHT, HALF,
                         ENDER_LID_TOP, ENDER_LID_UNDER, ENDER_LID_SIDE, ghost, light);
-                VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(PHANTOM));
-                float flap = Mth.sin(age * FLAP_SPEED) * FLAP_DEGREES;
-                wing(pose, wings, 1, flap, ghost, light);
-                wing(pose, wings, -1, flap, ghost, light);
+                VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(GhostQuads.PHANTOM));
+                float flap = GhostQuads.flap(age);
+                GhostQuads.wing(pose, wings, 1, flap, HALF - WING_TUCK, HEIGHT - RIM * 0.5F, ghost, light);
+                GhostQuads.wing(pose, wings, -1, flap, HALF - WING_TUCK, HEIGHT - RIM * 0.5F, ghost, light);
                 consumer = buffer.getBuffer(RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS));
             }
         }
-        box(pose, consumer, sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, PhantomClientConfig.white(alpha, GLASS_FACTOR), light);
+        box(pose, consumer, GhostQuads.sprite(GLASS), -glass, BASE, -glass, glass, HEIGHT - RIM, glass, PhantomClientConfig.white(alpha, GLASS_FACTOR), light);
         if (entity.getDisplayStyle() == TankStyle.PHANTOM) {
             // Glowing eyes on the front of the glass, just under the rim; full-bright like a phantom's.
-            VertexConsumer eyes = buffer.getBuffer(RenderType.eyes(PHANTOM_EYES));
-            float z = glass + 0.002F;
-            float top = HEIGHT - RIM - 0.5F * PX;
-            // The eyes render type culls back faces, so wind counter-clockwise as seen from the front.
-            int bright = LightTexture.FULL_BRIGHT;
-            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top - EYES_H, z, EYES[0], EYES[3]);
-            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top - EYES_H, z, EYES[2], EYES[3]);
-            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, EYES_HALF_W, top, z, EYES[2], EYES[1]);
-            vertex(pose, eyes, 0xFFFFFFFF, bright, 0, 0, 1, -EYES_HALF_W, top, z, EYES[0], EYES[1]);
+            GhostQuads.eyes(pose, buffer, glass + 0.002F, HEIGHT - RIM - 0.5F * PX);
         }
         poseStack.popPose();
 
@@ -163,60 +136,14 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
     }
 
     /** A box whose faces each show a fixed region of the bound texture, stretched to fit. */
-    /**
-     * One phantom wing on side {@code side} (+1 = +x, -1 = -x): a single thin membrane, no box edges,
-     * rooted under the lid. The inner half swings {@code flap} degrees and the outer half twice that,
-     * like the phantom's, but both halves share the joint vertices and one continuous stretch of the
-     * wing texture, so the wing bends there instead of looking bolted together. Drawn once; the render
-     * type doesn't cull, so it shows from above and below.
-     */
-    private static void wing(PoseStack.Pose pose, VertexConsumer c, int side, float flap, int color, int light) {
-        float a = flap * Mth.DEG_TO_RAD;
-        float rootX = HALF - WING_TUCK;
-        float rootY = HEIGHT - RIM * 0.5F;
-        float jointX = rootX + Mth.cos(a) * WING_BASE;
-        float jointY = rootY + Mth.sin(a) * WING_BASE;
-        float tipX = jointX + Mth.cos(2.0F * a) * WING_TIP;
-        float tipY = jointY + Mth.sin(2.0F * a) * WING_TIP;
-        float z0 = -WING_DEPTH / 2.0F;
-        float z1 = WING_DEPTH / 2.0F;
-        float tipZ0 = z0 + WING_DEPTH * WING_TAPER;
-
-        float u0 = WING[0];
-        float uJoint = Mth.lerp(WING_BASE / (WING_BASE + WING_TIP), WING[0], WING[2]);
-        float u1 = WING[2];
-        float v0 = WING[1];
-        float v1 = WING[3];
-        float vTip0 = Mth.lerp(WING_TAPER, v0, v1);
-        // Inner half: root -> joint.
-        vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z0, u0, v0);
-        vertex(pose, c, color, light, 0, 1, 0, side * rootX, rootY, z1, u0, v1);
-        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z1, uJoint, v1);
-        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z0, uJoint, v0);
-        // Outer half: joint -> tapered tip.
-        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z0, uJoint, v0);
-        vertex(pose, c, color, light, 0, 1, 0, side * jointX, jointY, z1, uJoint, v1);
-        vertex(pose, c, color, light, 0, 1, 0, side * tipX, tipY, z1, u1, v1);
-        vertex(pose, c, color, light, 0, 1, 0, side * tipX, tipY, tipZ0, u1, vTip0);
-    }
-
     private static void uvBox(PoseStack.Pose pose, VertexConsumer c, float x0, float y0, float z0, float x1, float y1, float z1,
                               float[] top, float[] bottom, float[] side, int color, int light) {
-        quad(pose, c, color, light, 0, 1, 0, top[0], top[1], top[2], top[3], x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
-        quad(pose, c, color, light, 0, -1, 0, bottom[0], bottom[1], bottom[2], bottom[3], x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
-        quad(pose, c, color, light, 0, 0, -1, side[0], side[1], side[2], side[3], x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
-        quad(pose, c, color, light, 0, 0, 1, side[0], side[1], side[2], side[3], x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
-        quad(pose, c, color, light, -1, 0, 0, side[0], side[1], side[2], side[3], x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
-        quad(pose, c, color, light, 1, 0, 0, side[0], side[1], side[2], side[3], x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
-    }
-
-    /** Pixel rectangle on a 64x64 texture as u0, v0, u1, v1 fractions. */
-    private static float[] px(int u0, int v0, int u1, int v1) {
-        return new float[] {u0 / 64.0F, v0 / 64.0F, u1 / 64.0F, v1 / 64.0F};
-    }
-
-    private static TextureAtlasSprite sprite(ResourceLocation id) {
-        return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(id);
+        GhostQuads.quad(pose, c, color, light, 0, 1, 0, top[0], top[1], top[2], top[3], x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+        GhostQuads.quad(pose, c, color, light, 0, -1, 0, bottom[0], bottom[1], bottom[2], bottom[3], x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
+        GhostQuads.quad(pose, c, color, light, 0, 0, -1, side[0], side[1], side[2], side[3], x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+        GhostQuads.quad(pose, c, color, light, 0, 0, 1, side[0], side[1], side[2], side[3], x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
+        GhostQuads.quad(pose, c, color, light, -1, 0, 0, side[0], side[1], side[2], side[3], x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
+        GhostQuads.quad(pose, c, color, light, 1, 0, 0, side[0], side[1], side[2], side[3], x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
     }
 
     /** All six faces; side faces show only as much of the sprite as the box is tall. */
@@ -227,33 +154,12 @@ public class PhantomTankRenderer extends EntityRenderer<PhantomTankEntity> {
         float v0 = s.getV0();
         float v1 = s.getV1();
         float vTop = v1 - (v1 - v0) * Math.min(1.0F, (y1 - y0) / (2.0F * HALF));
-        quad(pose, c, color, light, 0, 1, 0, u0, v0, u1, v1, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
-        quad(pose, c, color, light, 0, -1, 0, u0, v0, u1, v1, x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
-        quad(pose, c, color, light, 0, 0, -1, u0, vTop, u1, v1, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
-        quad(pose, c, color, light, 0, 0, 1, u0, vTop, u1, v1, x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
-        quad(pose, c, color, light, -1, 0, 0, u0, vTop, u1, v1, x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
-        quad(pose, c, color, light, 1, 0, 0, u0, vTop, u1, v1, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
-    }
-
-    /** Corners in order bottom-left, top-left, top-right, bottom-right of the face's texture. */
-    private static void quad(PoseStack.Pose pose, VertexConsumer c, int color, int light, float nx, float ny, float nz,
-                             float u0, float vTop, float u1, float vBottom,
-                             float ax, float ay, float az, float bx, float by, float bz,
-                             float cx, float cy, float cz, float dx, float dy, float dz) {
-        vertex(pose, c, color, light, nx, ny, nz, ax, ay, az, u0, vBottom);
-        vertex(pose, c, color, light, nx, ny, nz, bx, by, bz, u0, vTop);
-        vertex(pose, c, color, light, nx, ny, nz, cx, cy, cz, u1, vTop);
-        vertex(pose, c, color, light, nx, ny, nz, dx, dy, dz, u1, vBottom);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer c, int color, int light, float nx, float ny, float nz,
-                               float x, float y, float z, float u, float v) {
-        c.addVertex(pose, x, y, z)
-                .setColor(color)
-                .setUv(u, v)
-                .setOverlay(OverlayTexture.NO_OVERLAY)
-                .setLight(light)
-                .setNormal(pose, nx, ny, nz);
+        GhostQuads.quad(pose, c, color, light, 0, 1, 0, u0, v0, u1, v1, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+        GhostQuads.quad(pose, c, color, light, 0, -1, 0, u0, v0, u1, v1, x0, y0, z1, x0, y0, z0, x1, y0, z0, x1, y0, z1);
+        GhostQuads.quad(pose, c, color, light, 0, 0, -1, u0, vTop, u1, v1, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+        GhostQuads.quad(pose, c, color, light, 0, 0, 1, u0, vTop, u1, v1, x1, y0, z1, x1, y1, z1, x0, y1, z1, x0, y0, z1);
+        GhostQuads.quad(pose, c, color, light, -1, 0, 0, u0, vTop, u1, v1, x0, y0, z1, x0, y1, z1, x0, y1, z0, x0, y0, z0);
+        GhostQuads.quad(pose, c, color, light, 1, 0, 0, u0, vTop, u1, v1, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
     }
 
     @Override

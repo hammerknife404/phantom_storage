@@ -56,6 +56,8 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     private int openCount;
     /** Set by a recall; the follow goal picks it up and settles in place instead of wandering off. */
     private boolean recalled;
+    /** Set by {@link #relocate}; the stay goal picks it up and holds the new spot. */
+    private boolean relocated;
     /** Game time of the last server tick. */
     private long lastTickTime;
 
@@ -112,7 +114,19 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         this.setOrderedToSit(stay);
         this.setInSittingPose(stay);
         this.navigation.stop();
+        this.onStayToggled(player, stay);
         player.displayClientMessage(Component.translatable(this.kind().message(stay ? "stay" : "follow")), true);
+    }
+
+    /** Server-side, right after the owner toggled stay / follow. */
+    protected void onStayToggled(ServerPlayer owner, boolean stay) {}
+
+    /**
+     * Whether this pet holds its place while its owner is away, even in another dimension, instead of
+     * being dismissed. Only an anchored Phantom Anchor does.
+     */
+    public boolean isAnchored() {
+        return false;
     }
 
     /** Server-side, once, right after {@link #bindOwner} on summon (before the pet is added to the level). */
@@ -168,7 +182,9 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         UUID ownerId = this.getOwnerUUID();
         MinecraftServer server = this.level().getServer();
         ServerPlayer owner = ownerId == null || server == null ? null : server.getPlayerList().getPlayer(ownerId);
-        if (owner == null || owner.level() != this.level() || PetManager.getActive(this.kind(), ownerId) != this) {
+        if (owner == null
+                || (owner.level() != this.level() && !this.isAnchored())
+                || PetManager.getActive(this.kind(), ownerId) != this) {
             this.discard();
         }
     }
@@ -239,6 +255,19 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     public boolean takeRecall() {
         boolean was = this.recalled;
         this.recalled = false;
+        return was;
+    }
+
+    /** Server-side: blink straight to (x, y, z), e.g. to swap places with the owner. A pet told to stay stays there. */
+    public void relocate(double x, double y, double z) {
+        this.blinkTo(x, y, z);
+        this.relocated = true;
+    }
+
+    /** Consumed by the stay goal. */
+    public boolean takeRelocated() {
+        boolean was = this.relocated;
+        this.relocated = false;
         return was;
     }
 
