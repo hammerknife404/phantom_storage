@@ -16,7 +16,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * {@code /phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>}: for testing, a player in
+ * {@code /phantomstorage unlock <tank|anchor|collector|saddle|gateway|bell|all>}: for testing, a player in
  * creative mode grants themselves a charm mode's unlock advancement, exactly as {@code /advancement grant} would. Creative already
  * ignores unlocks, so this is about what they'll have back in survival. Any player may run it, but only
  * in creative; {@code /advancement revoke} locks a mode again.

@@ -1,17 +1,18 @@
 # Phantom Storage
 
-A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, the Phantom Anchor is a waypoint you can teleport to, the Phantom Collector gathers dropped items and experience into your storage, and you can have them all out at once. The same charm also saddles the chest so you can fly it, and opens a gateway to your anchor that anyone can walk through.
+A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, the Phantom Anchor is a waypoint you can teleport to, the Phantom Collector gathers dropped items and experience into your storage, and you can have them all out at once. The same charm also saddles the chest so you can fly it, opens a gateway to your anchor that anyone can walk through, and rings a bell that calls every pet at once.
 
 ## Controls
 
 | Action | Result |
 |---|---|
-| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest, Tank, Anchor, Collector, Saddle or Gateway (the charm's art changes to match) |
+| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest, Tank, Anchor, Collector, Saddle, Gateway or Bell (the charm's art changes to match) |
 | Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown). Anchor mode: teleport to the anchor instead |
 | Use the charm while looking at the anchor | Swap places with it (anchor mode, up to 32 blocks, through walls) |
 | Sneak + use the charm | Dismiss that pet (same cooldown) |
 | Use the charm in Saddle mode | Ride your Phantom Chest (summoned under you if it isn't out); use again, or sneak, to get off |
 | Use the charm in Gateway mode | Open a gateway to your anchored Phantom Anchor, 2 blocks ahead of you, for 15 s; sneak + use closes it |
+| Use the charm in Bell mode | Summon every unlocked pet that isn't out; sneak + use dismisses every following pet and closes your gateway. Anchored pets stay put (dismissing one forgets its spot) |
 | Right-click a pet | Open its panel: storage for the chest and tank; for the anchor, where it is, with Stay here and Dismiss; for the collector, its filter, range and banked experience |
 | Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI; the action bar shows that tank's level |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
@@ -94,10 +95,11 @@ Bosses, spectators, and anything riding something else (except you on your chest
 | Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
 | Phantom Saddle | *Great View From Up Here* (levitate 50 blocks from a shulker's attacks) |
 | Phantom Gateway | *The End... Again...* (respawn the Ender Dragon) |
+| Phantom Bell | *Hot Tourist Destinations* (explore all Nether biomes) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
 
-For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>` grants a mode's unlock advancement, so it stays unlocked back in survival. It only works in creative mode. `/advancement revoke` locks a mode again (for the tank, revoke both of its advancements).
+For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|bell|all>` grants a mode's unlock advancement, so it stays unlocked back in survival. It only works in creative mode. `/advancement revoke` locks a mode again (for the tank, revoke both of its advancements).
 
 ## What you get
 

@@ -51,6 +51,11 @@
 - **Anyone can step through**: you, friends, mobs, even dropped items
 - Your following pets are brought along when you cross to another dimension
 
+## 🔔 Phantom Bell
+
+- One ring **summons every pet you've unlocked**; sneak + ring **sends every following pet home** and closes your gateway
+- Anchored pets keep their spots
+
 ## ✨ All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
@@ -69,12 +74,13 @@
 
 | With the **Phantom Charm** | |
 |---|---|
-| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector / Saddle / Gateway |
+| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector / Saddle / Gateway / Bell |
 | Use | Summon, or recall if it's already out. Anchor: teleport to it |
 | Use, looking at the anchor | Swap places with it |
 | Sneak + use | Dismiss (Gateway: close it) |
 | Use, Saddle mode | Ride the chest / get off |
 | Use, Gateway mode | Open a gateway to your anchored anchor |
+| Use / sneak + use, Bell mode | Summon every pet at once / dismiss every following pet |
 
 | On a pet | |
 |---|---|
@@ -105,8 +111,9 @@ No extra recipes; every charm mode unlocks through a vanilla advancement.
 | Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
 | Phantom Saddle | *Great View From Up Here* (levitate 50 blocks from a shulker's attacks) |
 | Phantom Gateway | *The End... Again...* (respawn the Ender Dragon) |
+| Phantom Bell | *Hot Tourist Destinations* (explore all Nether biomes) |
 
-Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>` (creative only) grants a mode's unlock advancement.
+Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|bell|all>` (creative only) grants a mode's unlock advancement.
 
 ---
 

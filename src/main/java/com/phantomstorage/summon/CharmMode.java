@@ -18,7 +18,7 @@ import net.minecraft.util.StringRepresentable;
  * The Phantom Charm's modes: one per pet, plus modes that use a pet rather than being one (the saddle
  * rides the chest, the gateway reaches the anchor). A mode with unlock advancements is skipped until
  * the player has earned one of them; that is the only progression gate, so new modes need no recipes
- * of their own. New modes go at the end: the charm stores its mode by name on disk and by ordinal over
+ * of their own. The bell calls every pet at once. New modes go at the end: the charm stores its mode by name on disk and by ordinal over
  * the network, and the item model picks its art by ordinal.
  */
 public enum CharmMode implements StringRepresentable {
@@ -41,7 +41,10 @@ public enum CharmMode implements StringRepresentable {
             ResourceLocation.withDefaultNamespace("end/levitate")),
     /** "The End... Again...": respawn the Ender Dragon. Opens a portal to the anchored Phantom Anchor. */
     GATEWAY("gateway", null,
-            ResourceLocation.withDefaultNamespace("end/respawn_dragon"));
+            ResourceLocation.withDefaultNamespace("end/respawn_dragon")),
+    /** "Hot Tourist Destinations": explore every Nether biome. Summons or dismisses every pet at once. */
+    BELL("bell", null,
+            ResourceLocation.withDefaultNamespace("nether/explore_nether"));
 
     public static final Codec<CharmMode> CODEC = StringRepresentable.fromEnum(CharmMode::values);
     public static final StreamCodec<ByteBuf, CharmMode> STREAM_CODEC = ByteBufCodecs.idMapper(i -> values()[i], CharmMode::ordinal);
