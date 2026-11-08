@@ -23,14 +23,17 @@ import net.minecraft.world.phys.Vec3;
  *   <li>Experience: following, orbs are brought to the owner, so vanilla's pickup (Mending included)
  *       takes them; anchored, they go into its bank.</li>
  * </ul>
- * It never takes items still on their pickup delay, meant for someone else, or thrown by the owner
- * (what you throw away stays away), nor any an item-transport mod has marked {@code PreventRemoteMovement}.
+ * It never takes items still on their pickup delay, meant for someone else, or marked
+ * {@code PreventRemoteMovement} by an item-transport mod. Items the owner threw wait {@link #OWN_THROW_TICKS}
+ * first, so a quick toss to a friend or into a hopper still lands; anything left lying comes back.
  */
 public final class CollectorWork {
     public static final int INTERVAL = 5;
     /** Item entities handled per pass, so a huge pile spreads over a few passes. */
     private static final int MAX_ITEMS = 32;
     private static final String PREVENT_REMOTE_MOVEMENT = "PreventRemoteMovement";
+    /** How long the owner's own throws lie before it takes them (other drops: just their pickup delay). */
+    public static final int OWN_THROW_TICKS = 5 * 20;
     /** ExperienceOrb#count: orbs spawned together merge, each worth value x count. */
     private static final Field ORB_COUNT = orbCountField();
 
@@ -99,7 +102,7 @@ public final class CollectorWork {
         return item.isAlive()
                 && !item.hasPickUpDelay()
                 && (item.getTarget() == null || item.getTarget().equals(owner.getUUID()))
-                && item.getOwner() != owner
+                && (item.getOwner() != owner || item.getAge() >= OWN_THROW_TICKS)
                 && !item.getPersistentData().getBoolean(PREVENT_REMOTE_MOVEMENT);
     }
 
