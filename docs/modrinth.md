@@ -1,6 +1,6 @@
 # Phantom Storage
 
-**Ghostly flying pets that carry your stuff.** Summon a Phantom Chest for items, a Phantom Tank for fluids and a Phantom Anchor to teleport to. They follow you like an Allay, survive everything but `/kill`, and their contents are tied to *you*, not the pet.
+**Ghostly flying pets that carry your stuff.** Summon a Phantom Chest for items, a Phantom Tank for fluids and a Phantom Anchor to teleport to; saddle the chest and fly it, or open a gateway to your anchor. They follow you like an Allay, survive everything but `/kill`, and their contents are tied to *you*, not the pet.
 
 ---
 
@@ -37,6 +37,20 @@
 - Its panel: **range** (3–12 blocks), a **filter** of what to take or skip, the XP bank, *Stay here* and dismiss
 - Never takes what you threw away, and the chest's void filter destroys your listed junk on the way in
 
+## 🐎 Phantom Saddle
+
+- A charm mode, no new entity: **ride your Phantom Chest** and fly it, a saddle on its lid
+- **Fly where you look**: W/S along your view, A/D to strafe, Space to rise, sprint for double speed; let go and it hovers
+- Ridden, it **collides like any mount**, keeping your head out of walls and ceilings
+- No fall damage for it or you; sneak or use the charm again to get off
+
+## 🚪 Phantom Gateway
+
+- A **doorway of the End gateway's starfield** in a ghostly lodestone frame, the phantom eyes peering out of the void
+- Opens in front of you for 15 seconds and leads to your **anchored Phantom Anchor**, **across dimensions**
+- **Anyone can step through**: you, friends, mobs, even dropped items
+- Your following pets are brought along when you cross to another dimension
+
 ## ✨ All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
@@ -55,10 +69,12 @@
 
 | With the **Phantom Charm** | |
 |---|---|
-| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector |
+| Sneak + scroll | Switch mode: Chest / Tank / Anchor / Collector / Saddle / Gateway |
 | Use | Summon, or recall if it's already out. Anchor: teleport to it |
 | Use, looking at the anchor | Swap places with it |
-| Sneak + use | Dismiss |
+| Sneak + use | Dismiss (Gateway: close it) |
+| Use, Saddle mode | Ride the chest / get off |
+| Use, Gateway mode | Open a gateway to your anchored anchor |
 
 | On a pet | |
 |---|---|
@@ -79,16 +95,18 @@ One charm for every pet:
 
 ## 🔓 Unlocks
 
-No extra recipes; new pets unlock through vanilla advancements.
+No extra recipes; every charm mode unlocks through a vanilla advancement.
 
-| Pet | Unlocked by |
+| Mode | Unlocked by |
 |---|---|
 | Phantom Chest | Available from the start |
 | Phantom Tank | *Local Brewery* (brew a potion); *Not Quite "Nine" Lives* also still counts |
 | Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 | Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
+| Phantom Saddle | *Great View From Up Here* (levitate 50 blocks from a shulker's attacks) |
+| Phantom Gateway | *The End... Again...* (respawn the Ender Dragon) |
 
-Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|all>` (creative only) grants a pet's unlock advancement.
+Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>` (creative only) grants a mode's unlock advancement.
 
 ---
 

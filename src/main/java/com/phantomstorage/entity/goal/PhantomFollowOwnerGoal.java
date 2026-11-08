@@ -105,7 +105,7 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (this.pet.isOrderedToSit()) {
+        if (this.pet.isOrderedToSit() || this.pet.isVehicle()) {
             return false;
         }
         Player player = this.pet.getOwnerPlayer();
@@ -118,7 +118,7 @@ public class PhantomFollowOwnerGoal extends Goal {
 
     @Override
     public boolean canContinueToUse() {
-        return !this.pet.isOrderedToSit() && isFollowable(this.owner);
+        return !this.pet.isOrderedToSit() && !this.pet.isVehicle() && isFollowable(this.owner);
     }
 
     private boolean isFollowable(@Nullable Player player) {

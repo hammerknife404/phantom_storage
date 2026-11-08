@@ -1,0 +1,6 @@
+{
+  "match": {
+    "type": "phantomstorage:phantom_gateway"
+  },
+  "luminance": 10
+}
