@@ -10,13 +10,13 @@ A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. Th
 | Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown). Anchor mode: teleport to the anchor instead |
 | Use the charm while looking at the anchor | Swap places with it (anchor mode, up to 32 blocks, through walls) |
 | Sneak + use the charm | Dismiss that pet (same cooldown) |
-| Right-click a pet | Open its storage; the anchor shows where it is |
+| Right-click a pet | Open its panel: storage for the chest and tank; for the anchor, where it is, with Stay here and Dismiss |
 | Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI; the action bar shows that tank's level |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
 | Sneak + right-click a pet (empty-handed) | Toggle stay / follow |
 | Look at a pet ~½ s (while idle) | It comes within reach |
 
-In either GUI, hover any icon or gauge for a short description.
+All three panels share one look: night violet in a gold-trimmed frame, slot groups in darker wells, the pet's charm art beside the title, and cyan for whatever is active or selected. Hover any icon, gauge or checkbox for a short description.
 
 Chest:
 
@@ -45,7 +45,7 @@ Anchor:
 | Anchored (told to stay) | Teleports you to a safe spot within 3 blocks of it, from anywhere, other dimensions included. Its chunk stays loaded and ticking (farms, furnaces) while you're online |
 | Looking at it, either mode | You swap places; an anchored anchor stays anchored where you stood |
 
-A safe spot is solid ground the player fits on, with nothing harmful in it or next to it (fire, lava, cactus, powder snow and the like) and no portal or cobweb; surface water if there's nothing else. If there's none, the charm says so and nothing happens. An anchored anchor stays put through your logouts, deaths, dimension changes and server restarts; nothing is loaded while you're offline. Dismiss it with the charm (sneak + use, from anywhere) or tell it to follow again (sneak + right-click it).
+A safe spot is solid ground the player fits on, with nothing harmful in it or next to it (fire, lava, cactus, powder snow and the like) and no portal or cobweb; surface water if there's nothing else. If there's none, the charm says so and nothing happens. An anchored anchor stays put through your logouts, deaths, dimension changes and server restarts; nothing is loaded while you're offline. Dismiss it with the charm (sneak + use, from anywhere) or its panel's trash button; untick **Stay here** in the panel (or sneak + right-click it) to have it follow again.
 
 **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner. One charm summons every pet.
 
@@ -57,6 +57,8 @@ A safe spot is solid ground the player fits on, with nothing harmful in it or ne
 | Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
+
+For testing, `/phantomstorage unlock <tank|anchor|all>` grants a pet's unlock advancement, so it stays unlocked back in survival. It only works in creative mode. `/advancement revoke` locks a pet again (for the tank, revoke both of its advancements).
 
 ## What you get
 

@@ -28,35 +28,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * Two checkboxes set how bucket use on the pet treats the active tank ({@link PhantomTanks#selected()}).
  * All of it arrives as container-button clicks and runs server-side.
  *
- * <pre>
- * +------------------------------+
- * | title                        |
- * |  [##]   [##]   [##]   [##]   |  gauges
- * |   T      T      T      T     |  trash
- * | [ ] Overfill   [ ] Drain all |  options
- * | Inventory                    |
- * | player inventory + hotbar    |
- * +------------------------------+
- * </pre>
+ * Layout: {@link TankLayout}.
  */
 public class PhantomTankMenu extends AbstractContainerMenu {
-    public static final int WIDTH = 176;
-    public static final int HEIGHT = 194;
-    public static final int GAUGE_X = 17;
-    public static final int GAUGE_STEP = 40;
-    public static final int GAUGE_Y = 18;
-    public static final int GAUGE_W = 22;
-    public static final int GAUGE_H = 52;
-    public static final int TRASH_Y = GAUGE_Y + GAUGE_H + 3;
-    public static final int OPTION_Y = TRASH_Y + 17;
-    public static final int OPTION_SIZE = 9;
-    public static final int OVERFILL_X = 8;
-    public static final int DRAIN_ALL_X = 92;
-    public static final int INV_X = 8;
-    public static final int INV_Y = 112;
-    public static final int HOTBAR_Y = INV_Y + 58;
-    public static final int INV_LABEL_Y = INV_Y - 11;
-
     /** {@link #clickMenuButton} id = tank * ACTIONS + action. */
     public static final int ACTION_POUR = 0;
     public static final int ACTION_TAKE = 1;
@@ -95,24 +69,16 @@ public class PhantomTankMenu extends AbstractContainerMenu {
 
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, INV_X + col * 18, INV_Y + row * 18));
+                this.addSlot(new Slot(playerInventory, col + row * 9 + 9, TankLayout.INV_X + col * 18, TankLayout.INV_Y + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(playerInventory, col, INV_X + col * 18, HOTBAR_Y));
+            this.addSlot(new Slot(playerInventory, col, TankLayout.INV_X + col * 18, TankLayout.HOTBAR_Y));
         }
 
         if (pet != null) {
             pet.onMenuOpened();
         }
-    }
-
-    public static int gaugeX(int tank) {
-        return GAUGE_X + tank * GAUGE_STEP;
-    }
-
-    public static int trashX(int tank) {
-        return gaugeX(tank) + (GAUGE_W - PhantomLayout.ICON_SIZE) / 2;
     }
 
     public FluidStack getFluid(int tank) {

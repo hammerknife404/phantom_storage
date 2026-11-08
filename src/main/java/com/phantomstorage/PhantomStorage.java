@@ -1,6 +1,7 @@
 package com.phantomstorage;
 
 import com.mojang.logging.LogUtils;
+import com.phantomstorage.command.PhantomCommands;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.network.ModNetwork;
 import com.phantomstorage.registry.ModRegistries;
@@ -27,6 +28,7 @@ public final class PhantomStorage {
         modBus.addListener(ModNetwork::register);
         modBus.addListener(AnchorManager::registerTickets);
         PhantomPetEvents.register(NeoForge.EVENT_BUS);
+        NeoForge.EVENT_BUS.addListener(PhantomCommands::register);
     }
 
     public static ResourceLocation id(String path) {

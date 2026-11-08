@@ -2,6 +2,7 @@ package com.phantomstorage.summon;
 
 import com.mojang.serialization.Codec;
 import com.phantomstorage.entity.PhantomPetEntity;
+import com.phantomstorage.menu.PhantomAnchorMenu;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.registry.ModRegistries;
@@ -36,8 +37,8 @@ public enum PetKind implements StringRepresentable {
     TANK("tank", ModRegistries.PHANTOM_TANK, PhantomTankMenu.class,
             ResourceLocation.withDefaultNamespace("nether/brew_potion"),
             ResourceLocation.withDefaultNamespace("nether/charge_respawn_anchor")),
-    /** "Remote Getaway": enter an End gateway, i.e. after the dragon. No menu: it carries nothing. */
-    ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, null,
+    /** "Remote Getaway": enter an End gateway, i.e. after the dragon. Its panel shows where it is. */
+    ANCHOR("anchor", ModRegistries.PHANTOM_ANCHOR, PhantomAnchorMenu.class,
             ResourceLocation.withDefaultNamespace("end/enter_end_gateway"));
 
     public static final Codec<PetKind> CODEC = StringRepresentable.fromEnum(PetKind::values);
@@ -76,11 +77,25 @@ public enum PetKind implements StringRepresentable {
 
     /** Creative players and missing advancements never lock a pet. */
     public boolean isUnlocked(ServerPlayer player) {
-        if (player.isCreative()) {
-            return true;
-        }
+        return player.isCreative() || this.isEarned(player);
+    }
+
+    /** Unlocked by advancement, whatever the game mode: nothing to earn, or one of them earned. */
+    public boolean isEarned(ServerPlayer player) {
         List<AdvancementHolder> advancements = this.unlockAdvancements(player);
         return advancements.isEmpty() || advancements.stream().anyMatch(a -> isDone(player, a));
+    }
+
+    /** Whether this pet starts locked at all (the chest doesn't). */
+    public boolean hasUnlock() {
+        return !this.unlocks.isEmpty();
+    }
+
+    /** The advancement to earn for it: the first that exists; null if none do. */
+    @Nullable
+    public AdvancementHolder primaryUnlock(ServerPlayer player) {
+        List<AdvancementHolder> advancements = this.unlockAdvancements(player);
+        return advancements.isEmpty() ? null : advancements.getFirst();
     }
 
     /** {@code earned} unlocks this pet and no other unlock advancement already had: say so once, not per advancement. */
@@ -95,11 +110,14 @@ public enum PetKind implements StringRepresentable {
 
     /** "Tank is locked. Earn the advancement "Local Brewery" to unlock it." */
     public Component lockedMessage(ServerPlayer player) {
-        List<AdvancementHolder> advancements = this.unlockAdvancements(player);
-        AdvancementHolder advancement = advancements.isEmpty() ? null : advancements.getFirst();
-        Component title = advancement == null ? Component.empty()
-                : advancement.value().display().map(DisplayInfo::getTitle).orElse(Component.literal(advancement.id().toString()));
+        AdvancementHolder advancement = this.primaryUnlock(player);
+        Component title = advancement == null ? Component.empty() : advancementTitle(advancement);
         return Component.translatable("message.phantomstorage.locked", this.displayName(), title);
+    }
+
+    /** "Local Brewery", or the id of an advancement with no display. */
+    public static Component advancementTitle(AdvancementHolder advancement) {
+        return advancement.value().display().map(DisplayInfo::getTitle).orElse(Component.literal(advancement.id().toString()));
     }
 
     public EntityType<? extends PhantomPetEntity> entityType() {
@@ -114,6 +132,11 @@ public enum PetKind implements StringRepresentable {
     @Override
     public String getSerializedName() {
         return this.key;
+    }
+
+    /** "Phantom Tank": the pet's entity name. */
+    public Component fullName() {
+        return this.entityType().getDescription();
     }
 
     /** "Chest" / "Tank" / "Anchor", from {@code pet.phantomstorage.<kind>}. */

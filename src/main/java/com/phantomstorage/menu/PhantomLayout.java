@@ -43,7 +43,11 @@ public record PhantomLayout(
 
     /** Size of the square icon buttons (trash, sort, recipes). */
     public static final int ICON_SIZE = 12;
-    public static final int TITLE_X = 8;
+    /** Every pet screen's header: the pet's charm art, then the title. */
+    public static final int HEADER_ICON_X = 6;
+    public static final int HEADER_ICON_Y = 3;
+    public static final int HEADER_ICON_SIZE = 12;
+    public static final int TITLE_X = HEADER_ICON_X + HEADER_ICON_SIZE + 3;
     public static final int TITLE_Y = 5;
     /** Padding between the end of the title and the sort icon. */
     public static final int SORT_GAP = 6;
@@ -63,7 +67,7 @@ public record PhantomLayout(
     /** Vanilla cobweb texture size. */
     public static final int WEB_SIZE = 16;
     /** Well padding around a slot group (left/right/bottom; flush at the top so labels and icons stay clear). */
-    private static final int WELL_PAD = 2;
+    static final int WELL_PAD = 2;
 
     /** Pixel rectangle relative to the GUI's top-left. */
     public record Box(int x, int y, int w, int h) {
@@ -130,6 +134,11 @@ public record PhantomLayout(
                 new Well(this.craftingBox().padded(WELL_PAD, 0, WELL_PAD), false),
                 new Well(this.voidBox().padded(WELL_PAD, 0, WELL_PAD), true),
                 new Well(this.inventoryBox().padded(WELL_PAD, 0, WELL_PAD), false));
+    }
+
+    /** The header's charm art. */
+    public static Box headerIconBox() {
+        return new Box(HEADER_ICON_X, HEADER_ICON_Y, HEADER_ICON_SIZE, HEADER_ICON_SIZE);
     }
 
     /** Decorations drawn only in spare space; empty when the layout has none. */

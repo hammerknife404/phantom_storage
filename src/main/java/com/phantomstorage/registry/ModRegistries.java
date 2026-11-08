@@ -5,6 +5,7 @@ import com.phantomstorage.entity.PhantomAnchorEntity;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.item.PhantomCharmItem;
+import com.phantomstorage.menu.PhantomAnchorMenu;
 import com.phantomstorage.menu.PhantomChestMenu;
 import com.phantomstorage.menu.PhantomTankMenu;
 import com.phantomstorage.storage.AnchorSpot;
@@ -98,6 +99,8 @@ public final class ModRegistries {
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomTankMenu>> PHANTOM_TANK_MENU =
             MENU_TYPES.register("phantom_tank",
                     () -> IMenuTypeExtension.create((windowId, inventory, data) -> new PhantomTankMenu(windowId, inventory)));
+    public static final DeferredHolder<MenuType<?>, MenuType<PhantomAnchorMenu>> PHANTOM_ANCHOR_MENU =
+            MENU_TYPES.register("phantom_anchor", () -> IMenuTypeExtension.create(PhantomAnchorMenu::new));
 
     // The storage lives on the player (saved inside the player's own .dat, like the ender chest),
     // never on the entity. Summon/unsummon/dimension change can't lose or duplicate contents.

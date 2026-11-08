@@ -32,6 +32,7 @@ public final class PhantomStorageClient {
         modBus.addListener(PhantomStorageClient::onRegisterScreens);
         modBus.addListener(PhantomStorageClient::onClientSetup);
         NeoForge.EVENT_BUS.addListener(PhantomStorageClient::onScroll);
+        NeoForge.EVENT_BUS.addListener(PhantomTheme::onTooltipColor);
         PhantomLayout.setClientSelector(() -> {
             Window window = Minecraft.getInstance().getWindow();
             return PhantomLayout.choose(window.getGuiScaledWidth(), window.getGuiScaledHeight());
@@ -64,5 +65,6 @@ public final class PhantomStorageClient {
     private static void onRegisterScreens(RegisterMenuScreensEvent event) {
         event.register(ModRegistries.PHANTOM_CHEST_MENU.get(), PhantomChestScreen::new);
         event.register(ModRegistries.PHANTOM_TANK_MENU.get(), PhantomTankScreen::new);
+        event.register(ModRegistries.PHANTOM_ANCHOR_MENU.get(), PhantomAnchorScreen::new);
     }
 }

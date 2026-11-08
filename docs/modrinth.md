@@ -27,6 +27,7 @@
 - Tell it to stay and it's **anchored**: its chunk stays loaded and ticking while you're online, and the charm takes you back to it from anywhere, **even another dimension**
 - **Look at it** (up to 32 blocks, through walls) and use the charm to **swap places**
 - An anchored anchor stays put through logouts, deaths, dimension changes and restarts
+- Right-click it for its **panel**: where it is, a *Stay here* toggle and a dismiss button
 
 ## ✨ All pets
 
@@ -37,6 +38,7 @@
 - Invulnerable to everything but `/kill`
 - Storage lives on the player, so it survives death, logout and dimension changes
 - Never darker than light level 7; light up their surroundings with [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights)
+- **One look across every panel**: night violet with gold trim, the pet's charm art by the title, cyan for what's active
 - **Client config** (in-game from the Mods list): opacity for all pets or each one, and glow on/off per pet
 
 ---
@@ -52,7 +54,7 @@
 
 | On a pet | |
 |---|---|
-| Right-click | Open it (the anchor shows where it is) |
+| Right-click | Open its panel |
 | Right-click the tank with a bucket / bottle | Pour in or fill, no GUI |
 | Sneak + right-click the tank with a bucket | Cycle the active tank |
 | Sneak + right-click (empty hand) | Stay / follow |
@@ -77,7 +79,7 @@ No extra recipes; new pets unlock through vanilla advancements.
 | Phantom Tank | *Local Brewery* (brew a potion); *Not Quite "Nine" Lives* also still counts |
 | Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 
-Creative mode ignores unlocks.
+Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor|all>` (creative only) grants a pet's unlock advancement.
 
 ---
 
