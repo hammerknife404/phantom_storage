@@ -117,12 +117,12 @@ public final class PhantomPetEvents {
         }
     }
 
-    /** Tells the player when an advancement unlocks a pet for their charm (once, if several can). */
+    /** Tells the player when an advancement unlocks a charm mode (once, if several advancements can). */
     private static void onAdvancementEarned(AdvancementEvent.AdvancementEarnEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            for (PetKind kind : PetKind.values()) {
-                if (kind.isNewlyUnlockedBy(player, event.getAdvancement().id())) {
-                    player.sendSystemMessage(Component.translatable("message.phantomstorage.unlocked", kind.displayName())
+            for (CharmMode mode : CharmMode.values()) {
+                if (mode.isNewlyUnlockedBy(player, event.getAdvancement().id())) {
+                    player.sendSystemMessage(Component.translatable("message.phantomstorage.unlocked", mode.displayName())
                             .withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
             }
@@ -155,5 +155,6 @@ public final class PhantomPetEvents {
     private static void onServerStopped(ServerStoppedEvent event) {
         PetManager.clear();
         AnchorManager.clear();
+        GatewayManager.clear();
     }
 }

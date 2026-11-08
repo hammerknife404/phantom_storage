@@ -2,6 +2,7 @@ package com.phantomstorage.client;
 
 import com.mojang.blaze3d.platform.Window;
 import com.phantomstorage.PhantomStorage;
+import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.menu.PhantomLayout;
 import com.phantomstorage.network.CharmModePayload;
@@ -33,13 +34,15 @@ public final class PhantomStorageClient {
         modBus.addListener(PhantomStorageClient::onClientSetup);
         NeoForge.EVENT_BUS.addListener(PhantomStorageClient::onScroll);
         NeoForge.EVENT_BUS.addListener(PhantomTheme::onTooltipColor);
+        // Riding the chest: jump rises. Only the rider's own client moves its mount.
+        PhantomPetEntity.setRiderRising(player -> player instanceof LocalPlayer local && local.input.jumping);
         PhantomLayout.setClientSelector(() -> {
             Window window = Minecraft.getInstance().getWindow();
             return PhantomLayout.choose(window.getGuiScaledWidth(), window.getGuiScaledHeight());
         });
     }
 
-    /** The charm's model swaps to each pet's art by mode (overrides in models/item/phantom_charm.json). */
+    /** The charm's model swaps to each mode's art (overrides in models/item/phantom_charm.json). */
     private static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> ItemProperties.register(ModRegistries.PHANTOM_CHARM.get(), PhantomStorage.id("mode"),
                 (stack, level, entity, seed) -> PhantomCharmItem.getMode(stack).ordinal()));
@@ -61,6 +64,7 @@ public final class PhantomStorageClient {
         event.registerEntityRenderer(ModRegistries.PHANTOM_TANK.get(), PhantomTankRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_ANCHOR.get(), PhantomAnchorRenderer::new);
         event.registerEntityRenderer(ModRegistries.PHANTOM_COLLECTOR.get(), PhantomCollectorRenderer::new);
+        event.registerEntityRenderer(ModRegistries.PHANTOM_GATEWAY.get(), PhantomGatewayRenderer::new);
     }
 
     private static void onRegisterScreens(RegisterMenuScreensEvent event) {

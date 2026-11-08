@@ -24,12 +24,12 @@ public class PhantomStayGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return this.pet.isOrderedToSit();
+        return this.pet.isOrderedToSit() && !this.pet.isVehicle();
     }
 
     @Override
     public boolean canContinueToUse() {
-        return this.pet.isOrderedToSit();
+        return this.canUse();
     }
 
     @Override

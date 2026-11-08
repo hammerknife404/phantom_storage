@@ -4,6 +4,7 @@ import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomAnchorEntity;
 import com.phantomstorage.entity.PhantomChestEntity;
 import com.phantomstorage.entity.PhantomCollectorEntity;
+import com.phantomstorage.entity.PhantomGatewayEntity;
 import com.phantomstorage.entity.PhantomTankEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.menu.PhantomAnchorMenu;
@@ -14,7 +15,7 @@ import com.phantomstorage.storage.AnchorSpot;
 import com.phantomstorage.storage.CollectorSettings;
 import com.phantomstorage.storage.PhantomInventory;
 import com.phantomstorage.storage.PhantomTanks;
-import com.phantomstorage.summon.PetKind;
+import com.phantomstorage.summon.CharmMode;
 import java.util.function.Supplier;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
@@ -48,14 +49,14 @@ public final class ModRegistries {
     private static final DeferredRegister<CreativeModeTab> CREATIVE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PhantomStorage.MODID);
 
-    /** Which pet a Phantom Charm summons. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<PetKind>> CHARM_MODE =
+    /** What a Phantom Charm does: which pet it summons, or the saddle or gateway. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<CharmMode>> CHARM_MODE =
             DATA_COMPONENTS.registerComponentType("charm_mode",
-                    builder -> builder.persistent(PetKind.CODEC).networkSynchronized(PetKind.STREAM_CODEC));
+                    builder -> builder.persistent(CharmMode.CODEC).networkSynchronized(CharmMode.STREAM_CODEC));
 
     public static final DeferredItem<PhantomCharmItem> PHANTOM_CHARM = ITEMS.register("phantom_charm",
             () -> new PhantomCharmItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
-                    .component(CHARM_MODE.get(), PetKind.CHEST)));
+                    .component(CHARM_MODE.get(), CharmMode.CHEST)));
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB = CREATIVE_TABS.register("phantomstorage",
             () -> CreativeModeTab.builder()
@@ -105,6 +106,17 @@ public final class ModRegistries {
                     .clientTrackingRange(8)
                     .updateInterval(2)
                     .build("phantom_collector"));
+
+    /** The charm's gateway mode: a short-lived doorway, never saved; noSummon() like the pets. */
+    public static final DeferredHolder<EntityType<?>, EntityType<PhantomGatewayEntity>> PHANTOM_GATEWAY =
+            ENTITY_TYPES.register("phantom_gateway", () -> EntityType.Builder
+                    .<PhantomGatewayEntity>of(PhantomGatewayEntity::new, MobCategory.MISC)
+                    .sized(1.5F, 2.0F)
+                    .fireImmune()
+                    .noSummon()
+                    .clientTrackingRange(10)
+                    .updateInterval(20)
+                    .build("phantom_gateway"));
 
     public static final DeferredHolder<MenuType<?>, MenuType<PhantomChestMenu>> PHANTOM_CHEST_MENU =
             MENU_TYPES.register("phantom_chest",

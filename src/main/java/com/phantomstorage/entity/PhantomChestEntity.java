@@ -34,6 +34,12 @@ public class PhantomChestEntity extends PhantomPetEntity {
         return PetKind.CHEST;
     }
 
+    /** The charm's saddle mode rides it. */
+    @Override
+    public boolean isRideable() {
+        return true;
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         super.defineSynchedData(builder);

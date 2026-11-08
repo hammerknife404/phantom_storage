@@ -1,15 +1,17 @@
 # Phantom Storage
 
-A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, the Phantom Anchor is a waypoint you can teleport to, the Phantom Collector gathers dropped items and experience into your storage, and you can have them all out at once.
+A NeoForge 1.21.1 mod: summonable, ghostly flying pets that carry your stuff. The Phantom Chest holds items, the Phantom Tank holds fluids, the Phantom Anchor is a waypoint you can teleport to, the Phantom Collector gathers dropped items and experience into your storage, and you can have them all out at once. The same charm also saddles the chest so you can fly it, and opens a gateway to your anchor that anyone can walk through.
 
 ## Controls
 
 | Action | Result |
 |---|---|
-| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest, Tank, Anchor or Collector (the charm's art changes to match) |
+| Sneak + scroll with the **Phantom Charm** | Switch its mode: Chest, Tank, Anchor, Collector, Saddle or Gateway (the charm's art changes to match) |
 | Use the charm | Summon that pet, or recall it to your side if it's already out (5 s cooldown). Anchor mode: teleport to the anchor instead |
 | Use the charm while looking at the anchor | Swap places with it (anchor mode, up to 32 blocks, through walls) |
 | Sneak + use the charm | Dismiss that pet (same cooldown) |
+| Use the charm in Saddle mode | Ride your Phantom Chest (summoned under you if it isn't out); use again, or sneak, to get off |
+| Use the charm in Gateway mode | Open a gateway to your anchored Phantom Anchor, 2 blocks ahead of you, for 15 s; sneak + use closes it |
 | Right-click a pet | Open its panel: storage for the chest and tank; for the anchor, where it is, with Stay here and Dismiss; for the collector, its filter, range and banked experience |
 | Right-click the tank with a bucket, bottle (water, 250 mB) or other fluid container | Pour into, or fill from, the active tank without opening the GUI; the action bar shows that tank's level |
 | Sneak + right-click the tank holding a fluid container | Cycle the active tank |
@@ -57,19 +59,45 @@ Collector:
 
 Items go into your Phantom Chest storage, then your inventory; whatever fits nowhere stays on the ground. Items matching the chest's void filter are destroyed instead. Its own filter (9 ghost entries in its panel) lists what to take, or with **Skip** ticked, what to leave; empty, it takes everything. It never takes items still on their pickup delay, items meant for someone else, or anything you threw away yourself. An anchored collector stays put through logouts, deaths, dimension changes and restarts, like the anchor; the charm recalls it (same dimension) or dismisses it (anywhere).
 
+Saddle (rides the Phantom Chest; no entity of its own):
+
+| While riding | Does |
+|---|---|
+| Look + W / S | Fly forward or back along where you look, up and down included |
+| A / D | Strafe |
+| Space | Rise |
+| Sprint | About twice as fast (18 blocks/s against 9) |
+| No keys | Slows to a hover |
+| Sneak, or use the charm again | Get off |
+
+Ridden, the chest collides with blocks and keeps your head out of them, so you can't fly into walls or ceilings; two-block tunnels still fit. It wears a saddle while you ride, takes no fall damage and passes none to you. It can't take portals with you aboard.
+
+Gateway:
+
+| What | Does |
+|---|---|
+| Opens | 2 blocks ahead of you, facing you: a 1.5 × 2 block doorway of the End gateway's starfield in a ghostly lodestone frame, the phantom eyes peering out of the void. Needs your Phantom Anchor anchored (told to stay) |
+| Goes through | Whatever steps in: you, other players, mobs, items. Everyone lands on a safe spot within 3 blocks of the anchor, in whatever dimension it is (same rules as anchor teleports) |
+| Your pets | Don't go through themselves. Following pets catch up as usual; if you crossed to another dimension, they're re-summoned beside you |
+| Closes | After 15 s, on sneak + use, when you open another, log out, or the anchor stops being anchored |
+
+Bosses, spectators, and anything riding something else (except you on your chest) stay out.
+
 **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner. One charm summons every pet.
 
-**Unlocks:** the chest is available from the start. Other pets unlock through vanilla advancements, with no extra recipes:
+**Unlocks:** the chest is available from the start. Every other mode unlocks through a vanilla advancement, with no extra recipes:
 
-| Pet | Unlocked by |
+| Mode | Unlocked by |
 |---|---|
 | Phantom Tank | *Local Brewery* (brew a potion). *Not Quite "Nine" Lives* (charge a respawn anchor), the unlock before 2.9.0, still counts |
 | Phantom Anchor | *Remote Getaway* (enter an End gateway) |
 | Phantom Collector | *You've Got a Friend in Me* (have an Allay deliver you an item) |
+| Phantom Saddle | *Great View From Up Here* (levitate 50 blocks from a shulker's attacks) |
+| Phantom Gateway | *The End... Again...* (respawn the Ender Dragon) |
 
 Until then the charm skips that mode. Creative mode ignores unlocks.
 
-For testing, `/phantomstorage unlock <tank|anchor|collector|all>` grants a pet's unlock advancement, so it stays unlocked back in survival. It only works in creative mode. `/advancement revoke` locks a pet again (for the tank, revoke both of its advancements).
+For testing, `/phantomstorage unlock <tank|anchor|collector|saddle|gateway|all>` grants a mode's unlock advancement, so it stays unlocked back in survival. It only works in creative mode. `/advancement revoke` locks a mode again (for the tank, revoke both of its advancements).
 
 ## What you get
 
@@ -84,7 +112,8 @@ For testing, `/phantomstorage unlock <tank|anchor|collector|all>` grants a pet's
 - The anchor is a small ghostly lodestone whose sides are windows onto the End's sky, with the same wings and eyes. The void drifts slowly and glows faintly at night. Anchored, it hangs still with its wings folded.
 - The collector is a small orb of the End's sky with the same glowing eyes and no wings; items it takes fly into it.
 - One of each pet per player. Only the owner can open or move them, and only `/kill` can kill them.
-- Pets are dismissed automatically on logout or dimension change, except an anchored anchor or collector; re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
+- Every charm mode shows a pre-render of its pet, drawn as the game draws it, with the same outline.
+- Pets are dismissed automatically on logout or dimension change, except an anchored anchor or collector (and following pets brought through your gateway); re-summon them with the charm. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
 ## Client config
 

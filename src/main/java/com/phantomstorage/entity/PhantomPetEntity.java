@@ -5,8 +5,11 @@ import com.phantomstorage.entity.goal.PhantomStayGoal;
 import com.phantomstorage.summon.AnchorManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
+import java.util.List;
 import java.util.UUID;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -26,6 +29,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -34,13 +38,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.PushReaction;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.fluids.FluidType;
 
 /**
  * A summoned phantom pet: flies after its owner, phases through blocks, and is invulnerable to
- * everything but /kill. Deliberately holds no contents: whatever it carries lives on the owner
+ * everything but /kill. A {@linkplain #isRideable() rideable} one carries its owner, who steers it
+ * where they look; ridden, it collides with blocks like any mount.
+ * Deliberately holds no contents: whatever it carries lives on the owner
  * (player attachments in {@code ModRegistries}), so the entity can vanish at any moment without risk.
  * Never saved to disk ({@link #shouldBeSaved()}); {@link PetManager} keeps one of each kind per player.
  */
@@ -61,6 +69,13 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     private boolean relocated;
     /** Game time of the last server tick. */
     private long lastTickTime;
+
+    /**
+     * Whether a rider is holding jump, which the game keeps from other classes. Set by the client to
+     * read the local player's input; only the rider's own client moves its mount, so the server's
+     * answer never matters.
+     */
+    private static Predicate<Player> riderRising = player -> false;
 
     protected PhantomPetEntity(EntityType<? extends PhantomPetEntity> type, Level level) {
         super(type, level);
@@ -166,7 +181,8 @@ public abstract class PhantomPetEntity extends TamableAnimal {
 
     @Override
     public void tick() {
-        this.noPhysics = true;
+        // Phases through blocks, except with a rider, who mustn't end up inside them.
+        this.noPhysics = !this.isVehicle();
         super.tick();
         if (!this.level().isClientSide()) {
             this.lastTickTime = this.level().getGameTime();
@@ -265,6 +281,22 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         this.recalled = true;
     }
 
+    /**
+     * Server-side, saddle: settle under the owner at {@code feet}, following again, and take them on.
+     * False if they can't get on (sneaking, already riding something).
+     */
+    public boolean carry(ServerPlayer owner, Vec3 feet) {
+        if (this.isOrderedToSit()) {
+            this.setOrderedToSit(false);
+            this.setInSittingPose(false);
+        }
+        this.blinkTo(feet.x, feet.y, feet.z);
+        this.setYRot(owner.getYRot());
+        this.yBodyRot = this.getYRot();
+        this.yHeadRot = this.getYRot();
+        return owner.startRiding(this);
+    }
+
     /** Consumed by the follow goal. */
     public boolean takeRecall() {
         boolean was = this.recalled;
@@ -339,9 +371,143 @@ public abstract class PhantomPetEntity extends TamableAnimal {
 
     @Override
     public void travel(Vec3 travelVector) {
-        if (this.isControlledByLocalInstance()) {
+        if (!this.isControlledByLocalInstance()) {
+            return;
+        }
+        if (this.getControllingPassenger() instanceof Player rider) {
+            this.flyRidden(rider, travelVector);
+        } else {
             this.move(MoverType.SELF, this.getDeltaMovement());
         }
+    }
+
+    // ---- riding: the owner steers ------------------------------------------------------------
+
+    /** Ridden: blocks per tick while cruising, and sprinting. */
+    private static final double RIDE_SPEED = 0.45;
+    private static final double RIDE_SPRINT_SPEED = 0.9;
+    /** Backing up goes at this fraction of the speed. */
+    private static final double RIDE_BACK = 0.5;
+    /** How quickly it takes up a new heading, and how quickly it stops with no keys held. */
+    private static final double RIDE_ACCEL = 0.2;
+    private static final double RIDE_BRAKE = 0.25;
+    /** The rider's head must clear blocks by this much, so they never take suffocation damage. */
+    private static final double RIDE_HEAD_ROOM = 0.05;
+
+    /** Called by the client at startup: whether {@code player} is holding jump. */
+    public static void setRiderRising(Predicate<Player> rising) {
+        riderRising = rising;
+    }
+
+    /** Whether its owner can ride it (the chest, with the charm's saddle mode). */
+    public boolean isRideable() {
+        return false;
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        return this.isRideable() && this.getPassengers().isEmpty()
+                && passenger instanceof Player player && this.isOwnedBy(player);
+    }
+
+    @Nullable
+    @Override
+    public LivingEntity getControllingPassenger() {
+        return this.getFirstPassenger() instanceof Player player && this.isOwnedBy(player) ? player : null;
+    }
+
+    /** No mount hearts in the rider's HUD (it can't be hurt), so their food bar stays. */
+    @Override
+    public boolean showVehicleHealth() {
+        return false;
+    }
+
+    /** Lets the rider sprint, for {@link #RIDE_SPRINT_SPEED}. */
+    @Override
+    public boolean canSprint() {
+        return this.isVehicle();
+    }
+
+    /** (strafe, rise, forward) as the rider asks: WASD and jump. */
+    @Override
+    protected Vec3 getRiddenInput(Player rider, Vec3 travelVector) {
+        return new Vec3(rider.xxa, riderRising.test(rider) ? 1.0 : 0.0, rider.zza);
+    }
+
+    /** Faces where the rider faces. Both sides, so the server's copy turns too. */
+    @Override
+    protected void tickRidden(Player rider, Vec3 input) {
+        this.setYRot(rider.getYRot());
+        this.yRotO = this.getYRot();
+        this.setXRot(0.0F);
+        this.yBodyRot = this.getYRot();
+        this.yHeadRot = this.getYRot();
+    }
+
+    /**
+     * Rider's client only: fly where they look. Forward and back follow the view, pitch included; strafe
+     * stays level; jump rises. Velocity eases toward that and brakes to a hover with no keys held.
+     * Collides with blocks, and also keeps the rider's head out of them.
+     */
+    private void flyRidden(Player rider, Vec3 input) {
+        float yaw = rider.getYRot() * Mth.DEG_TO_RAD;
+        Vec3 left = new Vec3(Mth.cos(yaw), 0.0, Mth.sin(yaw));
+        double forward = input.z < 0.0 ? input.z * RIDE_BACK : input.z;
+        Vec3 wish = rider.getViewVector(1.0F).scale(forward).add(left.scale(input.x)).add(0.0, input.y, 0.0);
+        if (wish.lengthSqr() > 1.0) {
+            wish = wish.normalize();
+        }
+        boolean steering = wish.lengthSqr() > 1.0E-4;
+        double speed = rider.isSprinting() ? RIDE_SPRINT_SPEED : RIDE_SPEED;
+        Vec3 motion = this.getDeltaMovement().lerp(wish.scale(speed), steering ? RIDE_ACCEL : RIDE_BRAKE);
+        if (!steering && motion.lengthSqr() < 1.0E-5) {
+            motion = Vec3.ZERO;
+        }
+        motion = this.clearRiderHead(rider, motion);
+        this.setDeltaMovement(motion);
+        this.move(MoverType.SELF, motion);
+        this.calculateEntityAnimation(true);
+    }
+
+    /**
+     * {@code motion}, cut short where the rider's head would enter a block. Their body overlaps this
+     * pet's own box, so only the part above it (up to just over their eyes, where vanilla checks for
+     * suffocation) is tested; a two-block tunnel still fits.
+     */
+    private Vec3 clearRiderHead(Player rider, Vec3 motion) {
+        AABB own = this.getBoundingBox();
+        double top = rider.getEyeY() + RIDE_HEAD_ROOM;
+        if (top <= own.maxY) {
+            return motion;
+        }
+        double half = rider.getBbWidth() * 0.4;
+        AABB head = new AABB(rider.getX() - half, own.maxY, rider.getZ() - half, rider.getX() + half, top, rider.getZ() + half);
+        return Entity.collideBoundingBox(rider, motion, head, this.level(), List.of());
+    }
+
+    /** Off where it hovers, not on top of its lid, when there's room: a shorter drop. */
+    @Override
+    public Vec3 getDismountLocationForPassenger(LivingEntity passenger) {
+        Vec3 here = this.position();
+        AABB box = passenger.getDimensions(Pose.STANDING).makeBoundingBox(here);
+        return this.level().noCollision(passenger, box) ? here : super.getDismountLocationForPassenger(passenger);
+    }
+
+    /** It flies; no fall damage, for it or (vanilla passes it on) its rider. */
+    @Override
+    public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
+        return false;
+    }
+
+    @Override
+    protected void checkFallDamage(double y, boolean onGround, BlockState state, BlockPos pos) {
+        this.resetFallDistance();
+    }
+
+    /** Never through a portal, ridden or not: a pet never changes dimension; it's re-summoned instead. */
+    @Override
+    public boolean canUsePortal(boolean allowPassengers) {
+        return false;
     }
 
     @Override

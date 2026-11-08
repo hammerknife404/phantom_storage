@@ -59,7 +59,7 @@ public final class AnchorTravel {
             return false;
         }
         boolean swap = sameLevel && isLookingAt(player, anchor);
-        Vec3 landing = findLanding(player, anchor);
+        Vec3 landing = findLanding(player.getDimensions(Pose.STANDING), anchor);
         if (landing == null || !(anchor.level() instanceof ServerLevel to)) {
             player.displayClientMessage(Component.translatable("message.phantomstorage.anchor.no_landing"), true);
             return false;
@@ -92,25 +92,26 @@ public final class AnchorTravel {
         effects(to, landing, 1.2F);
     }
 
-    private static void effects(ServerLevel level, Vec3 feet, float pitch) {
+    /** The teleport puff and sound, at someone's feet. */
+    static void effects(ServerLevel level, Vec3 feet, float pitch) {
         level.sendParticles(ParticleTypes.REVERSE_PORTAL, feet.x, feet.y + 1.0, feet.z, 32, 0.3, 0.6, 0.3, 0.05);
         level.playSound(null, feet.x, feet.y, feet.z, SoundEvents.CHORUS_FRUIT_TELEPORT, SoundSource.PLAYERS, 0.8F, pitch);
     }
 
     /**
-     * Where the player's feet go: the nearest spot to the anchor, within {@link #LANDING_RADIUS} blocks
-     * of it horizontally, where a standing player fits, on solid ground that vanilla's pathfinding
+     * Where the feet go: the nearest spot to the anchor, within {@link #LANDING_RADIUS} blocks
+     * of it horizontally, where the arrival fits, on solid ground that vanilla's pathfinding
      * would walk (no fire, lava, cactus, berry bushes, powder snow, trapdoors, or anything harmful
      * beside it) and away from portals and cobwebs. Surface water counts as a last resort. Never
-     * loads chunks; null if there's no such spot.
+     * loads chunks; null if there's no such spot. {@code size} is whoever is landing: a player
+     * standing, or anything else coming through a gateway.
      */
     @Nullable
-    private static Vec3 findLanding(ServerPlayer player, PhantomPetEntity anchor) {
+    static Vec3 findLanding(EntityDimensions size, PhantomPetEntity anchor) {
         Level level = anchor.level();
         Vec3 center = anchor.position();
         BlockPos base = anchor.blockPosition();
         PathfindingContext context = new PathfindingContext(level, anchor);
-        EntityDimensions size = player.getDimensions(Pose.STANDING);
         int reach = Mth.ceil(LANDING_RADIUS);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         Landing best = null;

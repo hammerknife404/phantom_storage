@@ -55,10 +55,30 @@ public final class PetManager {
      */
     public static void recall(PetKind kind, ServerPlayer player, PhantomPetEntity pet) {
         AnchorManager.release(player, kind);
-        PhantomPetEntity target = pet.isStranded() ? replace(kind, player, pet) : pet;
+        pet.ejectPassengers();
+        PhantomPetEntity target = live(kind, player, pet);
         if (target != null) {
             target.recallTo(player);
         }
+    }
+
+    /** {@code pet}, or a fresh one in its place if it's stranded (see {@link #rescueStranded}). */
+    @Nullable
+    public static PhantomPetEntity live(PetKind kind, ServerPlayer player, PhantomPetEntity pet) {
+        return pet.isStranded() ? replace(kind, player, pet) : pet;
+    }
+
+    /**
+     * After the owner went to another dimension through their gateway: the pets that were following
+     * them there (and were dismissed by the dimension change) come along, re-summoned beside them with
+     * their names and looks, as pets hold no contents.
+     */
+    public static void bringAlong(ServerPlayer player, Map<PetKind, PhantomPetEntity> followers) {
+        followers.forEach((kind, old) -> {
+            if (getActive(kind, player.getUUID()) == null) {
+                spawn(kind, player, old);
+            }
+        });
     }
 
     /**

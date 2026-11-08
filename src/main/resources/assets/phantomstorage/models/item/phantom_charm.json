@@ -6,6 +6,8 @@
   "overrides": [
     { "predicate": { "phantomstorage:mode": 1 }, "model": "phantomstorage:item/phantom_charm_tank" },
     { "predicate": { "phantomstorage:mode": 2 }, "model": "phantomstorage:item/phantom_charm_anchor" },
-    { "predicate": { "phantomstorage:mode": 3 }, "model": "phantomstorage:item/phantom_charm_collector" }
+    { "predicate": { "phantomstorage:mode": 3 }, "model": "phantomstorage:item/phantom_charm_collector" },
+    { "predicate": { "phantomstorage:mode": 4 }, "model": "phantomstorage:item/phantom_charm_saddle" },
+    { "predicate": { "phantomstorage:mode": 5 }, "model": "phantomstorage:item/phantom_charm_gateway" }
   ]
 }
