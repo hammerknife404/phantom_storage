@@ -4,14 +4,14 @@
 
 ---
 
-## 🧳 Phantom Chest
+## Phantom Chest
 
 - **108 slots** (12×9) of personal storage
 - **3×3 crafting grid**, with one-click recipe fill when JEI or REI is installed
 - **Void filter**: list junk once (cobblestone, rotten flesh...) and your Collector destroys it instead of storing it; drop anything on the trash can to destroy it
 - **Sort** button: by name, amount or mod, ascending or descending, all from one button
 
-## 🫙 Phantom Tank
+## Phantom Tank
 
 - **4 tanks × 32 buckets**, any fluid, modded ones included
 - A tinted-glass jar in a ghostly ender chest frame, with **flapping phantom wings** and **glowing phantom eyes**. Every fluid shows as a stacked layer inside, so you can colour-arrange it.
@@ -20,7 +20,7 @@
 - **Overfill / Drain all** options: spill into or draw from the next tank automatically. Both are off by default, so nothing goes where you didn't expect.
 - Rings like amethyst when you open it
 
-## ⚓ Phantom Anchor
+## Phantom Anchor
 
 - A ghostly **lodestone with windows onto the End portal's starfield** and phantom wings, following you like the others
 - **Teleport to it** with the charm: you land on a safe spot within 3 blocks of it
@@ -29,7 +29,7 @@
 - An anchored anchor stays put through logouts, deaths, dimension changes and restarts
 - Right-click it for its **panel**: where it is, a *Stay here* toggle and a dismiss button
 
-## 🌀 Phantom Collector
+## Phantom Collector
 
 - A small **orb of the End portal's starfield** with glowing eyes that **gathers dropped items into your Phantom Chest storage**
 - Following, it collects round you; **anchored**, it keeps collecting round its spot (a mob farm, say) wherever you are, its chunk loaded while you're online
@@ -37,14 +37,14 @@
 - Its panel: **range** (3–12 blocks), a **filter** of what to take or skip, the XP bank, *Stay here* and dismiss
 - What you throw yourself waits 5 seconds first (time to hand it to a friend), and the chest's void filter destroys your listed junk on the way in
 
-## 🐎 Phantom Saddle
+## Phantom Saddle
 
 - A charm mode, no new entity: **ride your Phantom Chest** and fly it, a saddle on its lid
-- **Fly where you look**: W/S along your view, A/D to strafe, Space to rise, sprint for double speed; let go and it hovers
+- **Fly where you look**: W/S along your view, A/D to strafe, Space to rise, sprint to go a little faster; let go and it hovers
 - Ridden, it **collides like any mount**, keeping your head out of walls and ceilings
 - No fall damage for it or you; sneak or use the charm again to get off
 
-## 🚪 Phantom Gateway
+## Phantom Gateway
 
 - A **doorway of the End portal's starfield** in a ghostly lodestone frame, the phantom eyes peering out of the void
 - Opens in front of you for 15 seconds and leads to your **anchored Phantom Anchor**, **across dimensions**
@@ -52,12 +52,12 @@
 - Your following pets are brought along when you cross to another dimension
 - **Look steeply down or up to lay it flat**: catch a falling friend (no fall damage), drop the whole group through the floor, or fly up into it on an elytra
 
-## 🔔 Phantom Bell
+## Phantom Bell
 
 - One ring **summons every pet you've unlocked**; sneak + ring **sends every following pet home** and closes your gateway
 - Anchored pets keep their spots
 
-## ✨ All pets
+## All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
 - Look at one for half a second and it comes within reach
@@ -71,7 +71,7 @@
 
 ---
 
-## 🎮 Controls
+## Controls
 
 | With the **Phantom Charm** | |
 |---|---|
@@ -90,7 +90,7 @@
 | Sneak + right-click the tank with a bucket | Cycle the active tank |
 | Sneak + right-click (empty hand) | Stay / follow |
 
-## 🛠️ Recipe
+## Recipe
 
 One charm for every pet:
 
@@ -100,7 +100,7 @@ One charm for every pet:
 | Phantom Membrane | Ender Chest | Phantom Membrane |
 | Gold Block | Soul Campfire | Gold Block |
 
-## 🔓 Unlocks
+## Unlocks
 
 No extra recipes; every charm mode unlocks through a vanilla advancement.
 
@@ -118,7 +118,7 @@ Creative mode ignores unlocks. For testing, `/phantomstorage unlock <tank|anchor
 
 ---
 
-## 📦 Requirements
+## Requirements
 
 - Minecraft **1.21.1**, NeoForge **21.1.251+**
 - Required on **both client and server**

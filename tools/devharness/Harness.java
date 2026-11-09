@@ -718,13 +718,18 @@ public final class Harness {
      * anchor is out: the first use right after the world loads doesn't always land.
      */
     private static void anchorHere() {
+        anchorHere(0);
+    }
+
+    /** As {@link #anchorHere()}, with the anchor charm in hotbar {@code slot}. */
+    private static void anchorHere(int slot) {
         int[] tries = new int[1];
         until(() -> {
             boolean[] out = new boolean[1];
             server(() -> out[0] = PetManager.getActive(PetKind.ANCHOR, p().getUUID()) != null);
             if (!out[0] && tries[0]++ % 20 == 0) {
-                p().getInventory().selected = 0;
-                server(() -> sp().getInventory().selected = 0);
+                p().getInventory().selected = slot;
+                server(() -> sp().getInventory().selected = slot);
                 use();
             }
             return out[0];
@@ -1282,15 +1287,18 @@ public final class Harness {
         step(40, () -> {
             Vec3 now = vehicle().position();
             log("after 40t W looking up: " + now + " speed " + vehicle().getDeltaMovement().length());
-            check("W + look up climbs", now.y > mark.y + 3);
-            check("W + look up goes forward (+z)", now.z > mark.z + 5);
+            check("W + look up climbs", now.y > mark.y + 2);
+            check("W + look up goes forward (+z)", now.z > mark.z + 4);
+            double cruise = vehicle().getDeltaMovement().length();
+            check("cruise is a little under a walk (0.19..0.21 b/t, walk 0.216)", cruise > 0.19 && cruise < 0.21);
             mark = now;
             keys(true, false, false, true);
         });
         step(30, () -> {
             Vec3 now = vehicle().position();
             log("sprint 30t: dist " + now.distanceTo(mark) + " speed " + vehicle().getDeltaMovement().length() + " sprinting " + p().isSprinting());
-            check("sprint is faster than cruise (>0.5 b/t)", vehicle().getDeltaMovement().length() > 0.5);
+            double sprint = vehicle().getDeltaMovement().length();
+            check("sprint is a little under a player's sprint (0.26..0.28 b/t, sprint 0.281)", sprint > 0.26 && sprint < 0.28);
             keys(false, false, false, false);
         });
         step(30, () -> {
@@ -1352,23 +1360,14 @@ public final class Harness {
             mc().options.setCameraType(CameraType.FIRST_PERSON);
             cmd("tp @s 100.5 -60 0.5 0 0");
         });
-        step(20, () -> {
-            p().getInventory().selected = 2;
-            use();
-        });
-        step(30, () -> server(() -> {
-            PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
-            log("anchor " + (anchor == null ? null : anchor.position()));
-            if (anchor != null) {
-                anchor.toggleStay(sp());
-            }
-        }));
-        step(10, () -> {
-            check("anchor anchored", AnchorManager.isAnchored(sp(), PetKind.ANCHOR));
-            cmd("tp @s 140.5 -60 0.5 90 0");
-        });
+        // An anchor still out from earlier would be anchored where it is: start fresh, by the player.
+        step(20, () -> server(() -> PetManager.dismiss(PetKind.ANCHOR, sp(), false)));
+        step(10, () -> {});
+        anchorHere(2);
+        step(10, () -> cmd("tp @s 140.5 -60 0.5 90 0"));
         step(30, () -> {
             p().getInventory().selected = 5;
+            server(() -> sp().getInventory().selected = 5);
             look(90, 0);
             use();
         });
