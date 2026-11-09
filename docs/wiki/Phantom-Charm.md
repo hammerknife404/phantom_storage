@@ -1,6 +1,10 @@
 # Phantom Charm
 
-One charm calls up every pet and mode. Its art changes to show the current mode.
+One charm calls up every pet and mode. Its art changes to show the current mode:
+
+| <img src="images/charm-chest.png" width="64" alt="Chest"> | <img src="images/charm-tank.png" width="64" alt="Tank"> | <img src="images/charm-anchor.png" width="64" alt="Anchor"> | <img src="images/charm-collector.png" width="64" alt="Collector"> | <img src="images/charm-saddle.png" width="64" alt="Saddle"> | <img src="images/charm-gateway.png" width="64" alt="Gateway"> | <img src="images/charm-bell.png" width="64" alt="Bell"> |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Chest | Tank | Anchor | Collector | Saddle | Gateway | Bell |
 
 ## Recipe
 

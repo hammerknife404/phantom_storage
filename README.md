@@ -2,6 +2,8 @@
 
 Summonable, ghostly flying pets that carry your stuff, all called up with one item: the **Phantom Charm**. NeoForge 1.21.1.
 
+![The four pets: Phantom Chest, Tank, Anchor and Collector](docs/wiki/images/pets.jpg)
+
 **Full guide: [the wiki](https://github.com/hammerknife404/phantom_storage/wiki).** Downloads: [Releases](https://github.com/hammerknife404/phantom_storage/releases).
 
 | Charm mode | What it does | Unlocked by |

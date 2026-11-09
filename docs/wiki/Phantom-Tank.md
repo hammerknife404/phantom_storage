@@ -11,6 +11,8 @@ Four fluid tanks of 32 buckets each, any fluid, modded ones included. Unlocked b
 
 ## Panel
 
+![The tank's panel: water in the active first tank, lava in the second](images/tank-panel.png)
+
 | Control | Does |
 |---|---|
 | Gauge, click with an empty cursor | Makes that the active tank (outlined) |

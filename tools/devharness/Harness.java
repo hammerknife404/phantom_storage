@@ -45,7 +45,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
  * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
- * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling). It creates a flat creative world,
+ * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling), "docs" the wiki's screenshots (d_*.png, 1280x720; panel crop boxes in the log). It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -167,6 +167,8 @@ public final class Harness {
                 gateSizeScript();
             } else if ("gateflat".equals(System.getenv("PHANTOM_HARNESS"))) {
                 gateFlatScript();
+            } else if ("docs".equals(System.getenv("PHANTOM_HARNESS"))) {
+                docsScript();
             } else {
                 script();
             }
@@ -1025,6 +1027,216 @@ public final class Harness {
 
             log("DONE failures=" + failures);
         });
+        step(20, () -> mc().stop());
+    }
+
+    /** Selects hotbar {@code slot} on both sides and uses the charm there. */
+    private static void useSlot(int slot) {
+        p().getInventory().selected = slot;
+        server(() -> sp().getInventory().selected = slot);
+        use();
+    }
+
+    /** Puts where the game thinks the mouse is in the window's top-left corner. */
+    private static void parkMouse() {
+        try {
+            java.lang.reflect.Field x = net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");
+            java.lang.reflect.Field y = net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");
+            x.setAccessible(true);
+            y.setAccessible(true);
+            x.setDouble(mc().mouseHandler, 2.0);
+            y.setDouble(mc().mouseHandler, 2.0);
+        } catch (ReflectiveOperationException e) {
+            log("mouse: " + e);
+        }
+    }
+
+    /** Logs where the open container screen's panel is in the screenshot, in pixels, for cropping. */
+    private static void logPanel(String name) {
+        if (mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen) {
+            double k = mc().getWindow().getGuiScale();
+            log("PANEL " + name + " " + (int) (screen.getGuiLeft() * k) + " " + (int) (screen.getGuiTop() * k)
+                    + " " + (int) (screen.getXSize() * k) + " " + (int) (screen.getYSize() * k));
+        } else {
+            check(name + " screen open (got " + mc().screen + ")", false);
+        }
+    }
+
+    private static void stock(int slot, net.minecraft.world.item.Item item, int count) {
+        server(() -> sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).setItem(slot, new ItemStack(item, count)));
+    }
+
+    /**
+     * Screenshots for the wiki, at 1280x720 with the HUD hidden: the four pets in a row at full and at 40%
+     * opacity; each pet's panel, stocked (crop boxes logged as PANEL lines); riding the chest; and the
+     * gateway standing 3 x 3, 2 x 3 and 1 x 2 and lying on a floor, in mid-air and under a ceiling.
+     */
+    private static void docsScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(40, () -> org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc().getWindow().getWindow(), 1280, 720));
+        step(40, () -> {
+            log("window " + mc().getWindow().getWidth() + "x" + mc().getWindow().getHeight() + " gui scale " + mc().getWindow().getGuiScale());
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 5000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("phantomstorage unlock all");
+            String[] modes = {"chest", "tank", "anchor", "collector", "gateway"};
+            for (int i = 0; i < modes.length; i++) {
+                cmd("item replace entity @s hotbar." + i + " with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"" + modes[i] + "\"]");
+            }
+            cmd("tp @s 0.5 -60 1.6 180 3");
+            opacity(100);
+        });
+        // Stock the storage, tanks and filters so the panels show something.
+        step(10, () -> {
+            net.minecraft.world.item.Item[] items = {Items.DIAMOND, Items.IRON_INGOT, Items.GOLD_INGOT, Items.REDSTONE, Items.LAPIS_LAZULI,
+                    Items.EMERALD, Items.OAK_LOG, Items.SPRUCE_PLANKS, Items.COBBLESTONE, Items.DEEPSLATE, Items.TORCH, Items.BREAD,
+                    Items.GOLDEN_APPLE, Items.ENDER_PEARL, Items.ARROW, Items.BONE, Items.STRING, Items.GUNPOWDER, Items.AMETHYST_SHARD,
+                    Items.COPPER_INGOT, Items.GLASS, Items.BOOK, Items.EXPERIENCE_BOTTLE, Items.SHULKER_SHELL};
+            int[] counts = {64, 48, 23, 64, 37, 12, 64, 64, 64, 64, 64, 32, 3, 16, 64, 21, 30, 17, 9, 41, 64, 7, 12, 2};
+            for (int i = 0; i < items.length; i++) {
+                stock(i, items[i], counts[i]);
+            }
+            server(() -> {
+                com.phantomstorage.storage.ItemFilter voids = sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter();
+                voids.setItem(0, new ItemStack(Items.ROTTEN_FLESH));
+                voids.setItem(1, new ItemStack(Items.POISONOUS_POTATO));
+                voids.setItem(2, new ItemStack(Items.DIRT));
+                com.phantomstorage.storage.CollectorSettings collector = sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR);
+                collector.filter().setItem(0, new ItemStack(Items.BONE));
+                collector.filter().setItem(1, new ItemStack(Items.ARROW));
+                collector.filter().setItem(2, new ItemStack(Items.STRING));
+                collector.filter().setItem(3, new ItemStack(Items.GUNPOWDER));
+                collector.bank(345);
+                com.phantomstorage.storage.PhantomTanks tanks = sp().getData(com.phantomstorage.registry.ModRegistries.TANKS);
+                tanks.tank(0).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 24000),
+                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                tanks.tank(1).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 9000),
+                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                tanks.setActive(0);
+            });
+        });
+        // The four pets in a row, facing the camera.
+        for (int i = 0; i < 4; i++) {
+            int slot = i;
+            step(15, () -> useSlot(slot));
+        }
+        step(20, () -> {
+            place(PetKind.CHEST, -1.45, -58.9, -2.0);
+            place(PetKind.TANK, -0.15, -58.9, -2.0);
+            place(PetKind.ANCHOR, 1.15, -58.9, -2.0);
+            place(PetKind.COLLECTOR, 2.45, -58.9, -2.0);
+        });
+        step(80, () -> cmd("tp @s 0.5 -60 1.6 180 3"));
+        step(20, () -> {
+            place(PetKind.CHEST, -1.45, -58.9, -2.0);
+            place(PetKind.TANK, -0.15, -58.9, -2.0);
+            place(PetKind.ANCHOR, 1.15, -58.9, -2.0);
+            place(PetKind.COLLECTOR, 2.45, -58.9, -2.0);
+        });
+        step(30, () -> shot("d_pets_100"));
+        step(5, () -> opacity(40));
+        step(20, () -> shot("d_pets_40"));
+        step(5, () -> opacity(100));
+        // Each panel, the mouse parked in a corner (opening a screen centres it) so no slot is highlighted.
+        PetKind[] kinds = {PetKind.CHEST, PetKind.TANK, PetKind.ANCHOR, PetKind.COLLECTOR};
+        String[] names = {"chest", "tank", "anchor", "collector"};
+        for (int i = 0; i < kinds.length; i++) {
+            PetKind kind = kinds[i];
+            String name = names[i];
+            step(10, () -> server(() -> PetManager.getActive(kind, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> parkMouse());
+            step(5, () -> {
+                logPanel(name);
+                shot("d_" + name + "_panel");
+            });
+            step(10, () -> p().closeContainer());
+        }
+        // Riding the chest, seen from behind.
+        step(10, () -> {
+            cmd("tp @s 0.5 -60 6.5 200 0");
+        });
+        step(10, () -> server(() -> {
+            PhantomPetEntity chest = PetManager.getActive(PetKind.CHEST, p().getUUID());
+            chest.carry(sp(), sp().position().add(0.0, 2.5, 0.0));
+        }));
+        step(10, () -> {
+            mc().options.setCameraType(CameraType.THIRD_PERSON_BACK);
+            look(200, 12);
+        });
+        step(30, () -> shot("d_saddle"));
+        step(5, () -> {
+            mc().options.setCameraType(CameraType.FIRST_PERSON);
+            server(() -> sp().stopRiding());
+        });
+        // Gateways: the anchor in the row above is anchored, so they lead there. openGateLooking uses hotbar 1.
+        step(20, () -> {
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 140.5 -60 0.5 90 0");
+        });
+        step(20, () -> openGateLooking(90.0F, 0.0F));
+        step(25, () -> {
+            log("gate 3x3 " + describe(openGate()));
+            cmd("tp @s 143.5 -60 2.0 110 -5");
+        });
+        step(25, () -> shot("d_gate_3x3"));
+        step(5, () -> {
+            cmd("setblock 138 -58 1 minecraft:stone");
+            cmd("setblock 137 -58 1 minecraft:stone");
+            cmd("tp @s 140.5 -60 0.5 90 0");
+        });
+        step(15, () -> openGateLooking(90.0F, 0.0F));
+        step(25, () -> {
+            log("gate 2x3 " + describe(openGate()));
+            cmd("tp @s 143.5 -60 1.0 100 -5");
+        });
+        step(25, () -> shot("d_gate_2x3"));
+        step(5, () -> {
+            cmd("setblock 138 -58 1 minecraft:air");
+            cmd("setblock 137 -58 1 minecraft:air");
+            cmd("fill 135 -60 -1 139 -59 -1 minecraft:stone_bricks");
+            cmd("fill 135 -60 1 139 -59 1 minecraft:stone_bricks");
+            cmd("fill 135 -58 -1 139 -58 1 minecraft:stone_bricks");
+            cmd("tp @s 140.5 -60 0.5 90 0");
+        });
+        step(15, () -> openGateLooking(90.0F, 0.0F));
+        step(25, () -> {
+            log("gate 1x2 " + describe(openGate()));
+            cmd("tp @s 142.5 -60 0.5 90 8");
+        });
+        step(25, () -> shot("d_gate_1x2"));
+        step(5, () -> {
+            cmd("fill 135 -60 -1 139 -58 1 minecraft:air");
+            cmd("fill 160 -60 0 160 -57 0 minecraft:stone");
+            cmd("tp @s 160.5 -56 0.5 90 55");
+        });
+        step(15, () -> openGateLooking(90.0F, 55.0F));
+        step(30, () -> {
+            log("gate floor " + describe(openGate()));
+            shot("d_gate_floor");
+        });
+        step(5, () -> {
+            cmd("fill 160 -60 0 160 -57 0 minecraft:air");
+            cmd("tp @s 170.5 -60 0.5 90 -65");
+        });
+        step(15, () -> openGateLooking(90.0F, -65.0F));
+        step(30, () -> {
+            log("gate air " + describe(openGate()));
+            shot("d_gate_air");
+        });
+        step(5, () -> {
+            cmd("fill 176 -55 -4 184 -55 4 minecraft:deepslate_tiles");
+            cmd("tp @s 180.5 -60 0.5 90 -65");
+        });
+        step(15, () -> openGateLooking(90.0F, -65.0F));
+        step(30, () -> {
+            log("gate ceiling " + describe(openGate()));
+            shot("d_gate_ceiling");
+        });
+        step(5, () -> log("DONE failures=" + failures));
         step(20, () -> mc().stop());
     }
 

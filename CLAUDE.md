@@ -9,7 +9,7 @@ NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, wi
 - **PRs:** squash-merged into `main`, titled like `3.0.0: summary (#21)`. Bump `mod_version` in `gradle.properties` with user-visible changes. Keep `docs/wiki/`, `docs/modrinth.md` and the release notes body in `.github/workflows/release.yml` in step with behavior changes.
 - **Release:** pushing tag `v<mod_version>` runs `release.yml`. Sessions here can't push tags (the push is cut off), so run the Release workflow manually on `main` instead (GitHub MCP `actions_run_trigger`, `release.yml`, ref `main`). It creates the tag on that commit and publishes the jar. It refuses to overwrite an existing release.
 - **Modrinth:** the project description is `docs/modrinth.md`, pasted by hand. No Modrinth token is configured.
-- **Wiki:** edit `docs/wiki/*.md` (page = file name, `_Sidebar.md` is the sidebar); `wiki.yml` mirrors it to the wiki on push to `main`. Never edit the wiki on github.com: the next sync overwrites it.
+- **Wiki:** edit `docs/wiki/*.md` (page = file name, `_Sidebar.md` is the sidebar); `wiki.yml` mirrors it to the wiki on push to `main`. Never edit the wiki on github.com: the next sync overwrites it. Images live in `docs/wiki/images/` (synced with the pages), linked relatively (`images/x.png` from a page, `docs/wiki/images/x.png` from the README). To retake the screenshots after a visual change: run the harness with `PHANTOM_HARNESS=docs`, then `python3 tools/docs/compose_images.py`.
 - **Force pushes are refused here.** After a squash merge, restart the work branch from `main` and, if the remote branch still holds the merged commits, merge that tip in (its content equals `main`) so the push is a fast-forward.
 
 ## Testing in the real game
@@ -18,7 +18,7 @@ Unit tests can't touch Minecraft, so behavior was checked in the dev client unde
 
 1. `cp tools/devharness/Harness.java src/main/java/com/phantomstorage/devharness/` (that folder is gitignored)
 2. `mkdir -p run && printf 'onboardAccessibility:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\n' > run/options.txt` (else the first-launch screen blocks it)
-3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`; see the class comment)
+3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`, `docs`; see the class comment)
 4. Read `[HARNESS]` lines in the output (or `run/harness.log`) and `run/screenshots/*.png`
 5. **Delete the harness folder before any release build**; it compiles into the jar.
 

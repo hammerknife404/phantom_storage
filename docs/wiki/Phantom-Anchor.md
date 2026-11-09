@@ -22,4 +22,6 @@ Sneak + right-click it, or tick **Stay here** in its panel, and it's anchored:
 - It stays put through your logouts, deaths, dimension changes and server restarts.
 - It's where the [Phantom Gateway](Phantom-Gateway) leads.
 
+![The anchor's panel](images/anchor-panel.png)
+
 Its panel shows where it is, its dimension and whether its chunk is kept loaded, with **Stay here** and a dismiss button. Dismissing it (or `/kill`) forgets its spot.
