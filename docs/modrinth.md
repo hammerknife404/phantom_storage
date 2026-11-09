@@ -50,6 +50,7 @@
 - Opens in front of you for 15 seconds and leads to your **anchored Phantom Anchor**, **across dimensions**
 - **Anyone can step through**: you, friends, mobs, even dropped items
 - Your following pets are brought along when you cross to another dimension
+- **Look steeply down or up to lay it flat**: catch a falling friend (no fall damage), drop the whole group through the floor, or fly up into it on an elytra
 
 ## 🔔 Phantom Bell
 
@@ -79,7 +80,7 @@
 | Use, looking at the anchor | Swap places with it |
 | Sneak + use | Dismiss (Gateway: close it) |
 | Use, Saddle mode | Ride the chest / get off |
-| Use, Gateway mode | Open a gateway to your anchored anchor |
+| Use, Gateway mode | Open a gateway to your anchored anchor (look steeply down or up to lay it flat) |
 | Use / sneak + use, Bell mode | Summon every pet at once / dismiss every following pet |
 
 | On a pet | |

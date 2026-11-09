@@ -111,7 +111,7 @@ public final class ModRegistries {
     public static final DeferredHolder<EntityType<?>, EntityType<PhantomGatewayEntity>> PHANTOM_GATEWAY =
             ENTITY_TYPES.register("phantom_gateway", () -> EntityType.Builder
                     .<PhantomGatewayEntity>of(PhantomGatewayEntity::new, MobCategory.MISC)
-                    .sized(1.5F, 2.0F)
+                    .sized(3.0F, 3.0F) // the largest; its real box is the doorway's (PhantomGatewayEntity#box)
                     .fireImmune()
                     .noSummon()
                     .clientTrackingRange(10)

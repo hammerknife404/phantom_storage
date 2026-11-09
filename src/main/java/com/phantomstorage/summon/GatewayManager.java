@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -24,7 +26,10 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -37,8 +42,22 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class GatewayManager {
     public static final int LIFETIME = 15 * 20;
-    /** How far in front of the player it opens: the first of these with room for it. */
-    private static final double[] REACH = {2.0, 1.5, 2.5};
+    /** Doorway sizes as {width, height} in blocks, largest first: it opens the first that fits. 1 x 2 is for tunnels. */
+    private static final int[][] SIZES = {{3, 3}, {2, 3}, {1, 2}};
+    /** Looking at least this steeply down or up (degrees), it opens lying flat. */
+    private static final float FLAT_PITCH = 50.0F;
+    /** How far along the player's look a floor or ceiling is sought for it to lie on. */
+    private static final double FLAT_RANGE = 32.0;
+    /** With no floor or ceiling in range, how far along the player's look it opens in mid-air. */
+    private static final double FLAT_REACH = 6.0;
+    /** Lying gateway sides in blocks, largest first: it opens the first that fits. */
+    private static final int[] FLAT_SIDES = {3, 2, 1};
+    /** Furthest an entity's last move may be and still count as passing through (beyond it, it teleported). */
+    private static final double SWEEP_REACH = 5.0;
+    /** Blocks ahead of the player its middle column may stand, nearest first. */
+    private static final int[] AHEAD = {2, 3};
+    /** Shaves the clearance box so blocks only touching the doorway's edges don't count as in the way. */
+    private static final double CLEARANCE_SLACK = 1.0E-3;
     /** At most this many arrivals a tick, however many items a farm drops into it. */
     private static final int MAX_PER_TICK = 8;
     /** Couldn't land: try that one again after this long, not every tick. */
@@ -87,8 +106,8 @@ public final class GatewayManager {
         }
         ServerLevel level = player.serverLevel();
         PhantomGatewayEntity gate = ModRegistries.PHANTOM_GATEWAY.get().create(level);
-        Vec3 at = gate == null ? null : doorway(player, gate);
-        if (at == null) {
+        Doorway door = gate == null ? null : doorway(player);
+        if (door == null) {
             player.displayClientMessage(Component.translatable("message.phantomstorage.gateway.no_room"), true);
             return PhantomCharmItem.FAILED;
         }
@@ -96,33 +115,119 @@ public final class GatewayManager {
         if (old != null) {
             close(old);
         }
-        float yaw = player.getYRot() + 180.0F;
-        gate.moveTo(at.x, at.y, at.z, yaw, 0.0F);
-        gate.open(id, yaw, LIFETIME);
+        Vec3 at = door.at();
+        gate.open(id, door.yaw(), door.lie(), door.width(), door.height(), LIFETIME);
+        gate.moveTo(at.x, at.y, at.z, door.yaw(), 0.0F);
         if (!level.addFreshEntity(gate)) {
             return PhantomCharmItem.FAILED;
         }
         OPEN.put(id, gate);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, at.x, at.y + 1.0, at.z, 40, 0.3, 0.8, 0.3, 0.05);
-        level.playSound(null, at.x, at.y + 1.0, at.z, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.PLAYERS, 1.0F, 0.6F);
+        Vec3 middle = gate.getBoundingBox().getCenter();
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL, middle.x, middle.y, middle.z, 40, 0.3, 0.8, 0.3, 0.05);
+        level.playSound(null, middle.x, middle.y, middle.z, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.PLAYERS, 1.0F, 0.6F);
         player.displayClientMessage(Component.translatable("message.phantomstorage.gateway.opened"), true);
         return PhantomCharmItem.COOLDOWN_TICKS;
     }
 
-    /** Where it opens: straight ahead of the player at their feet, wherever it fits clear of blocks. */
+    private record Doorway(Vec3 at, float yaw, PhantomGatewayEntity.Lie lie, int width, int height) {}
+
+    /**
+     * Where it opens: lying flat if the player looks steeply down or up ({@link #FLAT_PITCH}), else
+     * standing ({@link #standingDoorway}). Null if nothing fits.
+     */
     @Nullable
-    private static Vec3 doorway(ServerPlayer player, PhantomGatewayEntity gate) {
-        Vec3 look = player.getLookAngle();
-        Vec3 flat = new Vec3(look.x, 0.0, look.z);
-        if (flat.lengthSqr() < 1.0E-4) {
-            flat = Vec3.directionFromRotation(0.0F, player.getYRot());
+    private static Doorway doorway(ServerPlayer player) {
+        float pitch = player.getXRot();
+        if (pitch >= FLAT_PITCH) {
+            return flatDoorway(player, true);
         }
-        flat = flat.normalize();
-        for (double reach : REACH) {
-            Vec3 at = player.position().add(flat.scale(reach));
-            AABB box = gate.getType().getDimensions().makeBoundingBox(at);
-            if (player.level().noCollision(box) && player.level().getWorldBorder().isWithinBounds(box)) {
-                return at;
+        if (pitch <= -FLAT_PITCH) {
+            return flatDoorway(player, false);
+        }
+        return standingDoorway(player);
+    }
+
+    /**
+     * Lying flat where the player looks: on the floor their look meets within {@link #FLAT_RANGE} (or
+     * under the ceiling, looking up), in the block layer just off it; with nothing in range, in mid-air
+     * {@link #FLAT_REACH} along their look. As big as fits there of {@link #FLAT_SIDES}, squares centred
+     * on the block looked at (a 2 leans toward the spot looked at). Whoever stands in that layer goes
+     * through, and so does anything falling or flying through it. Null if none fits.
+     */
+    @Nullable
+    private static Doorway flatDoorway(ServerPlayer player, boolean down) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle();
+        // Stops at a lava or water surface, so a fall into a lake is caught above it, not on its bed
+        // (unless the player is in a fluid already, where it would stop at once).
+        ClipContext.Fluid fluids = player.isUnderWater() || player.isInLava() ? ClipContext.Fluid.NONE : ClipContext.Fluid.ANY;
+        BlockHitResult hit = player.level().clip(new ClipContext(eye, eye.add(look.scale(FLAT_RANGE)),
+                ClipContext.Block.COLLIDER, fluids, player));
+        Vec3 aim;
+        BlockPos layer;
+        if (hit.getType() == HitResult.Type.MISS) {
+            aim = eye.add(look.scale(FLAT_REACH));
+            layer = BlockPos.containing(aim);
+        } else {
+            aim = hit.getLocation();
+            layer = hit.getBlockPos().relative(hit.getDirection());
+        }
+        BlockPos support = down ? layer.below() : layer.above();
+        boolean supported = !player.level().getBlockState(support).getCollisionShape(player.level(), support).isEmpty();
+        PhantomGatewayEntity.Lie lie = down
+                ? (supported ? PhantomGatewayEntity.Lie.FLOOR : PhantomGatewayEntity.Lie.AIR_BELOW)
+                : (supported ? PhantomGatewayEntity.Lie.CEILING : PhantomGatewayEntity.Lie.AIR_ABOVE);
+        float yaw = player.getDirection().getOpposite().toYRot();
+        double leanX = aim.x - layer.getX() >= 0.5 ? 0.5 : -0.5;
+        double leanZ = aim.z - layer.getZ() >= 0.5 ? 0.5 : -0.5;
+        for (int side : FLAT_SIDES) {
+            for (double sx : shifts(side, leanX)) {
+                for (double sz : shifts(side, leanZ)) {
+                    Vec3 at = new Vec3(layer.getX() + 0.5 + sx, layer.getY(), layer.getZ() + 0.5 + sz);
+                    if (fits(player, PhantomGatewayEntity.box(at, yaw, lie, side, side))) {
+                        return new Doorway(at, yaw, lie, side, side);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Offsets from a block's middle to try: none for an odd size; half a block toward {@code lean}, then away, for an even one. */
+    private static double[] shifts(int size, double lean) {
+        return size % 2 == 1 ? new double[] {0.0} : new double[] {lean, -lean};
+    }
+
+    private static boolean fits(ServerPlayer player, AABB box) {
+        return player.level().noCollision(box.deflate(CLEARANCE_SLACK)) && player.level().getWorldBorder().isWithinBounds(box);
+    }
+
+    /**
+     * Standing: square to the block grid across the way the player faces, its bottom at their feet,
+     * its middle column 2 blocks ahead (else 3), and the largest of {@link #SIZES} that fits there. An
+     * even width leans toward the player's side of the middle column first. Every block of the doorway
+     * must be clear; nothing in front of or behind it matters. Null if none fits anywhere.
+     */
+    @Nullable
+    private static Doorway standingDoorway(ServerPlayer player) {
+        Direction facing = player.getDirection();
+        Direction across = facing.getClockWise();
+        float yaw = facing.getOpposite().toYRot(); // its face toward the player
+        // Which side of their block's middle the player stands on, along the doorway.
+        double offset = (player.getX() - Math.floor(player.getX()) - 0.5) * across.getStepX()
+                + (player.getZ() - Math.floor(player.getZ()) - 0.5) * across.getStepZ();
+        double lean = offset >= 0.0 ? 0.5 : -0.5;
+        for (int[] size : SIZES) {
+            int width = size[0];
+            int height = size[1];
+            for (int ahead : AHEAD) {
+                Vec3 middle = Vec3.atBottomCenterOf(player.blockPosition().relative(facing, ahead));
+                for (double shift : shifts(width, lean)) {
+                    Vec3 at = new Vec3(middle.x + across.getStepX() * shift, player.getY(), middle.z + across.getStepZ() * shift);
+                    if (fits(player, PhantomGatewayEntity.box(at, yaw, PhantomGatewayEntity.Lie.STANDING, width, height))) {
+                        return new Doorway(at, yaw, PhantomGatewayEntity.Lie.STANDING, width, height);
+                    }
+                }
             }
         }
         return null;
@@ -169,7 +274,9 @@ public final class GatewayManager {
                 || !(anchor.level() instanceof ServerLevel to)) {
             return;
         }
-        List<Entity> inside = level.getEntities(gate, gate.getBoundingBox(), GatewayManager::canEnter);
+        AABB box = gate.getBoundingBox();
+        List<Entity> inside = level.getEntities(gate, box.inflate(SWEEP_REACH),
+                entity -> canEnter(entity) && passedThrough(entity, box));
         Map<EntityDimensions, Optional<Vec3>> landings = new HashMap<>();
         int sent = 0;
         for (Entity entity : inside) {
@@ -178,6 +285,24 @@ public final class GatewayManager {
             }
             send(entity, owner, anchor, to, landings);
         }
+    }
+
+    /**
+     * In the gateway now, crossed it with its last move, or about to with its next at the same speed. A
+     * fall or an elytra can carry something clean through a block-thick doorway between two ticks; and
+     * a fall onto a floor gateway must be caught the tick before it lands, since landing (and the fall's
+     * damage) comes before this check.
+     */
+    private static boolean passedThrough(Entity entity, AABB gate) {
+        AABB now = entity.getBoundingBox();
+        if (now.intersects(gate)) {
+            return true;
+        }
+        // A player's last move as their client reported it (the server's old position is already reset by now);
+        // anything else's velocity.
+        Vec3 move = entity.getKnownMovement();
+        return move.lengthSqr() <= SWEEP_REACH * SWEEP_REACH
+                && now.expandTowards(move.reverse()).expandTowards(move).intersects(gate);
     }
 
     /**
@@ -221,9 +346,14 @@ public final class GatewayManager {
             PetManager.bringAlong(player, followers);
             player.displayClientMessage(Component.translatable(player == owner
                     ? "message.phantomstorage.gateway.through" : "message.phantomstorage.gateway.through_other"), true);
-        } else if (entity.teleportTo(to, landing.x, landing.y, landing.z, Set.of(), entity.getYRot(), entity.getXRot()) && !crossing) {
-            // Crossing makes a new entity in the other dimension, far from any gateway; staying, it's this one.
-            entity.setPortalCooldown();
+        } else {
+            // Whatever fell or flew in lands at rest (a crossing copies both to the new entity).
+            entity.resetFallDistance();
+            entity.setDeltaMovement(Vec3.ZERO);
+            if (entity.teleportTo(to, landing.x, landing.y, landing.z, Set.of(), entity.getYRot(), entity.getXRot()) && !crossing) {
+                // Crossing makes a new entity in the other dimension, far from any gateway; staying, it's this one.
+                entity.setPortalCooldown();
+            }
         }
         if (entity instanceof LivingEntity) {
             AnchorTravel.effects(from, start, 0.8F);

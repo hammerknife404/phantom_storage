@@ -4,6 +4,7 @@ import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomGatewayEntity;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.summon.AnchorManager;
+import com.phantomstorage.summon.GatewayManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
 import java.io.FileWriter;
@@ -44,7 +45,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
  * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
- * collector's filter clicked through their screens. It creates a flat creative world,
+ * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling). It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -162,6 +163,10 @@ public final class Harness {
                 voidScript();
             } else if ("filters".equals(System.getenv("PHANTOM_HARNESS"))) {
                 filtersScript();
+            } else if ("gatesize".equals(System.getenv("PHANTOM_HARNESS"))) {
+                gateSizeScript();
+            } else if ("gateflat".equals(System.getenv("PHANTOM_HARNESS"))) {
+                gateFlatScript();
             } else {
                 script();
             }
@@ -380,10 +385,13 @@ public final class Harness {
         });
         step(20, () -> {
             p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
             use();
         });
         step(20, () -> server(() -> {
+            logActionBar();
             PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
+            log("anchor " + anchor);
             if (anchor != null) {
                 anchor.toggleStay(sp());
             }
@@ -391,11 +399,14 @@ public final class Harness {
         step(10, () -> cmd("tp @s 140.5 -60 0.5 90 0"));
         step(30, () -> {
             p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
             look(90, 0);
             use();
         });
         // Front: the side that faces whoever opened it.
         step(20, () -> {
+            logActionBar();
+            log("gate " + openGate() + " player at " + p().position());
             cmd("tp @s 141.5 -60 0.5 90 0");
         });
         step(10, () -> shot("g1_front"));
@@ -695,6 +706,323 @@ public final class Harness {
                         + ", ground " + groundCount(Items.COBBLESTONE) + ")",
                 count(Items.COBBLESTONE) == held[0] && groundCount(Items.COBBLESTONE) == 0));
         step(5, () -> {
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
+    /**
+     * Summons the anchor (hotbar 0) where the player stands and anchors it, retrying the charm until the
+     * anchor is out: the first use right after the world loads doesn't always land.
+     */
+    private static void anchorHere() {
+        int[] tries = new int[1];
+        until(() -> {
+            boolean[] out = new boolean[1];
+            server(() -> out[0] = PetManager.getActive(PetKind.ANCHOR, p().getUUID()) != null);
+            if (!out[0] && tries[0]++ % 20 == 0) {
+                p().getInventory().selected = 0;
+                server(() -> sp().getInventory().selected = 0);
+                use();
+            }
+            return out[0];
+        });
+        step(10, () -> server(() -> {
+            PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
+            if (!AnchorManager.isAnchored(sp(), PetKind.ANCHOR)) {
+                anchor.toggleStay(sp());
+            }
+        }));
+        step(5, () -> {
+            boolean[] anchored = new boolean[1];
+            server(() -> anchored[0] = AnchorManager.isAnchored(sp(), PetKind.ANCHOR));
+            check("anchor anchored", anchored[0]);
+        });
+    }
+
+    /** The owner's open gateway, if any (server side). */
+    private static PhantomGatewayEntity openGate() {
+        PhantomGatewayEntity[] found = new PhantomGatewayEntity[1];
+        server(() -> {
+            for (PhantomGatewayEntity g : sp().serverLevel().getEntitiesOfClass(PhantomGatewayEntity.class,
+                    sp().getBoundingBox().inflate(40))) {
+                if (!g.isRemoved() && sp().getUUID().equals(g.getOwnerId())) {
+                    found[0] = g;
+                }
+            }
+        });
+        return found[0];
+    }
+
+    /**
+     * Uses the gateway charm (hotbar 1) the way a player does, the selected slot set on both sides,
+     * facing west. The action bar's answer is logged a few ticks later by {@link #logActionBar}.
+     */
+    private static void openGateNow() {
+        p().getInventory().selected = 1;
+        server(() -> sp().getInventory().selected = 1);
+        look(90, 0);
+        use();
+    }
+
+    private static void logActionBar() {
+        try {
+            java.lang.reflect.Field f = net.minecraft.client.gui.Gui.class.getDeclaredField("overlayMessageString");
+            f.setAccessible(true);
+            log("action bar: " + f.get(mc().gui));
+        } catch (ReflectiveOperationException e) {
+            log("action bar: " + e);
+        }
+    }
+
+    /** Opens a gateway from (x, -60, z) facing west, after closing any open one. */
+    private static void openGateFrom(double x, double z) {
+        server(() -> GatewayManager.closeFor(sp()));
+        cmd("tp @s " + x + " -60 " + z + " 90 0");
+    }
+
+    /**
+     * The gateway's size: 3 x 3 in the open (walking in sends you to the anchor); 2 x 3, on the clear side,
+     * when a block stands where the third column would go; 1 x 2 under a 2-high ceiling and in a 1 x 2
+     * tunnel (walking in goes through); none in a 1-high gap.
+     */
+    private static void gateSizeScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 100.5 -60 0.5 0 0");
+        });
+        anchorHere();
+        // A: the open field.
+        step(10, () -> openGateFrom(140.5, 0.5));
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("A gate " + (g == null ? null : g.position() + " width " + g.doorWidth() + " box " + g.getBoundingBox()));
+            check("open field: 3 x 3, 2 blocks ahead", g != null && g.doorWidth() == 3 && g.doorHeight() == 3
+                    && Math.abs(g.getX() - 138.5) < 1.0E-6 && Math.abs(g.getZ() - 0.5) < 1.0E-6
+                    && Math.abs(g.getBoundingBox().getZsize() - 3.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getXsize() - 1.0) < 1.0E-6
+                    && Math.abs(g.getBoundingBox().getYsize() - 3.0) < 1.0E-6);
+        });
+        step(5, () -> cmd("tp @s 142.5 -60 0.5 90 0"));
+        step(20, () -> shot("s1_gate_3x3"));
+        // Walking in sends you to the anchor.
+        step(5, () -> cmd("tp @s 139.2 -60 0.5 90 0"));
+        step(20, () -> check("walking in lands by the anchor (at " + p().position() + ")", p().position().distanceTo(new Vec3(100.5, -60, 0.5)) < 6.0));
+        // B: a block where the third column would go: 2 wide, on the clear side.
+        step(10, () -> {
+            cmd("setblock 138 -58 1 minecraft:stone");
+            cmd("setblock 137 -58 1 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("B gate " + (g == null ? null : g.position() + " width " + g.doorWidth() + " box " + g.getBoundingBox()));
+            check("a block in the way: 2 x 3 on the clear side", g != null && g.doorWidth() == 2 && g.doorHeight() == 3
+                    && Math.abs(g.getZ() - 0.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getZsize() - 2.0) < 1.0E-6);
+        });
+        step(5, () -> cmd("tp @s 142.5 -60 0.5 90 0"));
+        step(20, () -> shot("s2_gate_2x3"));
+        // C: a 2-high ceiling: 1 x 2 in the middle column.
+        step(10, () -> {
+            cmd("setblock 138 -58 1 minecraft:air");
+            cmd("setblock 137 -58 1 minecraft:air");
+            cmd("fill 136 -58 -3 138 -58 4 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("C gate " + (g == null ? null : g.position() + " size " + g.doorWidth() + "x" + g.doorHeight() + " box " + g.getBoundingBox()));
+            check("under a 2-high ceiling: 1 x 2 in the middle", g != null && g.doorWidth() == 1 && g.doorHeight() == 2
+                    && Math.abs(g.getZ() - 0.5) < 1.0E-6 && Math.abs(g.getBoundingBox().getYsize() - 2.0) < 1.0E-6);
+        });
+        // D: a 1-wide, 2-high tunnel: 1 x 2 inside it, and walking in goes through.
+        step(10, () -> {
+            cmd("fill 135 -60 -1 139 -59 -1 minecraft:stone");
+            cmd("fill 135 -60 1 139 -59 1 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("D gate " + (g == null ? null : g.position() + " size " + g.doorWidth() + "x" + g.doorHeight()));
+            check("in a 1 x 2 tunnel: 1 x 2 inside it", g != null && g.doorWidth() == 1 && g.doorHeight() == 2
+                    && Math.abs(g.getX() - 138.5) < 1.0E-6 && Math.abs(g.getZ() - 0.5) < 1.0E-6);
+        });
+        step(5, () -> cmd("tp @s 141.5 -60 0.5 90 0"));
+        step(20, () -> shot("s3_gate_1x2_tunnel"));
+        step(5, () -> cmd("tp @s 139.2 -60 0.5 90 0"));
+        step(20, () -> check("walking into the tunnel's gateway lands by the anchor (at " + p().position() + ")",
+                p().position().distanceTo(new Vec3(100.5, -60, 0.5)) < 6.0));
+        // E: a 1-high gap: no room.
+        step(10, () -> {
+            cmd("fill 135 -59 -1 139 -59 1 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            check("a 1-high gap: no gateway", openGate() == null);
+        });
+        step(5, () -> {
+            cmd("fill 135 -60 -3 139 -58 4 minecraft:air");
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
+    /** Uses the gateway charm (hotbar 1) facing {@code yaw} at {@code pitch}, set on both sides. */
+    private static void openGateLooking(float yaw, float pitch) {
+        server(() -> GatewayManager.closeFor(sp()));
+        p().getInventory().selected = 1;
+        server(() -> {
+            sp().getInventory().selected = 1;
+            sp().setYRot(yaw);
+            sp().setXRot(pitch);
+        });
+        look(yaw, pitch);
+        use();
+    }
+
+    private static String describe(PhantomGatewayEntity g) {
+        return g == null ? "none" : g.lie() + " " + g.doorWidth() + "x" + g.doorHeight() + " at " + g.position() + " box " + g.getBoundingBox();
+    }
+
+    /**
+     * Gateways laid flat: on the floor below a pillar (screenshot); on the floor at the opener's feet,
+     * which takes them through; on the floor under a 30-block fall in survival, caught with no damage;
+     * in mid-air above, looking up at open sky, with an arrow shot up through it; under a ceiling.
+     */
+    private static void gateFlatScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 100.5 -60 0.5 0 0");
+            cmd("phantomstorage unlock all"); // survival (the caught fall) needs the gateway unlocked
+        });
+        anchorHere();
+        Vec3 anchorSpot = new Vec3(100.5, -60, 0.5);
+        // A: from a 4-high pillar, looking down at the ground ahead: a 3 x 3 floor gateway, the opener clear of it.
+        step(10, () -> {
+            cmd("fill 140 -60 0 140 -57 0 minecraft:stone");
+            cmd("tp @s 140.5 -56 0.5 90 60");
+        });
+        step(20, () -> openGateLooking(90.0F, 60.0F));
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("A " + describe(g));
+            check("looking down from a pillar: a 3 x 3 floor gateway on the ground", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.FLOOR && g.doorWidth() == 3 && g.doorHeight() == 3
+                    && Math.abs(g.getY() + 60.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getYsize() - 1.0) < 1.0E-6);
+        });
+        step(20, () -> shot("f1_floor_from_pillar"));
+        step(5, () -> cmd("fill 140 -60 0 140 -57 0 minecraft:air"));
+        // B: looking down at your own feet: it opens under you and takes you through.
+        step(10, () -> cmd("tp @s 150.5 -60 0.5 90 80"));
+        step(20, () -> openGateLooking(90.0F, 80.0F));
+        step(5, () -> {
+            logActionBar();
+            log("B " + describe(openGate()));
+        });
+        step(30, () -> check("a floor gateway under you takes you through (at " + p().position() + ")",
+                p().position().distanceTo(anchorSpot) < 6.0));
+        // C: falling 30 blocks in survival, looking straight down: caught by a floor gateway, no damage.
+        step(10, () -> {
+            cmd("gamemode survival");
+            cmd("effect clear @s");
+            cmd("tp @s 160.5 -30 0.5 90 89");
+        });
+        step(2, () -> openGateLooking(90.0F, 89.0F));
+        step(5, () -> {
+            logActionBar();
+            log("C " + describe(openGate()) + " player y " + p().getY());
+        });
+        step(60, () -> {
+            float[] health = new float[1];
+            server(() -> health[0] = sp().getHealth());
+            check("a 30-block fall caught by a floor gateway, unhurt (health " + health[0] + ", at " + p().position() + ")",
+                    p().position().distanceTo(anchorSpot) < 6.0 && health[0] >= 20.0F);
+        });
+        step(5, () -> cmd("gamemode creative"));
+        // D: looking up at open sky: in mid-air 6 blocks along the look; an arrow flying up through it goes through.
+        step(10, () -> cmd("tp @s 170.5 -60 0.5 90 -70"));
+        step(20, () -> openGateLooking(90.0F, -70.0F));
+        step(15, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("D " + describe(g));
+            check("looking up at open sky: a 3 x 3 gateway in mid-air above", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.AIR_ABOVE && g.doorWidth() == 3 && g.getY() > -56.0);
+            if (g != null) {
+                Vec3 below = new Vec3(g.getX(), g.getY() - 4.0, g.getZ());
+                server(() -> {
+                    net.minecraft.world.entity.projectile.Arrow arrow = new net.minecraft.world.entity.projectile.Arrow(
+                            sp().serverLevel(), below.x, below.y, below.z, new ItemStack(Items.ARROW), null);
+                    arrow.setDeltaMovement(0.0, 3.0, 0.0);
+                    sp().serverLevel().addFreshEntity(arrow);
+                });
+            }
+        });
+        step(5, () -> shot("f2_air_above"));
+        step(10, () -> {
+            boolean[] arrived = new boolean[1];
+            server(() -> arrived[0] = !sp().serverLevel().getEntitiesOfClass(net.minecraft.world.entity.projectile.Arrow.class,
+                    new AABB(anchorSpot, anchorSpot).inflate(6.0)).isEmpty());
+            check("an arrow flying up through it at 3 blocks a tick lands by the anchor", arrived[0]);
+        });
+        // E: under a ceiling, looking up: just below it.
+        step(10, () -> {
+            cmd("fill 176 -55 -4 184 -55 4 minecraft:stone");
+            cmd("tp @s 180.5 -60 0.5 90 -70");
+        });
+        step(20, () -> openGateLooking(90.0F, -70.0F));
+        step(15, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("E " + describe(g));
+            check("looking up at a ceiling: a 3 x 3 gateway just under it", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.CEILING && g.doorWidth() == 3 && Math.abs(g.getY() + 56.0) < 1.0E-6);
+        });
+        step(10, () -> shot("f3_ceiling"));
+        // F: looking down at a lava pool from its edge: on the lava's surface, not its bed.
+        step(5, () -> {
+            cmd("fill 176 -55 -4 184 -55 4 minecraft:air");
+            cmd("fill 191 -63 -3 197 -61 3 minecraft:lava");
+            cmd("fill 189 -60 0 189 -57 0 minecraft:stone");
+            cmd("tp @s 189.5 -56 0.5 270 60");
+        });
+        step(20, () -> openGateLooking(270.0F, 60.0F));
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("F " + describe(g));
+            check("looking down at lava from a pillar: just above its surface", g != null && Math.abs(g.getY() + 60.0) < 1.0E-6);
+        });
+        step(5, () -> {
+            cmd("fill 191 -63 -3 197 -61 3 minecraft:grass_block");
+            cmd("fill 189 -60 0 189 -57 0 minecraft:air");
+
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());
