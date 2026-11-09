@@ -3,7 +3,7 @@
     python3 tools/sprites/make_sprites.py [out_dir]
 
 Writes phantom_charm (chest), phantom_charm_saddle, phantom_charm_gateway and phantom_charm_bell to
-out_dir (default build/sprites). Copy what you want into src/main/resources/.../textures/item. The tank,
+out_dir (default build/sprites). The bell is animated: a 64-frame strip and its .mcmeta. Copy what you want into src/main/resources/.../textures/item. The tank,
 anchor and collector sprites came from an earlier session's renderer; void_sprites.py keeps the
 anchor's and collector's void in step with the End portal shader. The committed gateway sprite's stars
 came from an earlier starfield.py; its frame and shape match this output.
@@ -15,7 +15,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from iso import SHADE, cube, outline, quad, render, to_screen  # noqa: E402
+from iso import SHADE, cube, outline, quad, render  # noqa: E402
 from starfield import starfield  # noqa: E402
 from vanilla import ROOT, mod_texture, texture  # noqa: E402
 
@@ -78,41 +78,65 @@ def gateway_faces():
 
 # The bell's windows are drawn in this colour, then painted with the starfield in screen space (paint_void).
 VOID = (255, 0, 255, 255)
+# The anchor sprite's eye colours: yellow-lime at the outer ends, green toward the middle.
+EYE_COLOURS = [(240, 255, 104), (221, 255, 85), (197, 255, 68), (158, 255, 115), (125, 255, 125), (113, 255, 114)]
 # The bell's gold, deepened toward the chest's brass so it sits with the rest of the set.
 BRASS = (0.92, 0.76, 0.52)
-# Where the Eye of Ender looks out from: the body's front corner, halfway up its window.
-BELL_EYE_AT = (3.02, 9.5, 3.02)
+# The bell is animated: its starfield drifts through a seamless loop of this many frames, each shown this many
+# ticks (blended into the next), like the End portal's void in game.
+BELL_FRAMES = 64
+BELL_FRAME_TICKS = 6
+
+
+def eye_bars():
+    """The anchor's two eye bars as a 16 x 2 texture: 6 texels each, mirrored, a 4-texel gap."""
+    img = Image.new('RGBA', (16, 2), (0, 0, 0, 0))
+    for i, c in enumerate(EYE_COLOURS):
+        for y in range(2):
+            img.putpixel((i, y), c + (255,))
+            img.putpixel((15 - i, y), c + (255,))
+    return img
 
 
 def bell_faces():
-    """The vanilla bell's shape (BellRenderer's body and lip) in brass, with a window onto the End portal's
-    starfield round its front corner in a 1 px frame (bell_sprite puts an Eye of Ender in it)."""
+    """The vanilla bell's shape (BellRenderer's body and lip) in brass, each side of the body a window onto
+    the End portal's starfield in a 1 px frame, like the anchor's, the phantom eyes across the front one."""
     bell = texture('entity/bell/bell_body.png')
     void = Image.new('RGBA', (4, 4), VOID)
     faces = (cube(bell, 0, 0, (-3, -6, -3), (6, 7, 6), offset=(8, 12, 8), tint=BRASS)
              + cube(bell, 0, 13, (4, 4, 4), (8, 2, 8), tint=BRASS))
     for f in faces:
         f.verts = [(x - 8, y, z - 8) for x, y, z in f.verts]
-    # Framed on three sides of each face; open where the two meet, so the void wraps round the corner.
-    y0, y1 = 7, 12
-    faces.append(quad(void, [(-2, y1, 3.02), (3.02, y1, 3.02), (3.02, y0, 3.02), (-2, y0, 3.02)], (0, 0, 4, 4), bright=True))
-    faces.append(quad(void, [(3.02, y1, 3.02), (3.02, y1, -2), (3.02, y0, -2), (3.02, y0, 3.02)], (0, 0, 4, 4), bright=True))
+    w, y0, y1 = 2, 7, 12
+    faces.append(quad(void, [(-w, y1, 3.02), (w, y1, 3.02), (w, y0, 3.02), (-w, y0, 3.02)], (0, 0, 4, 4), bright=True))
+    faces.append(quad(void, [(3.02, y1, w), (3.02, y1, -w), (3.02, y0, -w), (3.02, y0, w)], (0, 0, 4, 4), bright=True))
+    faces.append(quad(eye_bars(), [(-w, 11.6, 3.05), (w, 11.6, 3.05), (w, 10.5, 3.05), (-w, 10.5, 3.05)], (0, 0, 16, 2), bright=True))
     return faces
 
 
-def bell_sprite(fill=58):
-    """The bell with an Eye of Ender in its void, facing out of the sprite: it looks at the player."""
-    faces = bell_faces()
-    img = paint_void(outline(render(faces, fill=fill)), 0.7)
-    eye = texture('item/ender_eye.png').crop((2, 2, 15, 15))
-    x, y = to_screen(faces, BELL_EYE_AT, fill=fill)
-    img.alpha_composite(eye, (round(x - eye.width / 2), round(y - eye.height / 2)))
-    return img
+def bell_frames(frames=BELL_FRAMES):
+    """The bell's animation: the same sprite with its starfield a step further through the loop in each frame."""
+    shape = outline(render(bell_faces(), fill=58))
+    return [paint_void(shape.copy(), 0.7, loop=i / frames) for i in range(frames)]
 
 
-def paint_void(img, ox):
+def bell_sprite():
+    """The bell's animated texture: its frames stacked top to bottom, as the game reads an animated sprite."""
+    frames = bell_frames()
+    strip = Image.new('RGBA', (64, 64 * len(frames)))
+    for i, frame in enumerate(frames):
+        strip.paste(frame, (0, 64 * i))
+    return strip
+
+
+def bell_mcmeta():
+    """The animation's .mcmeta: frame time, and frames blended into each other so the drift is smooth."""
+    return '{\n  "animation": {\n    "frametime": %d,\n    "interpolate": true\n  }\n}\n' % BELL_FRAME_TICKS
+
+
+def paint_void(img, ox, loop=0.0):
     """Fills the VOID pixels with the starfield laid over the whole sprite, as the game draws the void (screen-space)."""
-    stars = starfield(64, 64, 0.35, 0.35, ox=ox).load()
+    stars = starfield(64, 64, 0.35, 0.35, ox=ox, loop=loop).load()
     px = img.load()
     for y in range(img.size[1]):
         for x in range(img.size[0]):
@@ -130,3 +154,6 @@ if __name__ == '__main__':
                         ('phantom_charm_bell', bell_sprite)):
         image().save(os.path.join(out, name + '.png'))
         print('wrote', os.path.join(out, name + '.png'))
+    with open(os.path.join(out, 'phantom_charm_bell.png.mcmeta'), 'w') as mcmeta:
+        mcmeta.write(bell_mcmeta())
+    print('wrote', os.path.join(out, 'phantom_charm_bell.png.mcmeta'))
