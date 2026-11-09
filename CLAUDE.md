@@ -42,6 +42,8 @@ Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the al
 | `client/PhantomVoid`, `VoidLayers` | The starfield as the End portal shader draws it, but in ordinary entity passes: a near-black backing in the ghost pass, then 15 star layers added in the eyes pass, each vertex's texture spot taken from its screen position. It fades with opacity and shader packs draw it; `RenderType.endPortal()` did neither (Iris has no program for it on entities). `VoidLayers` is the game-free math, tested against the shader's matrices |
 | `menu/` | Menus; pixel layouts (`PhantomLayout`, `TankLayout`, `AnchorLayout`, `CollectorLayout`) are game-free and unit-tested |
 
+Screens: draw anything that must sit over slot items (the filter entries' ghost veil, `PhantomTheme.drawGhostVeils`) from `renderLabels`, not `renderSlot`. ImmediatelyFast's `experimental_screen_batching` (on in the owner's pack) draws the slot loop as one batch in its own order and flushes it just before the labels; a depth-writing overlay inside the loop hid flat items outright.
+
 Pets hold no contents; everything lives on the player as attachments. That's why a pet can vanish, be re-created or be replaced at any time without loss.
 
 ## Adding a charm mode
@@ -60,4 +62,5 @@ Every mode's art is a 64×64 pre-render "as the game draws it": a 2:1 isometric 
 
 - Not yet checked: riding on a dedicated server with others watching; other players through the gateway; earning the Saddle/Gateway/Bell advancements in survival.
 - The void under Iris (3.0.1) was checked only by reading Iris 1.8.12's and Complementary r5.9.3's code: Iris overrides the eyes and translucent entity shaders `PhantomVoid` uses, not the End portal one, and keeps each entity's pass order. Running downloaded Iris/Sodium jars in the dev client was refused by this sandbox's permission check, so no agent has seen it in-game; the owner can.
+- The owner plays "The Living World" (NeoForge 21.1.265, ~200 mods): Iris 1.8.14-beta.1 + Sodium 0.8.13 with Complementary r5.8.1, ImmediatelyFast 1.6.15 with screen batching on, Mouse Tweaks, JEI, Inventory Essentials. Worth reading a mod's code (not running it) when a report only happens there.
 - The bell's sneak-use leaves anchored pets alone; the owner accepted that "for now".

@@ -1,6 +1,7 @@
 package com.phantomstorage.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.phantomstorage.menu.GhostSlot;
 import com.phantomstorage.menu.PhantomLayout;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -120,16 +121,21 @@ public final class PhantomTheme {
     }
 
     /**
-     * A veil over a filter entry's item so it reads as a ghost, not stock: the slot's own fill at half
-     * strength, above the item and its count. Call after the vanilla slot drawing.
+     * Veils over the filter entries ({@link GhostSlot}s) among {@code slots} so they read as ghosts, not
+     * stock: the slot's own fill at about half strength, above the item. Call from {@code renderLabels},
+     * never from {@code renderSlot}. Every slot's item is on screen by the labels even when a mod draws
+     * the slots as one batch in its own order (ImmediatelyFast's screen batching, which ends right before
+     * the labels); a veil drawn inside the slot loop could then land before a flat item and hide it
+     * outright through the depth it leaves.
      */
-    public static void drawGhostVeil(GuiGraphics g, Slot slot, int slotFill) {
-        if (!slot.hasItem()) {
-            return;
-        }
+    public static void drawGhostVeils(GuiGraphics g, List<Slot> slots, int slotFill) {
         g.pose().pushPose();
         g.pose().translate(0.0F, 0.0F, 350.0F);
-        g.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, (slotFill & 0xFFFFFF) | 0x90000000);
+        for (Slot slot : slots) {
+            if (slot instanceof GhostSlot && slot.isActive() && slot.hasItem()) {
+                g.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, (slotFill & 0xFFFFFF) | 0x90000000);
+            }
+        }
         g.pose().popPose();
     }
 

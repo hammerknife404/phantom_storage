@@ -528,6 +528,26 @@ public final class Harness {
         screen.mouseReleased(x, y, button);
     }
 
+    /** Moves the real mouse pointer over menu slot {@code index}, so the screen draws its hover highlight. */
+    private static void hover(int index) {
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double scale = mc().getWindow().getGuiScale();
+        try {
+            // GLFW's cursor-move doesn't reach the game under Xvfb, so set where the game thinks the mouse is.
+            java.lang.reflect.Field x = net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");
+            java.lang.reflect.Field y = net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");
+            x.setAccessible(true);
+            y.setAccessible(true);
+            x.setDouble(mc().mouseHandler, (screen.getGuiLeft() + slot.x + 8) * scale);
+            y.setDouble(mc().mouseHandler, (screen.getGuiTop() + slot.y + 8) * scale);
+        } catch (ReflectiveOperationException e) {
+            log("hover: " + e);
+        }
+    }
+
     /** Places the cursor on a slot: 0 left click, 1 right click, 2 left press that drifts 2 px before release. */
     private static void placeOn(int index, int gesture) {
         if (gesture < 2) {
@@ -634,6 +654,7 @@ public final class Harness {
                     com.phantomstorage.menu.PhantomChestMenu.INV_START, gesture,
                     () -> sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter());
             if (v == 0) {
+                step(5, () -> hover(com.phantomstorage.menu.PhantomChestMenu.VOID_START + 1));
                 step(10, () -> shot("f1_chest_void"));
             }
             step(5, () -> p().closeContainer());
@@ -643,6 +664,7 @@ public final class Harness {
                     com.phantomstorage.menu.PhantomCollectorMenu.INV_START, gesture,
                     () -> sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR).filter());
             if (v == 0) {
+                step(5, () -> hover(com.phantomstorage.menu.PhantomCollectorMenu.FILTER_START + 2));
                 step(10, () -> shot("f2_collector"));
             }
             step(5, () -> p().closeContainer());
