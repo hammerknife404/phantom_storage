@@ -5,11 +5,14 @@
 Writes phantom_charm (chest), phantom_charm_saddle, phantom_charm_gateway and phantom_charm_bell to
 out_dir (default build/sprites). Copy what you want into src/main/resources/.../textures/item. The tank,
 anchor and collector sprites came from an earlier session's renderer; void_sprites.py keeps the
-anchor's and collector's void in step with the End portal shader.
+anchor's and collector's void in step with the End portal shader. The committed gateway sprite's stars
+came from an earlier starfield.py; its frame and shape match this output.
 """
 import math
 import os
 import sys
+
+from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
 from iso import SHADE, cube, outline, quad, render  # noqa: E402
@@ -73,15 +76,49 @@ def gateway_faces():
     return faces
 
 
+# The bell's windows are drawn in this colour, then painted with the starfield in screen space (paint_void).
+VOID = (255, 0, 255, 255)
+# The anchor sprite's eye colours: yellow-lime at the outer ends, green toward the middle.
+EYE_COLOURS = [(240, 255, 104), (221, 255, 85), (197, 255, 68), (158, 255, 115), (125, 255, 125), (113, 255, 114)]
+# The bell's gold, deepened toward the chest's brass so it sits with the rest of the set.
+BRASS = (0.92, 0.76, 0.52)
+
+
+def eye_bars():
+    """The anchor's two eye bars as a 16 x 2 texture: 6 texels each, mirrored, a 4-texel gap."""
+    img = Image.new('RGBA', (16, 2), (0, 0, 0, 0))
+    for i, c in enumerate(EYE_COLOURS):
+        for y in range(2):
+            img.putpixel((i, y), c + (255,))
+            img.putpixel((15 - i, y), c + (255,))
+    return img
+
+
 def bell_faces():
-    """The vanilla bell (BellRenderer's body and lip) wearing the phantom eyes on its front."""
+    """The vanilla bell's shape (BellRenderer's body and lip) in brass, each side of the body a window onto
+    the End portal's starfield in a 1 px frame, like the anchor's, the phantom eyes across the front one."""
     bell = texture('entity/bell/bell_body.png')
-    eyes = texture('entity/phantom_eyes.png')
-    faces = cube(bell, 0, 0, (-3, -6, -3), (6, 7, 6), offset=(8, 12, 8)) + cube(bell, 0, 13, (4, 4, 4), (8, 2, 8))
+    void = Image.new('RGBA', (4, 4), VOID)
+    faces = (cube(bell, 0, 0, (-3, -6, -3), (6, 7, 6), offset=(8, 12, 8), tint=BRASS)
+             + cube(bell, 0, 13, (4, 4, 4), (8, 2, 8), tint=BRASS))
     for f in faces:
         f.verts = [(x - 8, y, z - 8) for x, y, z in f.verts]
-    faces.append(quad(eyes, [(-2.6, 11.2, 3.05), (2.6, 11.2, 3.05), (2.6, 9.2, 3.05), (-2.6, 9.2, 3.05)], (5, 5, 12, 8), bright=True))
+    w, y0, y1 = 2, 7, 12
+    faces.append(quad(void, [(-w, y1, 3.02), (w, y1, 3.02), (w, y0, 3.02), (-w, y0, 3.02)], (0, 0, 4, 4), bright=True))
+    faces.append(quad(void, [(3.02, y1, w), (3.02, y1, -w), (3.02, y0, -w), (3.02, y0, w)], (0, 0, 4, 4), bright=True))
+    faces.append(quad(eye_bars(), [(-w, 11.6, 3.05), (w, 11.6, 3.05), (w, 10.5, 3.05), (-w, 10.5, 3.05)], (0, 0, 16, 2), bright=True))
     return faces
+
+
+def paint_void(img, ox):
+    """Fills the VOID pixels with the starfield laid over the whole sprite, as the game draws the void (screen-space)."""
+    stars = starfield(64, 64, 0.35, 0.35, ox=ox).load()
+    px = img.load()
+    for y in range(img.size[1]):
+        for x in range(img.size[0]):
+            if px[x, y] == VOID:
+                px[x, y] = stars[x, y] + (255,)
+    return img
 
 
 if __name__ == '__main__':
@@ -89,5 +126,5 @@ if __name__ == '__main__':
     os.makedirs(out, exist_ok=True)
     for name, faces, fill in (('phantom_charm', chest_faces(), 58), ('phantom_charm_saddle', saddled_faces(), 58),
                               ('phantom_charm_gateway', gateway_faces(), 60), ('phantom_charm_bell', bell_faces(), 58)):
-        outline(render(faces, fill=fill)).save(os.path.join(out, name + '.png'))
+        paint_void(outline(render(faces, fill=fill)), 0.7).save(os.path.join(out, name + '.png'))
         print('wrote', os.path.join(out, name + '.png'))
