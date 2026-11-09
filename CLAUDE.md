@@ -1,6 +1,6 @@
 # Phantom Storage: notes for the next agent
 
-NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.0.0** (tag `v3.0.0`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
+NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.0.1** (tag `v3.0.1`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
 
 ## Working here
 
@@ -61,6 +61,6 @@ Every mode's art is a 64×64 pre-render "as the game draws it": a 2:1 isometric 
 ## Open items
 
 - Not yet checked: riding on a dedicated server with others watching; other players through the gateway; earning the Saddle/Gateway/Bell advancements in survival.
-- The void under Iris (3.0.1) was checked only by reading Iris 1.8.12's and Complementary r5.9.3's code: Iris overrides the eyes and translucent entity shaders `PhantomVoid` uses, not the End portal one, and keeps each entity's pass order. Running downloaded Iris/Sodium jars in the dev client was refused by this sandbox's permission check, so no agent has seen it in-game; the owner can.
+- The void under Iris (3.0.1): the owner confirmed it looks right in their pack. Running downloaded mod jars (Iris, ImmediatelyFast) in the dev client is refused by this sandbox's permission check, so agents check such compat by reading the mod's code and the owner confirms in-game.
 - The owner plays "The Living World" (NeoForge 21.1.265, ~200 mods): Iris 1.8.14-beta.1 + Sodium 0.8.13 with Complementary r5.8.1, ImmediatelyFast 1.6.15 with screen batching on, Mouse Tweaks, JEI, Inventory Essentials. Worth reading a mod's code (not running it) when a report only happens there.
 - The bell's sneak-use leaves anchored pets alone; the owner accepted that "for now".
