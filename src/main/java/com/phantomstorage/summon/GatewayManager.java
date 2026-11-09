@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -37,8 +38,10 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class GatewayManager {
     public static final int LIFETIME = 15 * 20;
-    /** How far in front of the player it opens: the first of these with room for it. */
-    private static final double[] REACH = {2.0, 1.5, 2.5};
+    /** Blocks ahead of the player its middle column may stand, nearest first. */
+    private static final int[] AHEAD = {2, 3};
+    /** Shaves the clearance box so blocks only touching the doorway's edges don't count as in the way. */
+    private static final double CLEARANCE_SLACK = 1.0E-3;
     /** At most this many arrivals a tick, however many items a farm drops into it. */
     private static final int MAX_PER_TICK = 8;
     /** Couldn't land: try that one again after this long, not every tick. */
@@ -87,8 +90,8 @@ public final class GatewayManager {
         }
         ServerLevel level = player.serverLevel();
         PhantomGatewayEntity gate = ModRegistries.PHANTOM_GATEWAY.get().create(level);
-        Vec3 at = gate == null ? null : doorway(player, gate);
-        if (at == null) {
+        Doorway door = gate == null ? null : doorway(player);
+        if (door == null) {
             player.displayClientMessage(Component.translatable("message.phantomstorage.gateway.no_room"), true);
             return PhantomCharmItem.FAILED;
         }
@@ -96,9 +99,9 @@ public final class GatewayManager {
         if (old != null) {
             close(old);
         }
-        float yaw = player.getYRot() + 180.0F;
-        gate.moveTo(at.x, at.y, at.z, yaw, 0.0F);
-        gate.open(id, yaw, LIFETIME);
+        Vec3 at = door.at();
+        gate.open(id, door.yaw(), door.width(), LIFETIME);
+        gate.moveTo(at.x, at.y, at.z, door.yaw(), 0.0F);
         if (!level.addFreshEntity(gate)) {
             return PhantomCharmItem.FAILED;
         }
@@ -109,20 +112,34 @@ public final class GatewayManager {
         return PhantomCharmItem.COOLDOWN_TICKS;
     }
 
-    /** Where it opens: straight ahead of the player at their feet, wherever it fits clear of blocks. */
+    private record Doorway(Vec3 at, float yaw, int width) {}
+
+    /**
+     * Where it opens: square to the block grid across the way the player faces, its bottom at their feet,
+     * its middle column 2 blocks ahead (else 3), and as wide as fits there: 3 blocks, else 2 (leaning
+     * toward the player's side of the middle column first). Every block of the doorway must be clear;
+     * nothing in front of or behind it matters. Null if neither width fits anywhere.
+     */
     @Nullable
-    private static Vec3 doorway(ServerPlayer player, PhantomGatewayEntity gate) {
-        Vec3 look = player.getLookAngle();
-        Vec3 flat = new Vec3(look.x, 0.0, look.z);
-        if (flat.lengthSqr() < 1.0E-4) {
-            flat = Vec3.directionFromRotation(0.0F, player.getYRot());
-        }
-        flat = flat.normalize();
-        for (double reach : REACH) {
-            Vec3 at = player.position().add(flat.scale(reach));
-            AABB box = gate.getType().getDimensions().makeBoundingBox(at);
-            if (player.level().noCollision(box) && player.level().getWorldBorder().isWithinBounds(box)) {
-                return at;
+    private static Doorway doorway(ServerPlayer player) {
+        Direction facing = player.getDirection();
+        Direction across = facing.getClockWise();
+        float yaw = facing.getOpposite().toYRot(); // its face toward the player
+        // Which side of their block's middle the player stands on, along the doorway.
+        double offset = (player.getX() - Math.floor(player.getX()) - 0.5) * across.getStepX()
+                + (player.getZ() - Math.floor(player.getZ()) - 0.5) * across.getStepZ();
+        double lean = offset >= 0.0 ? 0.5 : -0.5;
+        for (int width = PhantomGatewayEntity.MAX_WIDTH; width >= PhantomGatewayEntity.MIN_WIDTH; width--) {
+            double[] shifts = width % 2 == 1 ? new double[] {0.0} : new double[] {lean, -lean};
+            for (int ahead : AHEAD) {
+                Vec3 middle = Vec3.atBottomCenterOf(player.blockPosition().relative(facing, ahead));
+                for (double shift : shifts) {
+                    Vec3 at = new Vec3(middle.x + across.getStepX() * shift, player.getY(), middle.z + across.getStepZ() * shift);
+                    AABB box = PhantomGatewayEntity.box(at, yaw, width);
+                    if (player.level().noCollision(box.deflate(CLEARANCE_SLACK)) && player.level().getWorldBorder().isWithinBounds(box)) {
+                        return new Doorway(at, yaw, width);
+                    }
+                }
             }
         }
         return null;

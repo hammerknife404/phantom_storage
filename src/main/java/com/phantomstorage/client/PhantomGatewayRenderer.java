@@ -10,25 +10,37 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
 
 /**
  * The Phantom Gateway: a doorway of the End portal's starfield in a ghostly lodestone frame, the
- * Phantom Anchor's own stone, with the phantom eyes peering out of the void on both sides. It swells
- * open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}). It follows the
- * anchor's opacity setting, void included, and the frame its glow setting. Drawn from vanilla textures,
- * like the anchor, the void with {@link PhantomVoid}.
+ * Phantom Anchor's own stone, with the phantom eyes peering out of the void on both sides. As wide as
+ * the entity says ({@link PhantomGatewayEntity#doorWidth()}: 3 blocks, or 2) and 3 tall; the eyes
+ * grow with it. It swells open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}).
+ * It follows the anchor's opacity setting, void included, and the frame its glow setting. Drawn from
+ * vanilla textures, like the anchor, the void with {@link PhantomVoid}.
  */
 public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity> {
     private static final ResourceLocation LODESTONE_SIDE = ResourceLocation.withDefaultNamespace("block/lodestone_side");
     private static final float PX = GhostQuads.PX;
-    private static final float HALF_WIDTH = 12.0F * PX;
-    private static final float HEIGHT = 32.0F * PX;
+    private static final float HEIGHT = (float) PhantomGatewayEntity.HEIGHT;
     private static final float FRAME = 2.0F * PX;
     /** Half the frame's thickness, front to back. */
     private static final float DEPTH = 1.0F * PX;
     private static final int MIN_BLOCK_LIGHT = 7;
-    private static final PhantomVoid PANE = pane();
+    /** The shared eyes' size (as {@link GhostQuads} draws them) suits a 1.5-block doorway; they scale from there. */
+    private static final float EYES_HALF_W = 5.25F * PX;
+    private static final float EYES_H = 4.5F * PX;
+    private static final float EYES_AT_WIDTH = 1.5F;
+    /** The starfield for each width in blocks. */
+    private static final PhantomVoid[] PANES = new PhantomVoid[PhantomGatewayEntity.MAX_WIDTH + 1];
+
+    static {
+        for (int blocks = PhantomGatewayEntity.MIN_WIDTH; blocks <= PhantomGatewayEntity.MAX_WIDTH; blocks++) {
+            PANES[blocks] = pane(blocks);
+        }
+    }
 
     public PhantomGatewayRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -42,6 +54,7 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         if (open <= 0.0F) {
             return;
         }
+        int blocks = Mth.clamp(entity.doorWidth(), PhantomGatewayEntity.MIN_WIDTH, PhantomGatewayEntity.MAX_WIDTH);
         float swell = open * open * (3.0F - 2.0F * open);
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(-entity.getYRot()));
@@ -51,52 +64,61 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         PoseStack.Pose pose = poseStack.last();
 
         float alpha = PhantomClientConfig.anchorAlpha();
-        PANE.draw(pose, buffer, alpha);
+        PANES[blocks].draw(pose, buffer, alpha);
 
         int ghost = PhantomClientConfig.white(alpha, 1.0F);
         int blockLight = PhantomClientConfig.anchorGlows()
                 ? Math.max(LightTexture.block(packedLight), MIN_BLOCK_LIGHT) : LightTexture.block(packedLight);
         int light = LightTexture.pack(blockLight, LightTexture.sky(packedLight));
         frame(pose, buffer.getBuffer(PhantomRenderTypes.ghost(InventoryMenu.BLOCK_ATLAS)),
-                GhostQuads.sprite(LODESTONE_SIDE), ghost, light);
+                GhostQuads.sprite(LODESTONE_SIDE), ghost, light, blocks / 2.0F);
 
-        // Eyes in the void just under the top bar, on both faces.
-        float eyesTop = HEIGHT - FRAME - 2.0F * PX;
-        GhostQuads.eyes(pose, buffer, 0.01F, eyesTop, alpha);
+        // Eyes in the void just under the top bar, on both faces, sized to the doorway.
+        float scale = blocks / EYES_AT_WIDTH;
+        float eyesTop = HEIGHT - FRAME - 2.0F * PX * scale;
+        GhostQuads.eyes(pose, buffer, 0.01F, eyesTop, alpha, EYES_HALF_W * scale, EYES_H * scale);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        GhostQuads.eyes(poseStack.last(), buffer, 0.01F, eyesTop, alpha);
+        GhostQuads.eyes(poseStack.last(), buffer, 0.01F, eyesTop, alpha, EYES_HALF_W * scale, EYES_H * scale);
         poseStack.popPose();
 
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 
     /**
-     * The starfield inside the frame, both faces (the passes cull), cut 4 x 6 so a doorway this big
-     * still holds its stars to the screen up close. Corners: a, a + up, a + up + across, a + across.
+     * The starfield inside the frame of a doorway {@code blocks} wide, both faces (the passes cull), cut
+     * into half-block cells so a doorway this big still holds its stars to the screen up close.
+     * Corners: a, a + up, a + up + across, a + across.
      */
-    private static PhantomVoid pane() {
-        float x0 = -HALF_WIDTH + FRAME;
-        float width = 2.0F * (HALF_WIDTH - FRAME);
+    private static PhantomVoid pane(int blocks) {
+        float halfWidth = blocks / 2.0F;
+        float x0 = -halfWidth + FRAME;
+        float width = 2.0F * (halfWidth - FRAME);
         float y0 = FRAME;
         float height = HEIGHT - 2.0F * FRAME;
+        int cutsAcross = blocks * 2;
+        int cutsUp = Math.round(HEIGHT * 2.0F);
         return PhantomVoid.builder()
-                .grid(x0, y0, 0.0F, width, 0, 0, 0, height, 0, 4, 6, 0, 0, 1)
-                .grid(x0, y0 + height, 0.0F, width, 0, 0, 0, -height, 0, 4, 6, 0, 0, -1)
+                .grid(x0, y0, 0.0F, width, 0, 0, 0, height, 0, cutsAcross, cutsUp, 0, 0, 1)
+                .grid(x0, y0 + height, 0.0F, width, 0, 0, 0, -height, 0, cutsAcross, cutsUp, 0, 0, -1)
                 .build();
     }
 
-    /** Two posts and two bars, each built of pieces at most a block long so the texture repeats rather than stretches. */
-    private static void frame(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite stone, int color, int light) {
-        float inner = HALF_WIDTH - FRAME;
-        for (float half : new float[] {0.0F, HEIGHT / 2.0F}) {
-            box(pose, c, stone, color, light, -HALF_WIDTH, half, -DEPTH, -inner, half + HEIGHT / 2.0F, DEPTH);
-            box(pose, c, stone, color, light, inner, half, -DEPTH, HALF_WIDTH, half + HEIGHT / 2.0F, DEPTH);
+    /**
+     * Two posts and two bars round a doorway {@code halfWidth} either side of its middle, each built of
+     * pieces at most a block long so the texture repeats rather than stretches.
+     */
+    private static void frame(PoseStack.Pose pose, VertexConsumer c, TextureAtlasSprite stone, int color, int light,
+                              float halfWidth) {
+        float inner = halfWidth - FRAME;
+        for (float y = 0.0F; y < HEIGHT - 1.0E-4F; y += 1.0F) {
+            float top = Math.min(y + 1.0F, HEIGHT);
+            box(pose, c, stone, color, light, -halfWidth, y, -DEPTH, -inner, top, DEPTH);
+            box(pose, c, stone, color, light, inner, y, -DEPTH, halfWidth, top, DEPTH);
         }
-        for (int side = -1; side <= 1; side += 2) {
-            float x0 = Math.min(0.0F, side * inner);
-            float x1 = Math.max(0.0F, side * inner);
-            box(pose, c, stone, color, light, x0, 0.0F, -DEPTH, x1, FRAME, DEPTH);
-            box(pose, c, stone, color, light, x0, HEIGHT - FRAME, -DEPTH, x1, HEIGHT, DEPTH);
+        for (float x = -inner; x < inner - 1.0E-4F; x += 1.0F) {
+            float end = Math.min(x + 1.0F, inner);
+            box(pose, c, stone, color, light, x, 0.0F, -DEPTH, end, FRAME, DEPTH);
+            box(pose, c, stone, color, light, x, HEIGHT - FRAME, -DEPTH, end, HEIGHT, DEPTH);
         }
     }
 

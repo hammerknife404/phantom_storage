@@ -4,6 +4,7 @@ import com.phantomstorage.PhantomStorage;
 import com.phantomstorage.entity.PhantomGatewayEntity;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.summon.AnchorManager;
+import com.phantomstorage.summon.GatewayManager;
 import com.phantomstorage.summon.PetKind;
 import com.phantomstorage.summon.PetManager;
 import java.io.FileWriter;
@@ -44,7 +45,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
  * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
- * collector's filter clicked through their screens. It creates a flat creative world,
+ * collector's filter clicked through their screens, "gatesize" the gateway's 3- or 2-wide fit. It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -162,6 +163,8 @@ public final class Harness {
                 voidScript();
             } else if ("filters".equals(System.getenv("PHANTOM_HARNESS"))) {
                 filtersScript();
+            } else if ("gatesize".equals(System.getenv("PHANTOM_HARNESS"))) {
+                gateSizeScript();
             } else {
                 script();
             }
@@ -380,10 +383,13 @@ public final class Harness {
         });
         step(20, () -> {
             p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
             use();
         });
         step(20, () -> server(() -> {
+            logActionBar();
             PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
+            log("anchor " + anchor);
             if (anchor != null) {
                 anchor.toggleStay(sp());
             }
@@ -391,11 +397,14 @@ public final class Harness {
         step(10, () -> cmd("tp @s 140.5 -60 0.5 90 0"));
         step(30, () -> {
             p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
             look(90, 0);
             use();
         });
         // Front: the side that faces whoever opened it.
         step(20, () -> {
+            logActionBar();
+            log("gate " + openGate() + " player at " + p().position());
             cmd("tp @s 141.5 -60 0.5 90 0");
         });
         step(10, () -> shot("g1_front"));
@@ -695,6 +704,125 @@ public final class Harness {
                         + ", ground " + groundCount(Items.COBBLESTONE) + ")",
                 count(Items.COBBLESTONE) == held[0] && groundCount(Items.COBBLESTONE) == 0));
         step(5, () -> {
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
+    /** The owner's open gateway, if any (server side). */
+    private static PhantomGatewayEntity openGate() {
+        PhantomGatewayEntity[] found = new PhantomGatewayEntity[1];
+        server(() -> {
+            for (PhantomGatewayEntity g : sp().serverLevel().getEntitiesOfClass(PhantomGatewayEntity.class,
+                    sp().getBoundingBox().inflate(8))) {
+                if (!g.isRemoved() && sp().getUUID().equals(g.getOwnerId())) {
+                    found[0] = g;
+                }
+            }
+        });
+        return found[0];
+    }
+
+    /**
+     * Uses the gateway charm (hotbar 1) the way a player does, the selected slot set on both sides,
+     * facing west. The action bar's answer is logged a few ticks later by {@link #logActionBar}.
+     */
+    private static void openGateNow() {
+        p().getInventory().selected = 1;
+        server(() -> sp().getInventory().selected = 1);
+        look(90, 0);
+        use();
+    }
+
+    private static void logActionBar() {
+        try {
+            java.lang.reflect.Field f = net.minecraft.client.gui.Gui.class.getDeclaredField("overlayMessageString");
+            f.setAccessible(true);
+            log("action bar: " + f.get(mc().gui));
+        } catch (ReflectiveOperationException e) {
+            log("action bar: " + e);
+        }
+    }
+
+    /** Opens a gateway from (x, -60, z) facing west, after closing any open one. */
+    private static void openGateFrom(double x, double z) {
+        server(() -> GatewayManager.closeFor(sp()));
+        cmd("tp @s " + x + " -60 " + z + " 90 0");
+    }
+
+    /**
+     * The gateway's size: 3 wide in the open; 2 wide, on the clear side, when a block stands where the
+     * third column would go; none under a 2-high ceiling. Then walking into it sends you to the anchor.
+     */
+    private static void gateSizeScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 100.5 -60 0.5 0 0");
+        });
+        step(20, () -> {
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            use();
+        });
+        step(20, () -> server(() -> {
+            PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
+            if (anchor != null) {
+                anchor.toggleStay(sp());
+            }
+        }));
+        // A: the open field.
+        step(10, () -> openGateFrom(140.5, 0.5));
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("A gate " + (g == null ? null : g.position() + " width " + g.doorWidth() + " box " + g.getBoundingBox()));
+            check("open field: 3 wide, 2 blocks ahead", g != null && g.doorWidth() == 3
+                    && Math.abs(g.getX() - 138.5) < 1.0E-6 && Math.abs(g.getZ() - 0.5) < 1.0E-6
+                    && Math.abs(g.getBoundingBox().getZsize() - 3.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getXsize() - 1.0) < 1.0E-6
+                    && Math.abs(g.getBoundingBox().getYsize() - 3.0) < 1.0E-6);
+        });
+        step(5, () -> cmd("tp @s 142.5 -60 0.5 90 0"));
+        step(20, () -> shot("s1_gate_3x3"));
+        // Walking in sends you to the anchor.
+        step(5, () -> cmd("tp @s 139.2 -60 0.5 90 0"));
+        step(20, () -> check("walking in lands by the anchor (at " + p().position() + ")", p().position().distanceTo(new Vec3(100.5, -60, 0.5)) < 6.0));
+        // B: a block where the third column would go: 2 wide, on the clear side.
+        step(10, () -> {
+            cmd("setblock 138 -58 1 minecraft:stone");
+            cmd("setblock 137 -58 1 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("B gate " + (g == null ? null : g.position() + " width " + g.doorWidth() + " box " + g.getBoundingBox()));
+            check("a block in the way: 2 wide on the clear side", g != null && g.doorWidth() == 2
+                    && Math.abs(g.getZ() - 0.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getZsize() - 2.0) < 1.0E-6);
+        });
+        step(5, () -> cmd("tp @s 142.5 -60 0.5 90 0"));
+        step(20, () -> shot("s2_gate_2x3"));
+        // C: a 2-high ceiling: no room.
+        step(10, () -> {
+            cmd("fill 136 -58 -3 138 -58 4 minecraft:stone");
+            openGateFrom(140.5, 0.5);
+        });
+        step(20, () -> openGateNow());
+        step(10, () -> {
+            logActionBar();
+            check("under a 2-high ceiling: no gateway", openGate() == null);
+        });
+        step(5, () -> {
+            cmd("fill 136 -58 -3 138 -58 4 minecraft:air");
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());
