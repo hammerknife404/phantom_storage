@@ -45,7 +45,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
  * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
- * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling), "docs" the wiki's screenshots (d_*.png, 1280x720; panel crop boxes in the log). It creates a flat creative world,
+ * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling), "docs" the wiki's screenshots (d_*.png, 1280x720; panel crop boxes in the log), "gallery" the Modrinth gallery's frames (g_*.png, 1920x1080, in a normal world; PHANTOM_SEED picks it). It creates a flat creative world (normal for "gallery"),
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -169,6 +169,8 @@ public final class Harness {
                 gateFlatScript();
             } else if ("docs".equals(System.getenv("PHANTOM_HARNESS"))) {
                 docsScript();
+            } else if ("gallery".equals(System.getenv("PHANTOM_HARNESS"))) {
+                galleryScript();
             } else {
                 script();
             }
@@ -718,13 +720,18 @@ public final class Harness {
      * anchor is out: the first use right after the world loads doesn't always land.
      */
     private static void anchorHere() {
+        anchorHere(0);
+    }
+
+    /** As {@link #anchorHere()}, with the anchor charm in hotbar {@code slot}. */
+    private static void anchorHere(int slot) {
         int[] tries = new int[1];
         until(() -> {
             boolean[] out = new boolean[1];
             server(() -> out[0] = PetManager.getActive(PetKind.ANCHOR, p().getUUID()) != null);
             if (!out[0] && tries[0]++ % 20 == 0) {
-                p().getInventory().selected = 0;
-                server(() -> sp().getInventory().selected = 0);
+                p().getInventory().selected = slot;
+                server(() -> sp().getInventory().selected = slot);
                 use();
             }
             return out[0];
@@ -1062,6 +1069,36 @@ public final class Harness {
         }
     }
 
+    /** Fills the storage, the tanks, the void grid and the collector's filter and bank, for panel shots. */
+    private static void stockAll() {
+        net.minecraft.world.item.Item[] items = {Items.DIAMOND, Items.IRON_INGOT, Items.GOLD_INGOT, Items.REDSTONE, Items.LAPIS_LAZULI,
+                Items.EMERALD, Items.OAK_LOG, Items.SPRUCE_PLANKS, Items.COBBLESTONE, Items.DEEPSLATE, Items.TORCH, Items.BREAD,
+                Items.GOLDEN_APPLE, Items.ENDER_PEARL, Items.ARROW, Items.BONE, Items.STRING, Items.GUNPOWDER, Items.AMETHYST_SHARD,
+                Items.COPPER_INGOT, Items.GLASS, Items.BOOK, Items.EXPERIENCE_BOTTLE, Items.SHULKER_SHELL};
+        int[] counts = {64, 48, 23, 64, 37, 12, 64, 64, 64, 64, 64, 32, 3, 16, 64, 21, 30, 17, 9, 41, 64, 7, 12, 2};
+        for (int i = 0; i < items.length; i++) {
+            stock(i, items[i], counts[i]);
+        }
+        server(() -> {
+            com.phantomstorage.storage.ItemFilter voids = sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter();
+            voids.setItem(0, new ItemStack(Items.ROTTEN_FLESH));
+            voids.setItem(1, new ItemStack(Items.POISONOUS_POTATO));
+            voids.setItem(2, new ItemStack(Items.DIRT));
+            com.phantomstorage.storage.CollectorSettings collector = sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR);
+            collector.filter().setItem(0, new ItemStack(Items.BONE));
+            collector.filter().setItem(1, new ItemStack(Items.ARROW));
+            collector.filter().setItem(2, new ItemStack(Items.STRING));
+            collector.filter().setItem(3, new ItemStack(Items.GUNPOWDER));
+            collector.bank(345);
+            com.phantomstorage.storage.PhantomTanks tanks = sp().getData(com.phantomstorage.registry.ModRegistries.TANKS);
+            tanks.tank(0).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 24000),
+                    net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+            tanks.tank(1).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 9000),
+                    net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+            tanks.setActive(0);
+        });
+    }
+
     private static void stock(int slot, net.minecraft.world.item.Item item, int count) {
         server(() -> sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).setItem(slot, new ItemStack(item, count)));
     }
@@ -1091,34 +1128,7 @@ public final class Harness {
             opacity(100);
         });
         // Stock the storage, tanks and filters so the panels show something.
-        step(10, () -> {
-            net.minecraft.world.item.Item[] items = {Items.DIAMOND, Items.IRON_INGOT, Items.GOLD_INGOT, Items.REDSTONE, Items.LAPIS_LAZULI,
-                    Items.EMERALD, Items.OAK_LOG, Items.SPRUCE_PLANKS, Items.COBBLESTONE, Items.DEEPSLATE, Items.TORCH, Items.BREAD,
-                    Items.GOLDEN_APPLE, Items.ENDER_PEARL, Items.ARROW, Items.BONE, Items.STRING, Items.GUNPOWDER, Items.AMETHYST_SHARD,
-                    Items.COPPER_INGOT, Items.GLASS, Items.BOOK, Items.EXPERIENCE_BOTTLE, Items.SHULKER_SHELL};
-            int[] counts = {64, 48, 23, 64, 37, 12, 64, 64, 64, 64, 64, 32, 3, 16, 64, 21, 30, 17, 9, 41, 64, 7, 12, 2};
-            for (int i = 0; i < items.length; i++) {
-                stock(i, items[i], counts[i]);
-            }
-            server(() -> {
-                com.phantomstorage.storage.ItemFilter voids = sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter();
-                voids.setItem(0, new ItemStack(Items.ROTTEN_FLESH));
-                voids.setItem(1, new ItemStack(Items.POISONOUS_POTATO));
-                voids.setItem(2, new ItemStack(Items.DIRT));
-                com.phantomstorage.storage.CollectorSettings collector = sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR);
-                collector.filter().setItem(0, new ItemStack(Items.BONE));
-                collector.filter().setItem(1, new ItemStack(Items.ARROW));
-                collector.filter().setItem(2, new ItemStack(Items.STRING));
-                collector.filter().setItem(3, new ItemStack(Items.GUNPOWDER));
-                collector.bank(345);
-                com.phantomstorage.storage.PhantomTanks tanks = sp().getData(com.phantomstorage.registry.ModRegistries.TANKS);
-                tanks.tank(0).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.WATER, 24000),
-                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                tanks.tank(1).fill(new net.neoforged.neoforge.fluids.FluidStack(net.minecraft.world.level.material.Fluids.LAVA, 9000),
-                        net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                tanks.setActive(0);
-            });
-        });
+        step(10, Harness::stockAll);
         // The four pets in a row, facing the camera.
         for (int i = 0; i < 4; i++) {
             int slot = i;
@@ -1240,6 +1250,618 @@ public final class Harness {
         step(20, () -> mc().stop());
     }
 
+    // ---- gallery: Modrinth frames in a normal world ------------------------------------------
+
+    /** The gallery world's seed: PHANTOM_SEED if set, else a fixed one. */
+    private static final long GALLERY_SEED = seedFromEnv();
+    /**
+     * The gallery's site, found once the world is up: the top of a cliff, the way down it as a unit x/z
+     * step, and the ground heights on top and at the foot. Spots are (along, side): blocks from the top
+     * toward the foot, and to the right of that line.
+     */
+    private static int topX, topZ, downX = 1, downZ, topY, footY;
+    /** Along the line: the cliff face at the foot's level, and the first open column at the rider's height. */
+    private static double faceAtFoot, faceAtRider;
+    private static int riderY;
+    private static float yawDown;
+
+    private static long seedFromEnv() {
+        String s = System.getenv("PHANTOM_SEED");
+        if (s == null || s.isBlank()) {
+            return 4815162342L;
+        }
+        try {
+            return Long.parseLong(s.trim());
+        } catch (NumberFormatException e) {
+            return s.hashCode();
+        }
+    }
+
+    private static double gx(double along, double side) {
+        return topX + 0.5 + along * downX - side * downZ;
+    }
+
+    private static double gz(double along, double side) {
+        return topZ + 0.5 + along * downZ + side * downX;
+    }
+
+    /**
+     * The first air block above the ground at (x, z): below any tree (logs and leaves), plants and snow
+     * layers. Loads the chunk; client thread only.
+     */
+    private static int ground(double x, double z) {
+        int bx = net.minecraft.util.Mth.floor(x);
+        int bz = net.minecraft.util.Mth.floor(z);
+        int[] out = new int[1];
+        server(() -> {
+            ServerLevel level = sp().serverLevel();
+            level.getChunk(bx >> 4, bz >> 4);
+            int y = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, bx, bz);
+            while (y > level.getMinBuildHeight()) {
+                net.minecraft.world.level.block.state.BlockState below = level.getBlockState(new net.minecraft.core.BlockPos(bx, y - 1, bz));
+                if (below.is(net.minecraft.tags.BlockTags.LOGS) || below.is(net.minecraft.tags.BlockTags.LEAVES) || below.canBeReplaced()) {
+                    y--;
+                } else {
+                    break;
+                }
+            }
+            out[0] = y;
+        });
+        return out[0];
+    }
+
+    private static int groundAt(double along, double side) {
+        return ground(gx(along, side), gz(along, side));
+    }
+
+    private static void tp(double x, double y, double z, float yaw, float pitch) {
+        cmd(String.format(java.util.Locale.ROOT, "tp @s %.3f %.3f %.3f %.2f %.2f", x, y, z, yaw, pitch));
+    }
+
+    /** Teleports the player's feet to (along, side) at height y, their eyes on the world point (lx, ly, lz). */
+    private static void tpLooking(double along, double side, double y, double lx, double ly, double lz) {
+        double x = gx(along, side);
+        double z = gz(along, side);
+        double dx = lx - x;
+        double dy = ly - (y + 1.62);
+        double dz = lz - z;
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz)));
+        tp(x, y, z, yaw, pitch);
+    }
+
+    private static void setAt(double along, double side, int y, String block) {
+        cmd(String.format(java.util.Locale.ROOT, "setblock %d %d %d %s", net.minecraft.util.Mth.floor(gx(along, side)), y,
+                net.minecraft.util.Mth.floor(gz(along, side)), block));
+    }
+
+    /** Holds the owner's pet of {@code kind} (staying) at (x, y, z), facing {@code yaw}. */
+    private static void pose(PetKind kind, double x, double y, double z, float yaw) {
+        server(() -> {
+            PhantomPetEntity pet = PetManager.getActive(kind, p().getUUID());
+            if (pet == null) {
+                check(kind + " is out", false);
+                return;
+            }
+            if (!pet.isOrderedToSit()) {
+                pet.toggleStay(sp());
+            }
+            pet.setYRot(yaw);
+            pet.yRotO = yaw;
+            pet.yBodyRot = yaw;
+            pet.yHeadRot = yaw;
+            pet.relocate(x, y, z);
+        });
+    }
+
+    private static void poseAt(PetKind kind, double along, double side, double above, float yaw) {
+        pose(kind, gx(along, side), groundAt(along, side) + above, gz(along, side), yaw);
+    }
+
+    private static void fly(boolean on) {
+        p().getAbilities().flying = on;
+        p().onUpdateAbilities();
+        server(() -> {
+            sp().getAbilities().flying = on;
+            sp().onUpdateAbilities();
+        });
+    }
+
+    /** Waits {@code ticks}, then until the client has built every chunk section it has. */
+    private static void settle(int ticks) {
+        step(ticks, () -> {});
+        until(() -> mc().levelRenderer.hasRenderedAllSections());
+        step(20, () -> {});
+    }
+
+    /**
+     * Finds the site near the closest cherry grove: the steepest dry drop of 6 to 40 blocks over 4, with
+     * level ground on top and at the foot, from the terrain generator's heights (no chunks needed).
+     */
+    private static void scout() {
+        server(() -> {
+            ServerLevel level = sp().serverLevel();
+            net.minecraft.core.BlockPos from = sp().blockPosition();
+            var grove = level.findClosestBiome3d(b -> b.is(net.minecraft.world.level.biome.Biomes.CHERRY_GROVE), from, 6400, 32, 64);
+            net.minecraft.core.BlockPos c = grove == null ? from : grove.getFirst();
+            log("cherry grove " + (grove == null ? "not found, using spawn" : "at " + c));
+            var gen = level.getChunkSource().getGenerator();
+            var random = level.getChunkSource().randomState();
+            int r = 112;
+            int s = 2;
+            int n = 2 * r / s + 1;
+            int[][] land = new int[n][n];
+            int[][] top = new int[n][n];
+            // 2: cherry grove, 1: meadow, 0: other green land, -1: snow, ice or anything else.
+            int[][] kind = new int[n][n];
+            var biomes = gen.getBiomeSource();
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    int x = c.getX() - r + i * s;
+                    int z = c.getZ() - r + j * s;
+                    land[i][j] = gen.getBaseHeight(x, z, net.minecraft.world.level.levelgen.Heightmap.Types.OCEAN_FLOOR_WG, level, random);
+                    top[i][j] = gen.getBaseHeight(x, z, net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, level, random);
+                    var b = biomes.getNoiseBiome(net.minecraft.core.QuartPos.fromBlock(x), net.minecraft.core.QuartPos.fromBlock(land[i][j]),
+                            net.minecraft.core.QuartPos.fromBlock(z), random.sampler());
+                    kind[i][j] = b.is(net.minecraft.world.level.biome.Biomes.CHERRY_GROVE) ? 2
+                            : b.is(net.minecraft.world.level.biome.Biomes.MEADOW) ? 1
+                            : b.is(net.minecraft.world.level.biome.Biomes.PLAINS) || b.is(net.minecraft.world.level.biome.Biomes.SUNFLOWER_PLAINS)
+                                    || b.is(net.minecraft.world.level.biome.Biomes.FOREST) || b.is(net.minecraft.world.level.biome.Biomes.FLOWER_FOREST)
+                                    || b.is(net.minecraft.world.level.biome.Biomes.BIRCH_FOREST) ? 0 : -1;
+                }
+            }
+            int[][] dirs = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            int best = -1;
+            double bestDist = 0;
+            for (int i = 4; i < n - 4; i++) {
+                for (int j = 4; j < n - 4; j++) {
+                    for (int[] d : dirs) {
+                        int hTop = land[i][j];
+                        int fi = i + 2 * d[0];
+                        int fj = j + 2 * d[1];
+                        int hFoot = land[fi][fj];
+                        int drop = hTop - hFoot;
+                        if (drop < 6 || drop > 40 || hFoot < 64 || top[fi][fj] != hFoot || top[i][j] != hTop
+                                || kind[i][j] < 1 || kind[fi][fj] < 0 || kind[i + 4 * d[0]][j + 4 * d[1]] < 0) {
+                            continue;
+                        }
+                        if (Math.abs(land[i + 3 * d[0]][j + 3 * d[1]] - hFoot) > 2 || Math.abs(land[i + 4 * d[0]][j + 4 * d[1]] - hFoot) > 3
+                                || Math.abs(land[i - d[0]][j - d[1]] - hTop) > 2 || Math.abs(land[i - 3 * d[0]][j - 3 * d[1]] - hTop) > 3) {
+                            continue;
+                        }
+                        int score = Math.min(drop, 18) + 6 * kind[i][j] + 3 * kind[fi][fj];
+                        double dist = Math.hypot(i * s - r, j * s - r);
+                        if (score > best || score == best && dist < bestDist) {
+                            best = score;
+                            bestDist = dist;
+                            topX = c.getX() - r + i * s;
+                            topZ = c.getZ() - r + j * s;
+                            downX = d[0];
+                            downZ = d[1];
+                        }
+                    }
+                }
+            }
+            if (best < 0) {
+                topX = c.getX();
+                topZ = c.getZ();
+                log("no cliff found; using the grove itself");
+            }
+            log("site top " + topX + ", " + topZ + " down " + downX + ", " + downZ + " drop score " + best);
+        });
+    }
+
+    /** The highest ground on the line between two spots (along, side), a block either side of it. */
+    private static int maxGround(double a0, double s0, double a1, double s1) {
+        int top = Integer.MIN_VALUE;
+        int steps = (int) Math.ceil(Math.hypot(a1 - a0, s1 - s0) * 2) + 1;
+        for (int i = 0; i <= steps; i++) {
+            double a = a0 + (a1 - a0) * i / steps;
+            double s = s0 + (s1 - s0) * i / steps;
+            for (double ds = -1; ds <= 1; ds++) {
+                top = Math.max(top, groundAt(a, s + ds));
+            }
+        }
+        return top;
+    }
+
+    /**
+     * A first-person camera hovering at (along, side), its feet {@code above} blocks over the highest ground
+     * between it and the subject (so nothing hides it), looking at the world point (lx, ly, lz).
+     */
+    private static void camera(double along, double side, double above, double lx, double ly, double lz) {
+        double sa = (gx(along, side) - topX - 0.5) * downX + (gz(along, side) - topZ - 0.5) * downZ;
+        double la = (lx - topX - 0.5) * downX + (lz - topZ - 0.5) * downZ;
+        double ls = -(lx - topX - 0.5) * downZ + (lz - topZ - 0.5) * downX;
+        int floor = maxGround(sa, side, sa + (la - sa) * 0.6, side + (ls - side) * 0.6);
+        fly(true);
+        tpLooking(along, side, Math.max(floor, groundAt(along, side)) + above, lx, ly, lz);
+    }
+
+    /**
+     * Removes whole trees (connected logs and leaves) that reach into the box round two spots, so a view
+     * is clear without leaving floating leaves. Stays within 8 blocks of the box.
+     */
+    private static void clearTrees(double a0, double s0, double a1, double s1, double pad, int y0, int y1) {
+        double xa = gx(a0, s0);
+        double za = gz(a0, s0);
+        double xb = gx(a1, s1);
+        double zb = gz(a1, s1);
+        int x0 = net.minecraft.util.Mth.floor(Math.min(xa, xb) - pad);
+        int x1 = net.minecraft.util.Mth.floor(Math.max(xa, xb) + pad);
+        int z0 = net.minecraft.util.Mth.floor(Math.min(za, zb) - pad);
+        int z1 = net.minecraft.util.Mth.floor(Math.max(za, zb) + pad);
+        server(() -> {
+            ServerLevel level = sp().serverLevel();
+            java.util.ArrayDeque<net.minecraft.core.BlockPos> queue = new java.util.ArrayDeque<>();
+            java.util.Set<net.minecraft.core.BlockPos> tree = new java.util.HashSet<>();
+            for (int x = x0; x <= x1; x++) {
+                for (int y = y0; y <= y1; y++) {
+                    for (int z = z0; z <= z1; z++) {
+                        net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(x, y, z);
+                        if (isTree(level, pos) && tree.add(pos)) {
+                            queue.add(pos);
+                        }
+                    }
+                }
+            }
+            while (!queue.isEmpty() && tree.size() < 20000) {
+                net.minecraft.core.BlockPos pos = queue.poll();
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        for (int dz = -1; dz <= 1; dz++) {
+                            net.minecraft.core.BlockPos next = pos.offset(dx, dy, dz);
+                            if (next.getX() >= x0 - 8 && next.getX() <= x1 + 8 && next.getZ() >= z0 - 8 && next.getZ() <= z1 + 8
+                                    && next.getY() >= y0 - 4 && next.getY() <= y1 + 24 && isTree(level, next) && tree.add(next)) {
+                                queue.add(next);
+                            }
+                        }
+                    }
+                }
+            }
+            for (net.minecraft.core.BlockPos pos : tree) {
+                level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),
+                        net.minecraft.world.level.block.Block.UPDATE_CLIENTS | net.minecraft.world.level.block.Block.UPDATE_KNOWN_SHAPE);
+            }
+            log("cleared " + tree.size() + " tree blocks");
+        });
+    }
+
+    private static boolean isTree(ServerLevel level, net.minecraft.core.BlockPos pos) {
+        net.minecraft.world.level.block.state.BlockState state = level.getBlockState(pos);
+        return state.is(net.minecraft.tags.BlockTags.LOGS) || state.is(net.minecraft.tags.BlockTags.LEAVES);
+    }
+
+    /** Sends away every pet of the owner's but the anchor, and those in {@code keep}. */
+    private static void onlyPets(PetKind... keep) {
+        java.util.List<PetKind> kept = java.util.List.of(keep);
+        server(() -> {
+            for (PetKind kind : new PetKind[] {PetKind.CHEST, PetKind.TANK, PetKind.COLLECTOR}) {
+                if (!kept.contains(kind) && PetManager.getActive(kind, p().getUUID()) != null) {
+                    PetManager.dismiss(kind, sp(), false);
+                }
+            }
+        });
+    }
+
+    /** The open gateway's middle, or the world point at (along, side) if none is open. */
+    private static Vec3 gateMiddle(double along, double side) {
+        PhantomGatewayEntity gate = openGate();
+        return gate == null ? new Vec3(gx(along, side), topY + 1.5, gz(along, side)) : gate.getBoundingBox().getCenter();
+    }
+
+    /**
+     * Frames for the Modrinth gallery, 1920x1080, HUD hidden, in a normal world (PHANTOM_SEED picks it), at a
+     * cliff by a cherry grove: the pets in a row; each panel; the bell; the gateway standing, from the side
+     * and head on; riding the chest by the cliff face with a ledge being built; the collector at work; a
+     * flat gateway from above, under a fall and from the cliff edge; the 1 x 2 gateway in a tunnel; the
+     * gateway, tank and collector at night. Saved as g_*.png. Cameras hover over the ground between them
+     * and what they show, and trees in the way are taken out whole.
+     */
+    private static void galleryScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(40, () -> org.lwjgl.glfw.GLFW.glfwSetWindowSize(mc().getWindow().getWindow(), 1920, 1080));
+        step(40, () -> {
+            log("window " + mc().getWindow().getWidth() + "x" + mc().getWindow().getHeight() + " gui scale " + mc().getWindow().getGuiScale()
+                    + " seed " + GALLERY_SEED);
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("gamerule doMobSpawning false");
+            cmd("gamerule doFireTick false");
+            cmd("time set 2000");
+            cmd("weather clear 100000");
+            cmd("phantomstorage unlock all");
+            String[] modes = {"anchor", "gateway", "chest", "tank", "collector", "saddle", "bell"};
+            for (int i = 0; i < modes.length; i++) {
+                cmd("item replace entity @s hotbar." + i + " with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"" + modes[i] + "\"]");
+            }
+            cmd("item replace entity @s hotbar.8 with minecraft:spruce_planks 64");
+            opacity(100);
+        });
+        step(10, Harness::stockAll);
+        step(10, Harness::scout);
+        step(5, () -> {
+            fly(true);
+            tp(topX + 0.5, 200, topZ + 0.5, 0, 0);
+        });
+        settle(400);
+        step(5, () -> {
+            topY = groundAt(0, 0);
+            footY = groundAt(4, 0);
+            yawDown = (float) Math.toDegrees(Math.atan2(-downX, downZ));
+            faceAtFoot = 4;
+            for (double a = 4; a >= -2; a -= 0.5) {
+                if (groundAt(a, 0) >= footY + 3) {
+                    faceAtFoot = a;
+                    break;
+                }
+            }
+            riderY = footY + Math.max(2, (topY - footY) / 2);
+            faceAtRider = 0;
+            for (double a = 0; a <= 6; a += 0.5) {
+                if (groundAt(a, 0) <= riderY) {
+                    faceAtRider = a;
+                    break;
+                }
+            }
+            log("heights top " + topY + " foot " + footY + " face at foot " + faceAtFoot + " rider y " + riderY + " at " + faceAtRider
+                    + " yaw down " + yawDown);
+            // Trees out of the cliff top's views, the foot's and the drop between.
+            clearTrees(-8.0, 0, 0.5, 0, 3.0, topY - 2, topY + 14);
+            clearTrees(3.0, 0, 12.0, 0, 2.5, footY - 2, topY + 14);
+        });
+        settle(40);
+
+        // The four pets in a row over the cliff top, level with each other, the drop behind them.
+        int[] summon = {2, 3, 0, 4};
+        for (int slot : summon) {
+            step(15, () -> useSlot(slot));
+        }
+        PetKind[] row = {PetKind.CHEST, PetKind.TANK, PetKind.ANCHOR, PetKind.COLLECTOR};
+        double[] sides = {-1.95, -0.65, 0.65, 1.95};
+        int[] rowY = new int[1];
+        Runnable poseRow = () -> {
+            for (int i = 0; i < row.length; i++) {
+                pose(row[i], gx(-2.0, sides[i]), rowY[0] + 1.0, gz(-2.0, sides[i]), yawDown + 180.0F);
+            }
+        };
+        step(30, () -> {
+            rowY[0] = maxGround(-3.0, 0, -1.0, 0);
+            for (double s = -2.5; s <= 2.5; s += 1.0) {
+                rowY[0] = Math.max(rowY[0], groundAt(-2.0, s));
+            }
+            poseRow.run();
+        });
+        step(60, () -> {
+            poseRow.run();
+            camera(-5.6, 0, 0.2, gx(-2.0, 0), rowY[0] + 1.4, gz(-2.0, 0));
+        });
+        step(30, () -> shot("g_pets"));
+
+        // Each panel, over the same view.
+        PetKind[] kinds = {PetKind.CHEST, PetKind.TANK, PetKind.ANCHOR, PetKind.COLLECTOR};
+        String[] names = {"chest", "tank", "anchor", "collector"};
+        for (int i = 0; i < kinds.length; i++) {
+            PetKind kind = kinds[i];
+            String name = names[i];
+            step(10, () -> server(() -> PetManager.getActive(kind, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> parkMouse());
+            step(5, () -> shot("g_panel_" + name));
+            step(10, () -> p().closeContainer());
+        }
+
+        // The bell: every pet at once, seen from the front with the drop behind.
+        step(10, () -> server(() -> PetManager.dismissAll(sp(), false)));
+        step(20, () -> {
+            fly(true);
+            tp(gx(-1.5, 0), maxGround(-2.5, 0, -0.5, 0) + 0.3, gz(-1.5, 0), yawDown + 180.0F, -12.0F);
+            mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+        });
+        step(10, () -> useSlot(6));
+        step(20, () -> shot("g_bell_a"));
+        step(25, () -> shot("g_bell_b"));
+        step(40, () -> shot("g_bell_c"));
+        step(5, () -> mc().options.setCameraType(CameraType.FIRST_PERSON));
+
+        // The anchor, anchored out of sight down the valley, for the gateways to lead to.
+        step(5, () -> {
+            onlyPets();
+            server(() -> PetManager.dismiss(PetKind.ANCHOR, sp(), false));
+            fly(false);
+            tp(gx(30, 24), groundAt(30, 24), gz(30, 24), yawDown, 0);
+        });
+        settle(20);
+        anchorHere(0);
+
+        // The gateway standing on the cliff top: from the side, then head on.
+        step(5, () -> {
+            fly(false);
+            tp(gx(-5.5, 0), groundAt(-5.5, 0), gz(-5.5, 0), yawDown, 0);
+        });
+        step(20, () -> openGateLooking(yawDown, 0.0F));
+        step(25, () -> {
+            log("gallery gate " + describe(openGate()));
+            Vec3 m = gateMiddle(-3.0, 0);
+            camera(-8.5, 3.0, 0.3, m.x, m.y, m.z);
+        });
+        step(25, () -> shot("g_gate"));
+        step(5, () -> {
+            Vec3 m = gateMiddle(-3.0, 0);
+            camera(-8.0, 0, 0.3, m.x, m.y, m.z);
+        });
+        step(20, () -> shot("g_gate_through"));
+
+        // Riding the chest by the cliff face, a ledge being built on it, planks in hand.
+        step(5, () -> {
+            server(() -> GatewayManager.closeFor(sp()));
+            for (double side = -1; side <= 1; side++) {
+                setAt(faceAtRider, side, riderY + 1, "minecraft:spruce_planks keep");
+            }
+            setAt(faceAtRider, 1, riderY + 2, "minecraft:lantern keep");
+            setAt(faceAtRider, -1, riderY + 2, "minecraft:spruce_fence keep");
+            setAt(faceAtRider, -1, riderY + 3, "minecraft:lantern keep");
+            p().getInventory().selected = 8;
+            server(() -> sp().getInventory().selected = 8);
+            fly(true);
+            tp(gx(faceAtRider + 2.5, -3.5), riderY, gz(faceAtRider + 2.5, -3.5), yawDown, 0);
+            useSlot(2);
+            p().getInventory().selected = 8;
+            server(() -> sp().getInventory().selected = 8);
+        });
+        step(15, () -> server(() -> {
+            PhantomPetEntity chest = PetManager.getActive(PetKind.CHEST, p().getUUID());
+            if (chest == null) {
+                check("chest out for the saddle shot", false);
+                return;
+            }
+            chest.carry(sp(), new Vec3(gx(faceAtRider + 2.5, -3.5), riderY, gz(faceAtRider + 2.5, -3.5)));
+        }));
+        step(10, () -> {
+            double x = gx(faceAtRider + 2.5, -3.5) - gx(faceAtRider, 0);
+            double z = gz(faceAtRider + 2.5, -3.5) - gz(faceAtRider, 0);
+            look((float) Math.toDegrees(Math.atan2(x, -z)), 18.0F);
+            mc().options.setCameraType(CameraType.THIRD_PERSON_BACK);
+        });
+        step(30, () -> shot("g_saddle"));
+        step(5, () -> {
+            server(() -> sp().stopRiding());
+            mc().options.setCameraType(CameraType.FIRST_PERSON);
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            onlyPets();
+        });
+
+        // The collector at work at the cliff's foot: drops lying round it, taken one by one.
+        step(10, () -> {
+            server(() -> {
+                com.phantomstorage.storage.CollectorSettings settings = sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR);
+                for (int i = 0; i < 4; i++) {
+                    settings.filter().setItem(i, ItemStack.EMPTY);
+                }
+            });
+            camera(5.2, -1.5, 1.2, gx(8.5, 0), groundAt(8.5, 0) + 0.7, gz(8.5, 0));
+        });
+        step(10, () -> useSlot(4));
+        step(20, () -> poseAt(PetKind.COLLECTOR, 8.5, 0, 1.3, yawDown + 160.0F));
+        step(10, () -> {
+            net.minecraft.world.item.Item[] drops = {Items.BONE, Items.ARROW, Items.ROTTEN_FLESH, Items.STRING, Items.GUNPOWDER,
+                    Items.SPIDER_EYE, Items.IRON_NUGGET, Items.COPPER_INGOT, Items.BONE, Items.ARROW, Items.STRING, Items.ROTTEN_FLESH,
+                    Items.REDSTONE, Items.BONE, Items.GUNPOWDER, Items.ARROW};
+            java.util.Random rand = new java.util.Random(7);
+            double[][] spots = new double[drops.length][3];
+            for (int i = 0; i < drops.length; i++) {
+                double ang = rand.nextDouble() * Math.PI * 2;
+                double rad = 0.8 + rand.nextDouble() * 1.7;
+                spots[i][0] = gx(8.5 + Math.cos(ang) * rad, Math.sin(ang) * rad);
+                spots[i][1] = gz(8.5 + Math.cos(ang) * rad, Math.sin(ang) * rad);
+                spots[i][2] = ground(spots[i][0], spots[i][1]) + 0.05;
+            }
+            server(() -> {
+                ServerLevel level = sp().serverLevel();
+                for (int i = 0; i < drops.length; i++) {
+                    ItemEntity item = new ItemEntity(level, spots[i][0], spots[i][2], spots[i][1], new ItemStack(drops[i], 1 + i % 3));
+                    item.setDeltaMovement(Vec3.ZERO);
+                    item.setPickUpDelay(90 + i * 6);
+                    level.addFreshEntity(item);
+                }
+            });
+            camera(5.2, -1.5, 1.2, gx(8.5, 0), groundAt(8.5, 0) + 0.7, gz(8.5, 0));
+        });
+        step(20, () -> {
+            double ox = gx(9.2, -1.0);
+            double oz = gz(9.2, -1.0);
+            double oy = ground(ox, oz) + 0.3;
+            server(() -> {
+                for (int i = 0; i < 5; i++) {
+                    sp().serverLevel().addFreshEntity(new net.minecraft.world.entity.ExperienceOrb(sp().serverLevel(), ox + i * 0.3, oy, oz - i * 0.25, 7));
+                }
+            });
+        });
+        step(2, () -> shot("g_collector_a"));
+        step(70, () -> shot("g_collector_b"));
+        step(9, () -> shot("g_collector_c"));
+        step(9, () -> shot("g_collector_d"));
+        step(15, () -> shot("g_collector_e"));
+
+        // A gateway laid flat on the ground at the foot: from straight above, under a fall, from the edge.
+        step(120, () -> {
+            onlyPets();
+            fly(true);
+            tp(gx(6.0, 0), footY + 7, gz(6.0, 0), yawDown, 65.0F);
+        });
+        step(15, () -> openGateLooking(yawDown, 65.0F));
+        step(25, () -> {
+            PhantomGatewayEntity gate = openGate();
+            log("gallery flat gate " + describe(gate));
+            if (gate != null) {
+                tp(gate.getX(), gate.getY() + 7.0, gate.getZ(), yawDown, 90.0F);
+            }
+        });
+        step(25, () -> shot("g_gate_flat"));
+        step(5, () -> {
+            PhantomGatewayEntity gate = openGate();
+            if (gate != null) {
+                // Falling toward it, looking up: the camera in front of them, above, looking back down past them to it.
+                tp(gate.getX() - downX * 0.6, gate.getY() + 5.0, gate.getZ() - downZ * 0.6, yawDown, -58.0F);
+            }
+            mc().options.setCameraType(CameraType.THIRD_PERSON_FRONT);
+        });
+        step(25, () -> shot("g_gate_fall"));
+        step(5, () -> {
+            mc().options.setCameraType(CameraType.FIRST_PERSON);
+            Vec3 m = gateMiddle(10.0, 0);
+            fly(true);
+            tpLooking(-0.6, 1.5, groundAt(-0.6, 1.5) + 0.2, m.x, m.y, m.z);
+        });
+        step(25, () -> shot("g_gate_below"));
+        step(5, () -> server(() -> GatewayManager.closeFor(sp())));
+
+        // The 1 x 2 gateway in a tunnel dug into the cliff, lit from its ceiling.
+        step(10, () -> {
+            for (double a = faceAtFoot + 2.0; a >= faceAtFoot - 8.0; a -= 1.0) {
+                setAt(a, 0, footY, "minecraft:air");
+                setAt(a, 0, footY + 1, "minecraft:air");
+            }
+            setAt(faceAtFoot - 5.0, 0, footY + 2, "minecraft:shroomlight");
+            setAt(faceAtFoot - 2.0, 0, footY + 2, "minecraft:shroomlight");
+            fly(false);
+            tp(gx(faceAtFoot + 1.0, 0), footY, gz(faceAtFoot + 1.0, 0), yawDown + 180.0F, 0);
+        });
+        step(20, () -> openGateLooking(yawDown + 180.0F, 0.0F));
+        step(25, () -> {
+            log("gallery tunnel gate " + describe(openGate()));
+            fly(true);
+            tp(gx(faceAtFoot + 3.5, 0), footY + 0.4, gz(faceAtFoot + 3.5, 0), yawDown + 180.0F, 3.0F);
+        });
+        step(25, () -> shot("g_tunnel"));
+
+        // Night: the gateway on the cliff top, the tank and collector by it; the brightness up, as many play.
+        step(5, () -> {
+            server(() -> GatewayManager.closeFor(sp()));
+            cmd("time set 14500");
+            mc().options.gamma().set(1.0);
+            fly(false);
+            tp(gx(-5.5, 0), groundAt(-5.5, 0), gz(-5.5, 0), yawDown, 0);
+        });
+        step(20, () -> openGateLooking(yawDown, 0.0F));
+        step(5, () -> useSlot(4));
+        step(10, () -> useSlot(3));
+        step(20, () -> {
+            Vec3 m = gateMiddle(-3.0, 0);
+            pose(PetKind.COLLECTOR, gx(-3.2, -2.7), m.y + 0.2, gz(-3.2, -2.7), yawDown + 200.0F);
+            pose(PetKind.TANK, gx(-3.6, 2.6), m.y - 1.0, gz(-3.6, 2.6), yawDown + 160.0F);
+        });
+        step(25, () -> {
+            log("gallery night gate " + describe(openGate()));
+            Vec3 m = gateMiddle(-3.0, 0);
+            camera(-8.5, 2.0, 0.3, m.x, m.y, m.z);
+        });
+        step(30, () -> shot("g_night"));
+        step(5, () -> log("DONE failures=" + failures));
+        step(20, () -> mc().stop());
+    }
+
     private static void script() {
         until(() -> p() != null && mc().level != null && mc().screen == null);
         step(60, () -> {
@@ -1282,15 +1904,18 @@ public final class Harness {
         step(40, () -> {
             Vec3 now = vehicle().position();
             log("after 40t W looking up: " + now + " speed " + vehicle().getDeltaMovement().length());
-            check("W + look up climbs", now.y > mark.y + 3);
-            check("W + look up goes forward (+z)", now.z > mark.z + 5);
+            check("W + look up climbs", now.y > mark.y + 2);
+            check("W + look up goes forward (+z)", now.z > mark.z + 4);
+            double cruise = vehicle().getDeltaMovement().length();
+            check("cruise is a little under a walk (0.19..0.21 b/t, walk 0.216)", cruise > 0.19 && cruise < 0.21);
             mark = now;
             keys(true, false, false, true);
         });
         step(30, () -> {
             Vec3 now = vehicle().position();
             log("sprint 30t: dist " + now.distanceTo(mark) + " speed " + vehicle().getDeltaMovement().length() + " sprinting " + p().isSprinting());
-            check("sprint is faster than cruise (>0.5 b/t)", vehicle().getDeltaMovement().length() > 0.5);
+            double sprint = vehicle().getDeltaMovement().length();
+            check("sprint is a little under a player's sprint (0.26..0.28 b/t, sprint 0.281)", sprint > 0.26 && sprint < 0.28);
             keys(false, false, false, false);
         });
         step(30, () -> {
@@ -1352,23 +1977,14 @@ public final class Harness {
             mc().options.setCameraType(CameraType.FIRST_PERSON);
             cmd("tp @s 100.5 -60 0.5 0 0");
         });
-        step(20, () -> {
-            p().getInventory().selected = 2;
-            use();
-        });
-        step(30, () -> server(() -> {
-            PhantomPetEntity anchor = PetManager.getActive(PetKind.ANCHOR, p().getUUID());
-            log("anchor " + (anchor == null ? null : anchor.position()));
-            if (anchor != null) {
-                anchor.toggleStay(sp());
-            }
-        }));
-        step(10, () -> {
-            check("anchor anchored", AnchorManager.isAnchored(sp(), PetKind.ANCHOR));
-            cmd("tp @s 140.5 -60 0.5 90 0");
-        });
+        // An anchor still out from earlier would be anchored where it is: start fresh, by the player.
+        step(20, () -> server(() -> PetManager.dismiss(PetKind.ANCHOR, sp(), false)));
+        step(10, () -> {});
+        anchorHere(2);
+        step(10, () -> cmd("tp @s 140.5 -60 0.5 90 0"));
         step(30, () -> {
             p().getInventory().selected = 5;
+            server(() -> sp().getInventory().selected = 5);
             look(90, 0);
             use();
         });
@@ -1485,8 +2101,12 @@ public final class Harness {
             GameRules rules = new GameRules();
             LevelSettings settings = new LevelSettings("harness", GameType.CREATIVE, false, Difficulty.PEACEFUL, true, rules,
                     WorldDataConfiguration.DEFAULT);
-            mc.createWorldOpenFlows().createFreshLevel("harness", settings, new WorldOptions(1234L, false, false),
-                    access -> access.registryOrThrow(Registries.WORLD_PRESET).getHolderOrThrow(WorldPresets.FLAT).value().createWorldDimensions(),
+            // The gallery wants real terrain; every other script a flat world.
+            boolean gallery = "gallery".equals(System.getenv("PHANTOM_HARNESS"));
+            mc.createWorldOpenFlows().createFreshLevel(gallery ? "gallery" : "harness", settings,
+                    new WorldOptions(gallery ? GALLERY_SEED : 1234L, gallery, false),
+                    access -> access.registryOrThrow(Registries.WORLD_PRESET)
+                            .getHolderOrThrow(gallery ? WorldPresets.NORMAL : WorldPresets.FLAT).value().createWorldDimensions(),
                     mc.screen);
             return;
         }

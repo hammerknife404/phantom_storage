@@ -17,7 +17,9 @@ Ride and fly your [Phantom Chest](Phantom-Chest). Unlocked by *Great View From U
 | Look + W / S | Fly forward or back along where you look, up and down included |
 | A / D | Strafe |
 | Space | Rise |
-| Sprint | About twice as fast (18 blocks/s against 9) |
+| Sprint | A little faster (5.4 blocks/s against 4) |
 | No keys | Slows to a hover |
+
+It flies a little slower than you walk (4.3 blocks/s) or sprint (5.6): it is for getting round rough ground and building on cliff faces, not for racing.
 
 Ridden, the chest collides with blocks and keeps your head out of them, so you can't fly into walls or ceilings; two-block tunnels still fit. It takes no fall damage and passes none to you. It can't take portals with you aboard.

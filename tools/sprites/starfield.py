@@ -13,9 +13,10 @@ COLORS = [(0.022087, 0.098399, 0.110818), (0.011892, 0.095924, 0.089485), (0.027
           (0.080955, 0.314821, 0.661491)]
 
 
-def starfield(w, h, sx, sy, layers=15, game_time=0.37, boost=1.8, ox=0.0, oy=0.0):
+def starfield(w, h, sx, sy, layers=15, game_time=0.37, boost=1.8, ox=0.0, oy=0.0, loop=0.0):
     """A w x h image of the starfield; (sx, sy) is how much of the screen it spans. boost brightens it
-    so it reads at hotbar size."""
+    so it reads at hotbar size. loop (0 to 1) is how far through a seamless animation loop: each layer
+    drifts one whole tile of the portal texture along its own axis per loop, so frame 1.0 is frame 0.0."""
     portal = texture('entity/end_portal.png').convert('RGB')
     sky = texture('environment/end_sky.png').convert('RGB')
     pp, sp = portal.load(), sky.load()
@@ -36,6 +37,7 @@ def starfield(w, h, sx, sy, layers=15, game_time=0.37, boost=1.8, ox=0.0, oy=0.0
                 scale = (4.5 - layer / 4.0) * 2.0
                 ux = scale * (math.cos(a) * tx - math.sin(a) * ty)
                 uy = scale * (math.sin(a) * tx + math.cos(a) * ty)
+                uy += loop
                 c = pp[int((ux % 1) * pw) % pw, int((uy % 1) * ph) % ph]
                 k = COLORS[i]
                 r += c[0] * k[0]

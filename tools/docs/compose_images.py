@@ -3,7 +3,7 @@
 Run the harness first (PHANTOM_HARNESS=docs, see CLAUDE.md): it leaves 1280x720 screenshots in
 run/screenshots/d_*.png and each panel's crop box as a PANEL line in run/harness.log. Then, from the
 repository root: python3 tools/docs/compose_images.py (needs Pillow). World shots become JPEGs, panels
-PNG crops; the charm sprites are copied from the mod's item textures.
+PNG crops; the charm sprites are copied from the mod's item textures (an animated one becomes an animated PNG).
 """
 import os
 import re
@@ -33,6 +33,16 @@ def strip(crops, name):
     jpeg(out, name)
 
 
+def animated(strip, mcmeta, out):
+    """An animated sprite (frames stacked top to bottom, timed by its .mcmeta) as an animated PNG, which
+    browsers play: the wiki shows the charm as the game does, but for the game's blending between frames."""
+    import json
+    ticks = json.load(open(mcmeta))['animation'].get('frametime', 1)
+    size = strip.width
+    frames = [strip.crop((0, i * size, size, (i + 1) * size)).convert('RGBA') for i in range(strip.height // size)]
+    frames[0].save(out, save_all=True, append_images=frames[1:], duration=ticks * 50, loop=0, optimize=True)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     jpeg(shot('d_pets_100').crop((150, 190, 1130, 460)), 'pets.jpg')
@@ -58,8 +68,14 @@ def main():
     strip([('d_gate_floor', wide), ('d_gate_air', (220, 60, 840, 525)), ('d_gate_ceiling', wide)], 'gateway-flat.jpg')
 
     for f in sorted(os.listdir(SPRITES)):
+        if not f.endswith('.png'):
+            continue
         mode = f[len('phantom_charm'):-len('.png')].lstrip('_') or 'chest'
-        shutil.copy(SPRITES + f, OUT + 'charm-' + mode + '.png')
+        sprite = Image.open(SPRITES + f)
+        if sprite.height == sprite.width:
+            shutil.copy(SPRITES + f, OUT + 'charm-' + mode + '.png')
+        else:
+            animated(sprite, SPRITES + f + '.mcmeta', OUT + 'charm-' + mode + '.png')
 
 
 if __name__ == '__main__':

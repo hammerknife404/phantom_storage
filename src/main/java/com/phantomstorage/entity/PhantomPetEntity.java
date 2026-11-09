@@ -383,9 +383,12 @@ public abstract class PhantomPetEntity extends TamableAnimal {
 
     // ---- riding: the owner steers ------------------------------------------------------------
 
-    /** Ridden: blocks per tick while cruising, and sprinting. */
-    private static final double RIDE_SPEED = 0.45;
-    private static final double RIDE_SPRINT_SPEED = 0.9;
+    /**
+     * Ridden: blocks per tick while cruising, and sprinting. Each a little under a player's own walk (0.216)
+     * and sprint (0.281): the chest is for getting round rough ground and building on cliff faces, not racing.
+     */
+    private static final double RIDE_SPEED = 0.2;
+    private static final double RIDE_SPRINT_SPEED = 0.27;
     /** Backing up goes at this fraction of the speed. */
     private static final double RIDE_BACK = 0.5;
     /** How quickly it takes up a new heading, and how quickly it stops with no keys held. */
@@ -393,6 +396,13 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     private static final double RIDE_BRAKE = 0.25;
     /** The rider's head must clear blocks by this much, so they never take suffocation damage. */
     private static final double RIDE_HEAD_ROOM = 0.05;
+    /**
+     * Two scalings of the game's that ridden flight undoes, so the speeds above are what the rider gets: a
+     * held key reads 0.98, and on the rider's client the game slows the mount's velocity by 0.98 each tick
+     * before it moves ({@code LivingEntity.aiStep}). Left in, they settled it about 9% short.
+     */
+    private static final double HELD_KEY = 0.98;
+    private static final double CLIENT_SLOWING = 0.98;
 
     /** Called by the client at startup: whether {@code player} is holding jump. */
     public static void setRiderRising(Predicate<Player> rising) {
@@ -428,10 +438,10 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         return this.isVehicle();
     }
 
-    /** (strafe, rise, forward) as the rider asks: WASD and jump. */
+    /** (strafe, rise, forward) as the rider asks: WASD and jump, a held key as 1. */
     @Override
     protected Vec3 getRiddenInput(Player rider, Vec3 travelVector) {
-        return new Vec3(rider.xxa, riderRising.test(rider) ? 1.0 : 0.0, rider.zza);
+        return new Vec3(rider.xxa / HELD_KEY, riderRising.test(rider) ? 1.0 : 0.0, rider.zza / HELD_KEY);
     }
 
     /** Faces where the rider faces. Both sides, so the server's copy turns too. */
@@ -459,7 +469,8 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         }
         boolean steering = wish.lengthSqr() > 1.0E-4;
         double speed = rider.isSprinting() ? RIDE_SPRINT_SPEED : RIDE_SPEED;
-        Vec3 motion = this.getDeltaMovement().lerp(wish.scale(speed), steering ? RIDE_ACCEL : RIDE_BRAKE);
+        Vec3 motion = this.getDeltaMovement().scale(1.0 / CLIENT_SLOWING)
+                .lerp(wish.scale(speed), steering ? RIDE_ACCEL : RIDE_BRAKE);
         if (!steering && motion.lengthSqr() < 1.0E-5) {
             motion = Vec3.ZERO;
         }
