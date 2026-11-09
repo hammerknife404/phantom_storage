@@ -1608,8 +1608,8 @@ public final class Harness {
             log("heights top " + topY + " foot " + footY + " face at foot " + faceAtFoot + " rider y " + riderY + " at " + faceAtRider
                     + " yaw down " + yawDown);
             // Trees out of the cliff top's views, the foot's and the drop between.
-            clearTrees(-12.0, 0, 0.5, 0, 5.0, topY - 2, topY + 14);
-            clearTrees(3.0, 0, 15.0, 0, 5.0, footY - 2, topY + 14);
+            clearTrees(-8.0, 0, 0.5, 0, 3.0, topY - 2, topY + 14);
+            clearTrees(3.0, 0, 12.0, 0, 2.5, footY - 2, topY + 14);
         });
         settle(40);
 
@@ -1635,7 +1635,7 @@ public final class Harness {
         });
         step(60, () -> {
             poseRow.run();
-            camera(-7.0, 0, 0.4, gx(-2.0, 0), rowY[0] + 1.3, gz(-2.0, 0));
+            camera(-5.6, 0, 0.2, gx(-2.0, 0), rowY[0] + 1.4, gz(-2.0, 0));
         });
         step(30, () -> shot("g_pets"));
 
@@ -1683,12 +1683,12 @@ public final class Harness {
         step(25, () -> {
             log("gallery gate " + describe(openGate()));
             Vec3 m = gateMiddle(-3.0, 0);
-            camera(-10.5, 4.5, 0.3, m.x, m.y, m.z);
+            camera(-8.5, 3.0, 0.3, m.x, m.y, m.z);
         });
         step(25, () -> shot("g_gate"));
         step(5, () -> {
             Vec3 m = gateMiddle(-3.0, 0);
-            camera(-10.5, 0, 0.3, m.x, m.y, m.z);
+            camera(-8.0, 0, 0.3, m.x, m.y, m.z);
         });
         step(20, () -> shot("g_gate_through"));
 
@@ -1740,10 +1740,10 @@ public final class Harness {
                     settings.filter().setItem(i, ItemStack.EMPTY);
                 }
             });
-            camera(4.5, -2.5, 2.0, gx(8.5, 0), groundAt(8.5, 0) + 0.8, gz(8.5, 0));
+            camera(5.2, -1.5, 1.2, gx(8.5, 0), groundAt(8.5, 0) + 0.7, gz(8.5, 0));
         });
         step(10, () -> useSlot(4));
-        step(20, () -> poseAt(PetKind.COLLECTOR, 8.5, 0, 1.6, yawDown + 160.0F));
+        step(20, () -> poseAt(PetKind.COLLECTOR, 8.5, 0, 1.3, yawDown + 160.0F));
         step(10, () -> {
             net.minecraft.world.item.Item[] drops = {Items.BONE, Items.ARROW, Items.ROTTEN_FLESH, Items.STRING, Items.GUNPOWDER,
                     Items.SPIDER_EYE, Items.IRON_NUGGET, Items.COPPER_INGOT, Items.BONE, Items.ARROW, Items.STRING, Items.ROTTEN_FLESH,
@@ -1752,7 +1752,7 @@ public final class Harness {
             double[][] spots = new double[drops.length][3];
             for (int i = 0; i < drops.length; i++) {
                 double ang = rand.nextDouble() * Math.PI * 2;
-                double rad = 1.2 + rand.nextDouble() * 2.6;
+                double rad = 0.8 + rand.nextDouble() * 1.7;
                 spots[i][0] = gx(8.5 + Math.cos(ang) * rad, Math.sin(ang) * rad);
                 spots[i][1] = gz(8.5 + Math.cos(ang) * rad, Math.sin(ang) * rad);
                 spots[i][2] = ground(spots[i][0], spots[i][1]) + 0.05;
@@ -1766,7 +1766,7 @@ public final class Harness {
                     level.addFreshEntity(item);
                 }
             });
-            camera(4.5, -2.5, 2.0, gx(8.5, 0), groundAt(8.5, 0) + 0.8, gz(8.5, 0));
+            camera(5.2, -1.5, 1.2, gx(8.5, 0), groundAt(8.5, 0) + 0.7, gz(8.5, 0));
         });
         step(20, () -> {
             double ox = gx(9.2, -1.0);
@@ -1855,7 +1855,7 @@ public final class Harness {
         step(25, () -> {
             log("gallery night gate " + describe(openGate()));
             Vec3 m = gateMiddle(-3.0, 0);
-            camera(-11.0, 2.0, 0.3, m.x, m.y, m.z);
+            camera(-8.5, 2.0, 0.3, m.x, m.y, m.z);
         });
         step(30, () -> shot("g_night"));
         step(5, () -> log("DONE failures=" + failures));
