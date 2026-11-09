@@ -2,6 +2,8 @@
 
 Ride and fly your [Phantom Chest](Phantom-Chest). Unlocked by *Great View From Up Here*. A charm mode with no entity of its own: the chest wears a saddle while you ride.
 
+![Riding the Phantom Chest](images/saddle.jpg)
+
 | Charm use (saddle mode) | Result |
 |---|---|
 | Use | Get on (the chest is summoned under you if it isn't out) |

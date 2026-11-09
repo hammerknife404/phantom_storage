@@ -19,4 +19,6 @@ Into your [Phantom Chest](Phantom-Chest) storage, then your inventory; whatever 
 
 ## Panel
 
+![The collector's panel: a filter of four entries, its spot and range, and banked experience](images/collector-panel.png)
+
 Filter and **Skip**, range (click or scroll), the experience bank with a take button, **Stay here**, and dismiss. Anchored, it keeps its spot through logouts, deaths, dimension changes and restarts, like the [anchor](Phantom-Anchor); the charm recalls it (same dimension) or dismisses it (anywhere).

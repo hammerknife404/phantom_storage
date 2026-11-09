@@ -8,6 +8,12 @@ A short-lived doorway to your [Phantom Anchor](Phantom-Anchor) that anyone can w
 | Use, looking steeply down or up (50° or more) | Open it lying flat instead: on the floor where you look (under the ceiling, looking up), or, with nothing within 32 blocks, in mid-air 6 blocks along your look. 3 × 3, 2 × 2 or 1 × 1, whatever fits |
 | Sneak + use | Close it |
 
+![Standing: 3 × 3 in the open, 2 × 3 beside a block, 1 × 2 in a tunnel](images/gateway-standing.jpg)
+*Standing: 3 × 3 in the open, 2 × 3 beside a block, 1 × 2 in a tunnel.*
+
+![Lying flat: on a floor, in mid-air above, under a ceiling](images/gateway-flat.jpg)
+*Lying flat: on the floor below a pillar, in mid-air above you, under a ceiling.*
+
 ## Going through
 
 - Whatever steps into the doorway goes through: you, other players, mobs, items. Everyone lands on a safe spot within 3 blocks of the anchor, in whatever dimension it is (the same rules as anchor teleports), at rest: a fall or a flight ends there, with no fall damage.

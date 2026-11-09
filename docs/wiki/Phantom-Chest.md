@@ -4,6 +4,8 @@ A ghostly chest with 108 slots (12×9) of personal item storage, a 3×3 crafting
 
 ## Panel
 
+![The chest's panel: storage, the crafting grid, and the void grid with three entries](images/chest-panel.png)
+
 | Icon | Does |
 |---|---|
 | Sort (bars, after the title) | Click: merge stacks and sort. Right-click or scroll: mode (Name, Amount, Mod). Shift + click: ascending / descending (the bars flip). Saved with your storage |
