@@ -15,7 +15,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from iso import SHADE, cube, outline, quad, render  # noqa: E402
+from iso import SHADE, cube, outline, quad, render, to_screen  # noqa: E402
 from starfield import starfield  # noqa: E402
 from vanilla import ROOT, mod_texture, texture  # noqa: E402
 
@@ -78,36 +78,36 @@ def gateway_faces():
 
 # The bell's windows are drawn in this colour, then painted with the starfield in screen space (paint_void).
 VOID = (255, 0, 255, 255)
-# The anchor sprite's eye colours: yellow-lime at the outer ends, green toward the middle.
-EYE_COLOURS = [(240, 255, 104), (221, 255, 85), (197, 255, 68), (158, 255, 115), (125, 255, 125), (113, 255, 114)]
 # The bell's gold, deepened toward the chest's brass so it sits with the rest of the set.
 BRASS = (0.92, 0.76, 0.52)
-
-
-def eye_bars():
-    """The anchor's two eye bars as a 16 x 2 texture: 6 texels each, mirrored, a 4-texel gap."""
-    img = Image.new('RGBA', (16, 2), (0, 0, 0, 0))
-    for i, c in enumerate(EYE_COLOURS):
-        for y in range(2):
-            img.putpixel((i, y), c + (255,))
-            img.putpixel((15 - i, y), c + (255,))
-    return img
+# Where the Eye of Ender looks out from: the body's front corner, halfway up its window.
+BELL_EYE_AT = (3.02, 9.5, 3.02)
 
 
 def bell_faces():
-    """The vanilla bell's shape (BellRenderer's body and lip) in brass, each side of the body a window onto
-    the End portal's starfield in a 1 px frame, like the anchor's, the phantom eyes across the front one."""
+    """The vanilla bell's shape (BellRenderer's body and lip) in brass, with a window onto the End portal's
+    starfield round its front corner in a 1 px frame (bell_sprite puts an Eye of Ender in it)."""
     bell = texture('entity/bell/bell_body.png')
     void = Image.new('RGBA', (4, 4), VOID)
     faces = (cube(bell, 0, 0, (-3, -6, -3), (6, 7, 6), offset=(8, 12, 8), tint=BRASS)
              + cube(bell, 0, 13, (4, 4, 4), (8, 2, 8), tint=BRASS))
     for f in faces:
         f.verts = [(x - 8, y, z - 8) for x, y, z in f.verts]
-    w, y0, y1 = 2, 7, 12
-    faces.append(quad(void, [(-w, y1, 3.02), (w, y1, 3.02), (w, y0, 3.02), (-w, y0, 3.02)], (0, 0, 4, 4), bright=True))
-    faces.append(quad(void, [(3.02, y1, w), (3.02, y1, -w), (3.02, y0, -w), (3.02, y0, w)], (0, 0, 4, 4), bright=True))
-    faces.append(quad(eye_bars(), [(-w, 11.6, 3.05), (w, 11.6, 3.05), (w, 10.5, 3.05), (-w, 10.5, 3.05)], (0, 0, 16, 2), bright=True))
+    # Framed on three sides of each face; open where the two meet, so the void wraps round the corner.
+    y0, y1 = 7, 12
+    faces.append(quad(void, [(-2, y1, 3.02), (3.02, y1, 3.02), (3.02, y0, 3.02), (-2, y0, 3.02)], (0, 0, 4, 4), bright=True))
+    faces.append(quad(void, [(3.02, y1, 3.02), (3.02, y1, -2), (3.02, y0, -2), (3.02, y0, 3.02)], (0, 0, 4, 4), bright=True))
     return faces
+
+
+def bell_sprite(fill=58):
+    """The bell with an Eye of Ender in its void, facing out of the sprite: it looks at the player."""
+    faces = bell_faces()
+    img = paint_void(outline(render(faces, fill=fill)), 0.7)
+    eye = texture('item/ender_eye.png').crop((2, 2, 15, 15))
+    x, y = to_screen(faces, BELL_EYE_AT, fill=fill)
+    img.alpha_composite(eye, (round(x - eye.width / 2), round(y - eye.height / 2)))
+    return img
 
 
 def paint_void(img, ox):
@@ -124,7 +124,9 @@ def paint_void(img, ox):
 if __name__ == '__main__':
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'build', 'sprites')
     os.makedirs(out, exist_ok=True)
-    for name, faces, fill in (('phantom_charm', chest_faces(), 58), ('phantom_charm_saddle', saddled_faces(), 58),
-                              ('phantom_charm_gateway', gateway_faces(), 60), ('phantom_charm_bell', bell_faces(), 58)):
-        paint_void(outline(render(faces, fill=fill)), 0.7).save(os.path.join(out, name + '.png'))
+    for name, image in (('phantom_charm', lambda: outline(render(chest_faces(), fill=58))),
+                        ('phantom_charm_saddle', lambda: outline(render(saddled_faces(), fill=58))),
+                        ('phantom_charm_gateway', lambda: outline(render(gateway_faces(), fill=60))),
+                        ('phantom_charm_bell', bell_sprite)):
+        image().save(os.path.join(out, name + '.png'))
         print('wrote', os.path.join(out, name + '.png'))

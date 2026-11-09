@@ -60,6 +60,18 @@ def cube(tex, u, v, origin, dims, offset=(0, 0, 0), faces=('up', 'down', 'north'
     return out
 
 
+def to_screen(faces, point, size=64, fill=60):
+    """Where render(faces, size, fill) puts the model point, in sprite pixels (x right, y down)."""
+    pts = [project(p) for f in faces for p in f.verts]
+    xs = [p[0] for p in pts]
+    ups = [p[1] for p in pts]
+    s = fill / max(max(xs) - min(xs), max(ups) - min(ups))
+    cx = size / 2 - s * (max(xs) + min(xs)) / 2
+    cy = size / 2 + s * (max(ups) + min(ups)) / 2
+    x1, up, _ = project(point)
+    return cx + s * x1, cy - s * up
+
+
 def render(faces, size=64, fill=60, margin_center=None, scale=None):
     projected = []
     for f in faces:
