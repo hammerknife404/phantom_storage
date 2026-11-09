@@ -1,5 +1,8 @@
 name: Build
 
+# Builds and tests every push to main and every pull request, and uploads the jar.
+# These jars are versioned <mod_version>-dev.<commit>; only the Release workflow builds a plain
+# <mod_version> jar, so a test build can't be mistaken for a release.
 on:
   push:
     branches: [main]
@@ -17,14 +20,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Build and test
         run: ./gradlew build --stacktrace
@@ -34,7 +37,7 @@ jobs:
       - name: Show built jar
         run: ls -l build/libs
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
-          name: phantomstorage-dev-jar
+          name: ${{ github.event.repository.name }}-dev-jar
           path: build/libs/*.jar
