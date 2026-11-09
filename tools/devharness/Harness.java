@@ -669,6 +669,31 @@ public final class Harness {
             }
             step(5, () -> p().closeContainer());
         }
+        // The void list only acts on what the collector takes: the owner's own pickups are left alone.
+        int[] held = new int[1];
+        step(5, () -> server(() -> {
+            sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter().setItem(0, new ItemStack(Items.COBBLESTONE));
+            sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR).filter().clearContent();
+            PetManager.dismiss(PetKind.COLLECTOR, sp(), false);
+        }));
+        step(20, () -> {
+            held[0] = count(Items.COBBLESTONE);
+            spawnItem(Items.COBBLESTONE, 3, 0.0, 0.0);
+        });
+        step(40, () -> check("own pickup keeps a void-listed item (" + held[0] + " -> " + count(Items.COBBLESTONE) + ")",
+                count(Items.COBBLESTONE) == held[0] + 3 && groundCount(Items.COBBLESTONE) == 0));
+        step(5, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        step(40, () -> {
+            held[0] = count(Items.COBBLESTONE);
+            spawnItem(Items.COBBLESTONE, 3, 4.0, 0.0);
+        });
+        step(60, () -> check("collector destroys a void-listed item (" + held[0] + " -> " + count(Items.COBBLESTONE)
+                        + ", ground " + groundCount(Items.COBBLESTONE) + ")",
+                count(Items.COBBLESTONE) == held[0] && groundCount(Items.COBBLESTONE) == 0));
         step(5, () -> {
             log("DONE failures=" + failures);
         });

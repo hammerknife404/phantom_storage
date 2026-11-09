@@ -85,7 +85,7 @@ jobs:
             | In the chest | |
             |---|---|
             | Sort icon: click / right-click or scroll / shift + click | Sort / change mode (Name, Amount, Mod) / reverse order |
-            | Void grid | Filter: matching items you or your collector pick up are destroyed |
+            | Void grid | Filter: matching items your collector picks up are destroyed instead of stored |
 
             | In the tank | |
             |---|---|

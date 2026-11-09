@@ -8,7 +8,7 @@
 
 - **108 slots** (12×9) of personal storage
 - **3×3 crafting grid**, with one-click recipe fill when JEI or REI is installed
-- **Void filter**: list junk once (cobblestone, rotten flesh...) and it's destroyed whenever you or your Collector pick it up; drop anything on the trash can to destroy it
+- **Void filter**: list junk once (cobblestone, rotten flesh...) and your Collector destroys it instead of storing it; drop anything on the trash can to destroy it
 - **Sort** button: by name, amount or mod, ascending or descending, all from one button
 
 ## 🫙 Phantom Tank
