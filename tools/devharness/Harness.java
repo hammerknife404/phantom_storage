@@ -1005,8 +1005,24 @@ public final class Harness {
                     && g.lie() == PhantomGatewayEntity.Lie.CEILING && g.doorWidth() == 3 && Math.abs(g.getY() + 56.0) < 1.0E-6);
         });
         step(10, () -> shot("f3_ceiling"));
+        // F: looking down at a lava pool from its edge: on the lava's surface, not its bed.
         step(5, () -> {
             cmd("fill 176 -55 -4 184 -55 4 minecraft:air");
+            cmd("fill 191 -63 -3 197 -61 3 minecraft:lava");
+            cmd("fill 189 -60 0 189 -57 0 minecraft:stone");
+            cmd("tp @s 189.5 -56 0.5 270 60");
+        });
+        step(20, () -> openGateLooking(270.0F, 60.0F));
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("F " + describe(g));
+            check("looking down at lava from a pillar: just above its surface", g != null && Math.abs(g.getY() + 60.0) < 1.0E-6);
+        });
+        step(5, () -> {
+            cmd("fill 191 -63 -3 197 -61 3 minecraft:grass_block");
+            cmd("fill 189 -60 0 189 -57 0 minecraft:air");
+
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());

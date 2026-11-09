@@ -122,8 +122,9 @@ public final class GatewayManager {
             return PhantomCharmItem.FAILED;
         }
         OPEN.put(id, gate);
-        level.sendParticles(ParticleTypes.REVERSE_PORTAL, at.x, at.y + 1.0, at.z, 40, 0.3, 0.8, 0.3, 0.05);
-        level.playSound(null, at.x, at.y + 1.0, at.z, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.PLAYERS, 1.0F, 0.6F);
+        Vec3 middle = gate.getBoundingBox().getCenter();
+        level.sendParticles(ParticleTypes.REVERSE_PORTAL, middle.x, middle.y, middle.z, 40, 0.3, 0.8, 0.3, 0.05);
+        level.playSound(null, middle.x, middle.y, middle.z, SoundEvents.END_PORTAL_FRAME_FILL, SoundSource.PLAYERS, 1.0F, 0.6F);
         player.displayClientMessage(Component.translatable("message.phantomstorage.gateway.opened"), true);
         return PhantomCharmItem.COOLDOWN_TICKS;
     }
@@ -157,8 +158,11 @@ public final class GatewayManager {
     private static Doorway flatDoorway(ServerPlayer player, boolean down) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
+        // Stops at a lava or water surface, so a fall into a lake is caught above it, not on its bed
+        // (unless the player is in a fluid already, where it would stop at once).
+        ClipContext.Fluid fluids = player.isUnderWater() || player.isInLava() ? ClipContext.Fluid.NONE : ClipContext.Fluid.ANY;
         BlockHitResult hit = player.level().clip(new ClipContext(eye, eye.add(look.scale(FLAT_RANGE)),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+                ClipContext.Block.COLLIDER, fluids, player));
         Vec3 aim;
         BlockPos layer;
         if (hit.getType() == HitResult.Type.MISS) {
@@ -177,10 +181,8 @@ public final class GatewayManager {
         double leanX = aim.x - layer.getX() >= 0.5 ? 0.5 : -0.5;
         double leanZ = aim.z - layer.getZ() >= 0.5 ? 0.5 : -0.5;
         for (int side : FLAT_SIDES) {
-            double[] shiftsX = side % 2 == 1 ? new double[] {0.0} : new double[] {leanX, -leanX};
-            double[] shiftsZ = side % 2 == 1 ? new double[] {0.0} : new double[] {leanZ, -leanZ};
-            for (double sx : shiftsX) {
-                for (double sz : shiftsZ) {
+            for (double sx : shifts(side, leanX)) {
+                for (double sz : shifts(side, leanZ)) {
                     Vec3 at = new Vec3(layer.getX() + 0.5 + sx, layer.getY(), layer.getZ() + 0.5 + sz);
                     if (fits(player, PhantomGatewayEntity.box(at, yaw, lie, side, side))) {
                         return new Doorway(at, yaw, lie, side, side);
@@ -189,6 +191,11 @@ public final class GatewayManager {
             }
         }
         return null;
+    }
+
+    /** Offsets from a block's middle to try: none for an odd size; half a block toward {@code lean}, then away, for an even one. */
+    private static double[] shifts(int size, double lean) {
+        return size % 2 == 1 ? new double[] {0.0} : new double[] {lean, -lean};
     }
 
     private static boolean fits(ServerPlayer player, AABB box) {
@@ -213,10 +220,9 @@ public final class GatewayManager {
         for (int[] size : SIZES) {
             int width = size[0];
             int height = size[1];
-            double[] shifts = width % 2 == 1 ? new double[] {0.0} : new double[] {lean, -lean};
             for (int ahead : AHEAD) {
                 Vec3 middle = Vec3.atBottomCenterOf(player.blockPosition().relative(facing, ahead));
-                for (double shift : shifts) {
+                for (double shift : shifts(width, lean)) {
                     Vec3 at = new Vec3(middle.x + across.getStepX() * shift, player.getY(), middle.z + across.getStepZ() * shift);
                     if (fits(player, PhantomGatewayEntity.box(at, yaw, PhantomGatewayEntity.Lie.STANDING, width, height))) {
                         return new Doorway(at, yaw, PhantomGatewayEntity.Lie.STANDING, width, height);

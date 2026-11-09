@@ -1,6 +1,6 @@
 # Phantom Storage: notes for the next agent
 
-NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.0.1** (tag `v3.0.1`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
+NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.1.0** (tag `v3.1.0`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
 
 ## Working here
 
@@ -36,7 +36,7 @@ Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the al
 | `summon/CollectorWork` | What the collector takes and where it goes |
 | `summon/PhantomSaddle`, `GatewayManager`, `PhantomBell` | The non-pet modes |
 | `entity/PhantomPetEntity` | Base pet: flight, never saved, only `/kill` hurts it; riding (look + WASD, collides only while ridden) |
-| `entity/PhantomGatewayEntity` | The gateway: standing 3 × 3, 2 × 3 or 1 × 2, or lying flat (`Lie`: floor, ceiling, mid-air; 3, 2 or 1 a side) when opened looking 50°+ down or up; square to the grid, its box the doorway itself a block deep or the layer it lies in (`box`, rebuilt when rotation, size or lie changes, all synced). Travel, the fit searches and `passedThrough` (fast movers and falls caught a tick early, via `getKnownMovement`, so a caught fall does no damage) are in `GatewayManager` |
+| `entity/PhantomGatewayEntity` | The gateway: standing 3 × 3, 2 × 3 or 1 × 2, or lying flat (`Lie`: floor, ceiling, mid-air; 3, 2 or 1 a side) when opened looking 50°+ down or up; square to the grid, its box the doorway itself a block deep or the layer it lies in (`box`, rebuilt when rotation, size or lie changes, all synced). Travel, the fit searches (the flat one's look ray stops at lava/water surfaces) and `passedThrough` (fast movers and falls caught a tick early, via `getKnownMovement`, so a caught fall does no damage) are in `GatewayManager` |
 | `registry/ModRegistries` | Items, entities, menus, the charm-mode component, player attachments (storage, tanks, anchor and collector spots, collector settings) |
 | `client/` | Renderers (`GhostQuads` shared wings/eyes/quads; `PhantomRenderTypes` ghost passes; `PhantomVoid` the End portal starfield of the anchor, collector and gateway), screens on `PhantomTheme`, client config |
 | `client/PhantomVoid`, `VoidLayers` | The starfield as the End portal shader draws it, but in ordinary entity passes: a near-black backing in the ghost pass, then 15 star layers added in the eyes pass, each vertex's texture spot taken from its screen position. It fades with opacity and shader packs draw it; `RenderType.endPortal()` did neither (Iris has no program for it on entities). `VoidLayers` is the game-free math, tested against the shader's matrices |
@@ -60,7 +60,8 @@ Every mode's art is a 64×64 pre-render "as the game draws it": a 2:1 isometric 
 
 ## Open items
 
-- Not yet checked: riding on a dedicated server with others watching; other players through the gateway; earning the Saddle/Gateway/Bell advancements in survival.
+- Not yet checked: riding on a dedicated server with others watching; other players through the gateway; earning the Saddle/Gateway/Bell advancements in survival; a real elytra flight into a flat gateway (an arrow at 3 blocks a tick stood in for it).
+- Harness gotchas: survival scripts need `/phantomstorage unlock all` first (modes are locked outside creative); use `anchorHere()` to set up the anchor (the first charm use after world load doesn't always land); `openGate()` searches 40 blocks round the player.
 - The void under Iris (3.0.1): the owner confirmed it looks right in their pack. Running downloaded mod jars (Iris, ImmediatelyFast) in the dev client is refused by this sandbox's permission check, so agents check such compat by reading the mod's code and the owner confirms in-game.
 - The owner plays "The Living World" (NeoForge 21.1.265, ~200 mods): Iris 1.8.14-beta.1 + Sodium 0.8.13 with Complementary r5.8.1, ImmediatelyFast 1.6.15 with screen batching on, Mouse Tweaks, JEI, Inventory Essentials. Worth reading a mod's code (not running it) when a report only happens there.
 - The bell's sneak-use leaves anchored pets alone; the owner accepted that "for now".
