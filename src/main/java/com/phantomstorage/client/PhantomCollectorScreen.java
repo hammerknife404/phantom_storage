@@ -93,17 +93,13 @@ public class PhantomCollectorScreen extends AbstractContainerScreen<PhantomColle
         RenderSystem.disableBlend();
     }
 
-    /** Filter entries are ghosts: veiled so they never read as stock. */
-    @Override
-    protected void renderSlot(GuiGraphics graphics, Slot slot) {
-        super.renderSlot(graphics, slot);
-        if (slot instanceof GhostSlot) {
-            PhantomTheme.drawGhostVeil(graphics, slot, PhantomTheme.SLOT_FILL);
-        }
-    }
-
+    /** Filter entries are ghosts: veiled (here, after every slot is drawn) so they never read as stock. */
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        PhantomTheme.drawGhostVeils(graphics, this.menu.slots, PhantomTheme.SLOT_FILL);
+        if (this.hoveredSlot instanceof GhostSlot) {
+            this.renderSlotHighlight(graphics, this.hoveredSlot, mouseX, mouseY, 0.0F);
+        }
         PhantomTheme.drawTitle(graphics, this.font, this.title, CollectorLayout.MAX_TITLE_WIDTH);
         PhantomTheme.drawLabel(graphics, this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY);
         PhantomTheme.drawLabel(graphics, this.font, SKIP, CollectorLayout.SKIP_X + CollectorLayout.OPTION_SIZE + 3, CollectorLayout.SKIP_Y + 1);

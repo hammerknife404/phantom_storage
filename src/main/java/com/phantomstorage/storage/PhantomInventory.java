@@ -11,7 +11,7 @@ import net.neoforged.neoforge.common.util.INBTSerializable;
  * A player's 12x9 phantom storage. Attached to the player and persisted in the player's data file,
  * so it is written in the same atomic save as the player's own inventory: an item is never in both
  * or neither after a crash. Also holds the void filter: items matching it are destroyed when the
- * player or their collector picks them up.
+ * player's collector picks them up (what the player picks up themselves is never touched).
  */
 public class PhantomInventory extends SimpleContainer implements INBTSerializable<CompoundTag> {
     public static final int COLUMNS = 12;
@@ -33,7 +33,7 @@ public class PhantomInventory extends SimpleContainer implements INBTSerializabl
         return this.voidFilter;
     }
 
-    /** Whether picking {@code stack} up should destroy it instead. */
+    /** Whether the collector taking {@code stack} should destroy it instead of storing it. */
     public boolean isVoided(ItemStack stack) {
         return this.voidFilter.matches(stack);
     }

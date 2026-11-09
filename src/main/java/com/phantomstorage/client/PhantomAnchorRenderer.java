@@ -13,14 +13,14 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.InventoryMenu;
-import org.joml.Matrix4f;
 
 /**
  * A small ghostly lodestone whose sides are windows onto the void: a lodestone frame round a pane of
- * the End portal's starfield, which drifts like the portal block's and shows by day and night alike. It wears the tank's phantom wings
- * and glowing eyes. While it follows it bobs and flaps like the other pets; anchored, it hangs still
- * with its wings folded down. Drawn from vanilla textures, so there is no model or texture to maintain.
- * Opacity (eyes included) and the light-level-7 floor come from {@link PhantomClientConfig}.
+ * the End portal's starfield ({@link PhantomVoid}), which drifts like the portal block's and shows by
+ * day and night alike. It wears the tank's phantom wings and glowing eyes. While it follows it bobs
+ * and flaps like the other pets; anchored, it hangs still with its wings folded down. Drawn from
+ * vanilla textures, so there is no model or texture to maintain. Opacity (void and eyes included) and
+ * the light-level-7 floor come from {@link PhantomClientConfig}.
  *
  * <p>Drawn with the mod's own {@link PhantomRenderTypes#ghost} like the chest, never with vanilla's
  * {@code entityTranslucentCull(blocks)}: that one is the translucent block-item sheet, which the game
@@ -41,6 +41,7 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
     /** Anchored: wings hang down the sides (the outer half at twice this). */
     private static final float FOLDED_DEGREES = -38.0F;
     private static final float BOB_BASE = 0.06F;
+    private static final PhantomVoid PANES = voidPanes();
 
     public PhantomAnchorRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -65,10 +66,12 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
         int light = LightTexture.pack(blockLight, LightTexture.sky(packedLight));
         PoseStack.Pose pose = poseStack.last();
 
+        // The void first, as the gateway and collector draw it: shader packs batch entity passes in the order
+        // renderers ask for them, and one order everywhere keeps the void's backing under its stars.
+        PANES.draw(pose, buffer, alpha);
         VertexConsumer stone = buffer.getBuffer(PhantomRenderTypes.ghost(InventoryMenu.BLOCK_ATLAS));
         stoneEnds(pose, stone, GhostQuads.sprite(LODESTONE_TOP), ghost, light);
         stoneFrames(pose, stone, GhostQuads.sprite(LODESTONE_SIDE), ghost, light);
-        voidPanes(pose.pose(), buffer.getBuffer(RenderType.endPortal()));
 
         VertexConsumer wings = buffer.getBuffer(RenderType.entityTranslucent(GhostQuads.PHANTOM));
         float flap = anchored ? FOLDED_DEGREES : GhostQuads.flap(age);
@@ -107,31 +110,20 @@ public class PhantomAnchorRenderer extends EntityRenderer<PhantomAnchorEntity> {
     }
 
     /**
-     * The open centre of each side: the End portal itself, its starfield drifting as in the portal
-     * block. The shader is opaque and its own light, so the void reads the same by day and night and
-     * stays whole at any opacity setting while the stone round it fades. Wound like {@link #sideRect}.
+     * The open centre of each side: a window onto the End portal's starfield, cut 2 x 2 so its stars
+     * hold to the screen. Corners wound like {@link #sideRect}: a, a + up, a + up + across, a + across.
      */
-    private static void voidPanes(Matrix4f m, VertexConsumer c) {
+    private static PhantomVoid voidPanes() {
         float f = FRAME / (2.0F * HALF / PX);
         float y0 = f * HEIGHT;
-        float y1 = (1.0F - f) * HEIGHT;
+        float h = (1.0F - 2.0F * f) * HEIGHT;
         float in = HALF - 2.0F * HALF * f; // the pane's half-width
-        for (int face = 0; face < 4; face++) {
-            switch (face) {
-                case 0 -> pane(m, c, -in, y0, -HALF, -in, y1, -HALF, in, y1, -HALF, in, y0, -HALF);
-                case 1 -> pane(m, c, in, y0, HALF, in, y1, HALF, -in, y1, HALF, -in, y0, HALF);
-                case 2 -> pane(m, c, -HALF, y0, in, -HALF, y1, in, -HALF, y1, -in, -HALF, y0, -in);
-                default -> pane(m, c, HALF, y0, -in, HALF, y1, -in, HALF, y1, in, HALF, y0, in);
-            }
-        }
-    }
-
-    private static void pane(Matrix4f m, VertexConsumer c, float ax, float ay, float az, float bx, float by, float bz,
-                             float cx, float cy, float cz, float dx, float dy, float dz) {
-        c.addVertex(m, ax, ay, az);
-        c.addVertex(m, bx, by, bz);
-        c.addVertex(m, cx, cy, cz);
-        c.addVertex(m, dx, dy, dz);
+        return PhantomVoid.builder()
+                .grid(-in, y0, -HALF, 0, h, 0, 2 * in, 0, 0, 2, 2, 0, 0, -1)
+                .grid(in, y0, HALF, 0, h, 0, -2 * in, 0, 0, 2, 2, 0, 0, 1)
+                .grid(-HALF, y0, in, 0, h, 0, 0, 0, -2 * in, 2, 2, -1, 0, 0)
+                .grid(HALF, y0, -in, 0, h, 0, 0, 0, 2 * in, 2, 2, 1, 0, 0)
+                .build();
     }
 
     /**

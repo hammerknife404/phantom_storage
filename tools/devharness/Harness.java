@@ -42,7 +42,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * Scripted in-game checks for the dev client. Lives in tools/ so it never ships: copy it to
  * src/main/java/com/phantomstorage/devharness/ (gitignored) to use it, and delete it before a release
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
- * look from every side, "collector" the collector + bell script. It creates a flat creative world,
+ * look from every side, "collector" the collector + bell script, "void" the End portal void of the
+ * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
+ * collector's filter clicked through their screens. It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -156,6 +158,10 @@ public final class Harness {
                 collectorScript();
             } else if ("gateway".equals(System.getenv("PHANTOM_HARNESS"))) {
                 gatewayScript();
+            } else if ("void".equals(System.getenv("PHANTOM_HARNESS"))) {
+                voidScript();
+            } else if ("filters".equals(System.getenv("PHANTOM_HARNESS"))) {
+                filtersScript();
             } else {
                 script();
             }
@@ -409,6 +415,291 @@ public final class Harness {
         step(20, () -> mc().stop());
     }
 
+    /** Sets the all-pets opacity, in percent, as the config screen would. */
+    private static void opacity(int percent) {
+        try {
+            java.lang.reflect.Field f = com.phantomstorage.client.PhantomClientConfig.class.getDeclaredField("ALL_PETS_OPACITY");
+            f.setAccessible(true);
+            ((net.neoforged.neoforge.common.ModConfigSpec.IntValue) f.get(null)).set(percent);
+            log("all-pets opacity " + percent + "%");
+        } catch (ReflectiveOperationException e) {
+            check("set opacity: " + e, false);
+        }
+    }
+
+    /** Holds the owner's pet of {@code kind} (already staying) at (x, y, z), facing south (+z). */
+    private static void place(PetKind kind, double x, double y, double z) {
+        server(() -> {
+            PhantomPetEntity pet = PetManager.getActive(kind, p().getUUID());
+            if (pet == null) {
+                check(kind + " is out", false);
+                return;
+            }
+            if (!pet.isOrderedToSit()) {
+                pet.toggleStay(sp());
+            }
+            pet.setYRot(0.0F);
+            pet.yBodyRot = 0.0F;
+            pet.yHeadRot = 0.0F;
+            pet.relocate(x, y, z);
+        });
+    }
+
+    /**
+     * The End portal void of the anchor, collector and gateway at full and at 10% all-pets opacity,
+     * from the front and from below. Run it with a shader pack too: see CLAUDE.md.
+     */
+    private static void voidScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(100, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"collector\"]");
+            cmd("item replace entity @s hotbar.2 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 0.5 -60 0.5 180 0");
+            opacity(100);
+        });
+        step(20, () -> {
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            use();
+        });
+        step(20, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        step(20, () -> {
+            place(PetKind.ANCHOR, -0.3, -58.9, -1.0);
+            place(PetKind.COLLECTOR, 1.0, -58.9, -1.0);
+        });
+        // Front, eye level, 1.5 blocks away.
+        step(60, () -> cmd("tp @s 0.35 -60 0.5 180 6"));
+        step(40, () -> shot("v1_front_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v2_front_10pct"));
+        // From below and to the side, like looking up at them in the sky.
+        step(5, () -> {
+            opacity(100);
+            place(PetKind.ANCHOR, -0.3, -57.2, -1.0);
+            place(PetKind.COLLECTOR, 1.0, -57.2, -1.0);
+            cmd("tp @s 1.6 -60 0.2 134 -42");
+        });
+        step(60, () -> shot("v3_below_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v4_below_10pct"));
+        // Gateway, front, at full and at 10%.
+        step(5, () -> {
+            opacity(100);
+            cmd("tp @s 20.5 -60 0.5 90 0");
+        });
+        step(30, () -> {
+            p().getInventory().selected = 2;
+            server(() -> sp().getInventory().selected = 2);
+            look(90, 0);
+            use();
+        });
+        step(20, () -> cmd("tp @s 21.5 -60 2.0 110 0"));
+        step(30, () -> shot("v5_gateway_full"));
+        step(5, () -> opacity(10));
+        step(20, () -> shot("v6_gateway_10pct"));
+        step(5, () -> {
+            opacity(100);
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
+    /** Clicks menu slot {@code index} as a player does: press and release over it on the open screen. */
+    private static void clickSlot(int index, int button) {
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            check("a container screen is open (got " + mc().screen + ")", false);
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double x = screen.getGuiLeft() + slot.x + 8;
+        double y = screen.getGuiTop() + slot.y + 8;
+        screen.mouseClicked(x, y, button);
+        screen.mouseReleased(x, y, button);
+    }
+
+    /** Moves the real mouse pointer over menu slot {@code index}, so the screen draws its hover highlight. */
+    private static void hover(int index) {
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double scale = mc().getWindow().getGuiScale();
+        try {
+            // GLFW's cursor-move doesn't reach the game under Xvfb, so set where the game thinks the mouse is.
+            java.lang.reflect.Field x = net.minecraft.client.MouseHandler.class.getDeclaredField("xpos");
+            java.lang.reflect.Field y = net.minecraft.client.MouseHandler.class.getDeclaredField("ypos");
+            x.setAccessible(true);
+            y.setAccessible(true);
+            x.setDouble(mc().mouseHandler, (screen.getGuiLeft() + slot.x + 8) * scale);
+            y.setDouble(mc().mouseHandler, (screen.getGuiTop() + slot.y + 8) * scale);
+        } catch (ReflectiveOperationException e) {
+            log("hover: " + e);
+        }
+    }
+
+    /** Places the cursor on a slot: 0 left click, 1 right click, 2 left press that drifts 2 px before release. */
+    private static void placeOn(int index, int gesture) {
+        if (gesture < 2) {
+            clickSlot(index, gesture);
+            return;
+        }
+        if (!(mc().screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?> screen)) {
+            check("a container screen is open (got " + mc().screen + ")", false);
+            return;
+        }
+        net.minecraft.world.inventory.Slot slot = screen.getMenu().slots.get(index);
+        double x = screen.getGuiLeft() + slot.x + 6;
+        double y = screen.getGuiTop() + slot.y + 6;
+        screen.mouseClicked(x, y, 0);
+        screen.mouseDragged(x + 2, y + 1, 0, 2, 1);
+        screen.mouseReleased(x + 2, y + 1, 0);
+    }
+
+    /**
+     * For each test item: pick its stack up from the first inventory row, click filter entry k with it,
+     * put the stack back; then the entry should hold one ghost copy on both sides and the stack be whole.
+     */
+    private static void filterCases(String name, int filterStart, int invStart, int gesture,
+                                    java.util.function.Supplier<net.minecraft.world.Container> serverFilter) {
+        // A local, not a static: the scripts are built from this class's static initializer.
+        net.minecraft.world.item.Item[] items = {Items.COBBLESTONE, Items.DIAMOND, Items.STICK, Items.DIAMOND_SWORD, Items.ROTTEN_FLESH};
+        step(2, () -> server(() -> serverFilter.get().clearContent()));
+        for (int k = 0; k < items.length; k++) {
+            int i = k;
+            net.minecraft.world.item.Item item = items[k];
+            int[] before = new int[1];
+            step(4, () -> {
+                before[0] = p().getInventory().countItem(item);
+                clickSlot(invStart + i, 0);
+                log(name + " " + item + ": carried " + p().containerMenu.getCarried());
+            });
+            step(4, () -> placeOn(filterStart + i, gesture));
+            step(4, () -> clickSlot(invStart + i, 0));
+            step(6, () -> {
+                ItemStack client = p().containerMenu.slots.get(filterStart + i).getItem();
+                ItemStack[] server = new ItemStack[1];
+                server(() -> server[0] = serverFilter.get().getItem(i).copy());
+                log(name + " entry " + i + ": client " + client + " server " + server[0]
+                        + " carried " + p().containerMenu.getCarried() + " held " + p().getInventory().countItem(item));
+                check(name + " takes a ghost " + item, client.is(item) && client.getCount() == 1
+                        && server[0].is(item) && server[0].getCount() == 1
+                        && p().containerMenu.getCarried().isEmpty() && p().getInventory().countItem(item) == before[0]);
+            });
+        }
+        // Clicking an entry empty-handed clears it.
+        step(4, () -> clickSlot(filterStart, 0));
+        step(6, () -> {
+            ItemStack[] server = new ItemStack[1];
+            server(() -> server[0] = serverFilter.get().getItem(0).copy());
+            check(name + " entry clears on an empty-handed click", server[0].isEmpty()
+                    && p().containerMenu.slots.get(filterStart).getItem().isEmpty());
+        });
+    }
+
+    /**
+     * The chest's void grid and the collector's filter, filled through their screens with blocks, items
+     * and a tool: left click, right click and a drifting press in survival, and left click in creative.
+     */
+    private static void filtersScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"chest\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"collector\"]");
+            cmd("item replace entity @s inventory.0 with minecraft:cobblestone 16");
+            cmd("item replace entity @s inventory.1 with minecraft:diamond 3");
+            cmd("item replace entity @s inventory.2 with minecraft:stick 8");
+            cmd("item replace entity @s inventory.3 with minecraft:diamond_sword");
+            cmd("item replace entity @s inventory.4 with minecraft:rotten_flesh 5");
+            cmd("tp @s 0.5 -60 0.5 180 0");
+            cmd("gamemode survival");
+        });
+        step(20, () -> {
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+            use();
+        });
+        step(20, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        String[] variants = {"left click", "right click", "drag", "creative left click"};
+        for (int v = 0; v < variants.length; v++) {
+            int gesture = v == 3 ? 0 : v;
+            String label = variants[v];
+            boolean creative = v == 3;
+            step(5, () -> {
+                cmd(creative ? "gamemode creative" : "gamemode survival");
+                log("--- " + label);
+            });
+            step(20, () -> server(() -> PetManager.getActive(PetKind.CHEST, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> log("screen " + mc().screen));
+            filterCases("chest void (" + label + ")", com.phantomstorage.menu.PhantomChestMenu.VOID_START,
+                    com.phantomstorage.menu.PhantomChestMenu.INV_START, gesture,
+                    () -> sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter());
+            if (v == 0) {
+                step(5, () -> hover(com.phantomstorage.menu.PhantomChestMenu.VOID_START + 1));
+                step(10, () -> shot("f1_chest_void"));
+            }
+            step(5, () -> p().closeContainer());
+            step(20, () -> server(() -> PetManager.getActive(PetKind.COLLECTOR, p().getUUID()).interact(sp(), InteractionHand.MAIN_HAND)));
+            step(20, () -> log("screen " + mc().screen));
+            filterCases("collector (" + label + ")", com.phantomstorage.menu.PhantomCollectorMenu.FILTER_START,
+                    com.phantomstorage.menu.PhantomCollectorMenu.INV_START, gesture,
+                    () -> sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR).filter());
+            if (v == 0) {
+                step(5, () -> hover(com.phantomstorage.menu.PhantomCollectorMenu.FILTER_START + 2));
+                step(10, () -> shot("f2_collector"));
+            }
+            step(5, () -> p().closeContainer());
+        }
+        // The void list only acts on what the collector takes: the owner's own pickups are left alone.
+        int[] held = new int[1];
+        step(5, () -> server(() -> {
+            sp().getData(com.phantomstorage.registry.ModRegistries.STORAGE).voidFilter().setItem(0, new ItemStack(Items.COBBLESTONE));
+            sp().getData(com.phantomstorage.registry.ModRegistries.COLLECTOR).filter().clearContent();
+            PetManager.dismiss(PetKind.COLLECTOR, sp(), false);
+        }));
+        step(20, () -> {
+            held[0] = count(Items.COBBLESTONE);
+            spawnItem(Items.COBBLESTONE, 3, 0.0, 0.0);
+        });
+        step(40, () -> check("own pickup keeps a void-listed item (" + held[0] + " -> " + count(Items.COBBLESTONE) + ")",
+                count(Items.COBBLESTONE) == held[0] + 3 && groundCount(Items.COBBLESTONE) == 0));
+        step(5, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        step(40, () -> {
+            held[0] = count(Items.COBBLESTONE);
+            spawnItem(Items.COBBLESTONE, 3, 4.0, 0.0);
+        });
+        step(60, () -> check("collector destroys a void-listed item (" + held[0] + " -> " + count(Items.COBBLESTONE)
+                        + ", ground " + groundCount(Items.COBBLESTONE) + ")",
+                count(Items.COBBLESTONE) == held[0] && groundCount(Items.COBBLESTONE) == 0));
+        step(5, () -> {
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
     private static void script() {
         until(() -> p() != null && mc().level != null && mc().screen == null);
         step(60, () -> {
@@ -636,7 +927,6 @@ public final class Harness {
         }));
         step(20, () -> shot("07_chest_panel"));
         step(5, () -> {
-            p().closeContainer();
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());

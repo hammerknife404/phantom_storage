@@ -64,7 +64,7 @@
   "tooltip.phantomstorage.trash": "Trash",
   "tooltip.phantomstorage.trash.desc": "Click while holding an item to destroy it",
   "tooltip.phantomstorage.void_slot": "Void filter",
-  "tooltip.phantomstorage.void_slot.desc": "Items like these are destroyed when you or your Phantom Collector pick them up. Click with an item to add it; click an entry empty-handed to clear it",
+  "tooltip.phantomstorage.void_slot.desc": "Items like these are destroyed when your Phantom Collector picks them up, instead of going into storage. Click with an item to add it; click an entry empty-handed to clear it",
   "tooltip.phantomstorage.result": "Crafting output",
   "tooltip.phantomstorage.result.desc": "Shift-click to craft as many as possible",
   "tooltip.phantomstorage.tank_empty": "Empty",

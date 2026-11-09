@@ -103,17 +103,13 @@ public class PhantomChestScreen extends AbstractContainerScreen<PhantomChestMenu
         }
     }
 
-    /** Void filter entries are ghosts: veiled so they never read as stock. */
-    @Override
-    protected void renderSlot(GuiGraphics graphics, Slot slot) {
-        super.renderSlot(graphics, slot);
-        if (slot instanceof VoidSlot) {
-            PhantomTheme.drawGhostVeil(graphics, slot, PhantomTheme.VOID_FILL);
-        }
-    }
-
+    /** Void filter entries are ghosts: veiled (here, after every slot is drawn) so they never read as stock. */
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        PhantomTheme.drawGhostVeils(graphics, this.menu.slots, PhantomTheme.VOID_FILL);
+        if (this.hoveredSlot instanceof VoidSlot) {
+            this.renderSlotHighlight(graphics, this.hoveredSlot, mouseX, mouseY, 0.0F);
+        }
         // Long custom names are cut short rather than running under the sort button.
         PhantomTheme.drawTitle(graphics, this.font, this.title, this.layout.maxTitleWidth());
         PhantomTheme.drawLabel(graphics, this.font, CRAFTING, this.layout.craftLabelX(), this.layout.craftLabelY());
