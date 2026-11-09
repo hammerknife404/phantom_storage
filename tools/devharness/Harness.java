@@ -45,7 +45,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * build. Inert unless PHANTOM_HARNESS is set: "1" runs the saddle + gateway script, "gateway" the gateway
  * look from every side, "collector" the collector + bell script, "void" the End portal void of the
  * anchor, collector and gateway at full and at 10% opacity, "filters" the chest's void grid and the
- * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit. It creates a flat creative world,
+ * collector's filter clicked through their screens, "gatesize" the gateway's 3 x 3 / 2 x 3 / 1 x 2 fit, "gateflat" gateways laid flat (floor, a caught fall, mid-air, ceiling). It creates a flat creative world,
  * steps through a script (each step waits its ticks, then runs), logs PASS/FAIL lines to run/harness.log
  * and the console, saves screenshots to run/screenshots, and quits. See CLAUDE.md for the command line.
  */
@@ -165,6 +165,8 @@ public final class Harness {
                 filtersScript();
             } else if ("gatesize".equals(System.getenv("PHANTOM_HARNESS"))) {
                 gateSizeScript();
+            } else if ("gateflat".equals(System.getenv("PHANTOM_HARNESS"))) {
+                gateFlatScript();
             } else {
                 script();
             }
@@ -743,7 +745,7 @@ public final class Harness {
         PhantomGatewayEntity[] found = new PhantomGatewayEntity[1];
         server(() -> {
             for (PhantomGatewayEntity g : sp().serverLevel().getEntitiesOfClass(PhantomGatewayEntity.class,
-                    sp().getBoundingBox().inflate(8))) {
+                    sp().getBoundingBox().inflate(40))) {
                 if (!g.isRemoved() && sp().getUUID().equals(g.getOwnerId())) {
                     found[0] = g;
                 }
@@ -877,6 +879,134 @@ public final class Harness {
         });
         step(5, () -> {
             cmd("fill 135 -60 -3 139 -58 4 minecraft:air");
+            log("DONE failures=" + failures);
+        });
+        step(20, () -> mc().stop());
+    }
+
+    /** Uses the gateway charm (hotbar 1) facing {@code yaw} at {@code pitch}, set on both sides. */
+    private static void openGateLooking(float yaw, float pitch) {
+        server(() -> GatewayManager.closeFor(sp()));
+        p().getInventory().selected = 1;
+        server(() -> {
+            sp().getInventory().selected = 1;
+            sp().setYRot(yaw);
+            sp().setXRot(pitch);
+        });
+        look(yaw, pitch);
+        use();
+    }
+
+    private static String describe(PhantomGatewayEntity g) {
+        return g == null ? "none" : g.lie() + " " + g.doorWidth() + "x" + g.doorHeight() + " at " + g.position() + " box " + g.getBoundingBox();
+    }
+
+    /**
+     * Gateways laid flat: on the floor below a pillar (screenshot); on the floor at the opener's feet,
+     * which takes them through; on the floor under a 30-block fall in survival, caught with no damage;
+     * in mid-air above, looking up at open sky, with an arrow shot up through it; under a ceiling.
+     */
+    private static void gateFlatScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            mc().options.hideGui = true;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"anchor\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"gateway\"]");
+            cmd("tp @s 100.5 -60 0.5 0 0");
+            cmd("phantomstorage unlock all"); // survival (the caught fall) needs the gateway unlocked
+        });
+        anchorHere();
+        Vec3 anchorSpot = new Vec3(100.5, -60, 0.5);
+        // A: from a 4-high pillar, looking down at the ground ahead: a 3 x 3 floor gateway, the opener clear of it.
+        step(10, () -> {
+            cmd("fill 140 -60 0 140 -57 0 minecraft:stone");
+            cmd("tp @s 140.5 -56 0.5 90 60");
+        });
+        step(20, () -> openGateLooking(90.0F, 60.0F));
+        step(10, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("A " + describe(g));
+            check("looking down from a pillar: a 3 x 3 floor gateway on the ground", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.FLOOR && g.doorWidth() == 3 && g.doorHeight() == 3
+                    && Math.abs(g.getY() + 60.0) < 1.0E-6 && Math.abs(g.getBoundingBox().getYsize() - 1.0) < 1.0E-6);
+        });
+        step(20, () -> shot("f1_floor_from_pillar"));
+        step(5, () -> cmd("fill 140 -60 0 140 -57 0 minecraft:air"));
+        // B: looking down at your own feet: it opens under you and takes you through.
+        step(10, () -> cmd("tp @s 150.5 -60 0.5 90 80"));
+        step(20, () -> openGateLooking(90.0F, 80.0F));
+        step(5, () -> {
+            logActionBar();
+            log("B " + describe(openGate()));
+        });
+        step(30, () -> check("a floor gateway under you takes you through (at " + p().position() + ")",
+                p().position().distanceTo(anchorSpot) < 6.0));
+        // C: falling 30 blocks in survival, looking straight down: caught by a floor gateway, no damage.
+        step(10, () -> {
+            cmd("gamemode survival");
+            cmd("effect clear @s");
+            cmd("tp @s 160.5 -30 0.5 90 89");
+        });
+        step(2, () -> openGateLooking(90.0F, 89.0F));
+        step(5, () -> {
+            logActionBar();
+            log("C " + describe(openGate()) + " player y " + p().getY());
+        });
+        step(60, () -> {
+            float[] health = new float[1];
+            server(() -> health[0] = sp().getHealth());
+            check("a 30-block fall caught by a floor gateway, unhurt (health " + health[0] + ", at " + p().position() + ")",
+                    p().position().distanceTo(anchorSpot) < 6.0 && health[0] >= 20.0F);
+        });
+        step(5, () -> cmd("gamemode creative"));
+        // D: looking up at open sky: in mid-air 6 blocks along the look; an arrow flying up through it goes through.
+        step(10, () -> cmd("tp @s 170.5 -60 0.5 90 -70"));
+        step(20, () -> openGateLooking(90.0F, -70.0F));
+        step(15, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("D " + describe(g));
+            check("looking up at open sky: a 3 x 3 gateway in mid-air above", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.AIR_ABOVE && g.doorWidth() == 3 && g.getY() > -56.0);
+            if (g != null) {
+                Vec3 below = new Vec3(g.getX(), g.getY() - 4.0, g.getZ());
+                server(() -> {
+                    net.minecraft.world.entity.projectile.Arrow arrow = new net.minecraft.world.entity.projectile.Arrow(
+                            sp().serverLevel(), below.x, below.y, below.z, new ItemStack(Items.ARROW), null);
+                    arrow.setDeltaMovement(0.0, 3.0, 0.0);
+                    sp().serverLevel().addFreshEntity(arrow);
+                });
+            }
+        });
+        step(5, () -> shot("f2_air_above"));
+        step(10, () -> {
+            boolean[] arrived = new boolean[1];
+            server(() -> arrived[0] = !sp().serverLevel().getEntitiesOfClass(net.minecraft.world.entity.projectile.Arrow.class,
+                    new AABB(anchorSpot, anchorSpot).inflate(6.0)).isEmpty());
+            check("an arrow flying up through it at 3 blocks a tick lands by the anchor", arrived[0]);
+        });
+        // E: under a ceiling, looking up: just below it.
+        step(10, () -> {
+            cmd("fill 176 -55 -4 184 -55 4 minecraft:stone");
+            cmd("tp @s 180.5 -60 0.5 90 -70");
+        });
+        step(20, () -> openGateLooking(90.0F, -70.0F));
+        step(15, () -> {
+            logActionBar();
+            PhantomGatewayEntity g = openGate();
+            log("E " + describe(g));
+            check("looking up at a ceiling: a 3 x 3 gateway just under it", g != null
+                    && g.lie() == PhantomGatewayEntity.Lie.CEILING && g.doorWidth() == 3 && Math.abs(g.getY() + 56.0) < 1.0E-6);
+        });
+        step(10, () -> shot("f3_ceiling"));
+        step(5, () -> {
+            cmd("fill 176 -55 -4 184 -55 4 minecraft:air");
             log("DONE failures=" + failures);
         });
         step(20, () -> mc().stop());

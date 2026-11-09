@@ -16,8 +16,8 @@ import net.minecraft.world.inventory.InventoryMenu;
 /**
  * The Phantom Gateway: a doorway of the End portal's starfield in a ghostly lodestone frame, the
  * Phantom Anchor's own stone, with the phantom eyes peering out of the void on both sides. As big as
- * the entity says ({@link PhantomGatewayEntity#doorWidth()} by {@link PhantomGatewayEntity#doorHeight()}:
- * 3 x 3, 2 x 3 or 1 x 2); the eyes scale with its width. It swells open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}).
+ * the entity says ({@link PhantomGatewayEntity#doorWidth()} by {@link PhantomGatewayEntity#doorHeight()}),
+ * standing or laid flat ({@link PhantomGatewayEntity#lie()}); the eyes scale with its width. It swells open from its centre and shrinks shut ({@link PhantomGatewayEntity#openness}).
  * It follows the anchor's opacity setting, void included, and the frame its glow setting. Drawn from
  * vanilla textures, like the anchor, the void with {@link PhantomVoid}.
  */
@@ -54,6 +54,14 @@ public class PhantomGatewayRenderer extends EntityRenderer<PhantomGatewayEntity>
         float swell = open * open * (3.0F - 2.0F * open);
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(-entity.getYRot()));
+        PhantomGatewayEntity.Lie lie = entity.lie();
+        if (lie.flat()) {
+            // Laid flat in its layer: its top edge away from the player looking down at it (toward them looking
+            // up), so the eyes read upright either way; then centred on the layer's middle.
+            poseStack.translate(0.0F, lie.plane, 0.0F);
+            poseStack.mulPose(Axis.XP.rotationDegrees(lie.facesDown ? 90.0F : -90.0F));
+            poseStack.translate(0.0F, -height / 2.0F, 0.0F);
+        }
         poseStack.translate(0.0F, height / 2.0F, 0.0F);
         poseStack.scale(swell, swell, 1.0F);
         poseStack.translate(0.0F, -height / 2.0F, 0.0F);

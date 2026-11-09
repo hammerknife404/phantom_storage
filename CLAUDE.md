@@ -18,7 +18,7 @@ Unit tests can't touch Minecraft, so behavior was checked in the dev client unde
 
 1. `cp tools/devharness/Harness.java src/main/java/com/phantomstorage/devharness/` (that folder is gitignored)
 2. `mkdir -p run && printf 'onboardAccessibility:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\n' > run/options.txt` (else the first-launch screen blocks it)
-3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`; see the class comment)
+3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`; see the class comment)
 4. Read `[HARNESS]` lines in the output (or `run/harness.log`) and `run/screenshots/*.png`
 5. **Delete the harness folder before any release build**; it compiles into the jar.
 
@@ -36,7 +36,7 @@ Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the al
 | `summon/CollectorWork` | What the collector takes and where it goes |
 | `summon/PhantomSaddle`, `GatewayManager`, `PhantomBell` | The non-pet modes |
 | `entity/PhantomPetEntity` | Base pet: flight, never saved, only `/kill` hurts it; riding (look + WASD, collides only while ridden) |
-| `entity/PhantomGatewayEntity` | The gateway doorway: 3 × 3, 2 × 3 or 1 × 2 (synced width and height), square to the grid, its box the doorway itself a block deep (`box`, rebuilt when rotation or size changes); travel and the fit search (`GatewayManager.SIZES`, first that fits) are in `GatewayManager` |
+| `entity/PhantomGatewayEntity` | The gateway: standing 3 × 3, 2 × 3 or 1 × 2, or lying flat (`Lie`: floor, ceiling, mid-air; 3, 2 or 1 a side) when opened looking 50°+ down or up; square to the grid, its box the doorway itself a block deep or the layer it lies in (`box`, rebuilt when rotation, size or lie changes, all synced). Travel, the fit searches and `passedThrough` (fast movers and falls caught a tick early, via `getKnownMovement`, so a caught fall does no damage) are in `GatewayManager` |
 | `registry/ModRegistries` | Items, entities, menus, the charm-mode component, player attachments (storage, tanks, anchor and collector spots, collector settings) |
 | `client/` | Renderers (`GhostQuads` shared wings/eyes/quads; `PhantomRenderTypes` ghost passes; `PhantomVoid` the End portal starfield of the anchor, collector and gateway), screens on `PhantomTheme`, client config |
 | `client/PhantomVoid`, `VoidLayers` | The starfield as the End portal shader draws it, but in ordinary entity passes: a near-black backing in the ghost pass, then 15 star layers added in the eyes pass, each vertex's texture spot taken from its screen position. It fades with opacity and shader packs draw it; `RenderType.endPortal()` did neither (Iris has no program for it on entities). `VoidLayers` is the game-free math, tested against the shader's matrices |
