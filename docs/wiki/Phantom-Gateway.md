@@ -4,7 +4,7 @@ A short-lived doorway to your [Phantom Anchor](Phantom-Anchor) that anyone can w
 
 | Charm use (gateway mode) | Result |
 |---|---|
-| Use | Open a gateway 2 blocks ahead of you (else 3), facing you and square to the block grid, for 15 seconds: 3 × 3 blocks, or 2 × 3 where that doesn't fit. Every block of the doorway must be clear. Needs your anchor anchored (told to stay) |
+| Use | Open a gateway 2 blocks ahead of you (else 3), facing you and square to the block grid, for 15 seconds: 3 × 3 blocks, 2 × 3 where that doesn't fit, or 1 × 2 in a tunnel. Every block of the doorway must be clear. Needs your anchor anchored (told to stay) |
 | Sneak + use | Close it |
 
 ## Going through
@@ -17,4 +17,4 @@ A short-lived doorway to your [Phantom Anchor](Phantom-Anchor) that anyone can w
 
 After 15 seconds, on sneak + use, when you open another, when you log out, or when the anchor stops being anchored. One gateway per player.
 
-It's a 3 × 3 block doorway (2 × 3 in tighter spots) of the End portal's starfield in a ghostly lodestone frame (the anchor's stone), the phantom eyes peering out of the void on both sides. It swells open and shrinks shut.
+It's a 3 × 3 block doorway (2 × 3 or 1 × 2 in tighter spots) of the End portal's starfield in a ghostly lodestone frame (the anchor's stone), the phantom eyes peering out of the void on both sides. It swells open and shrinks shut.

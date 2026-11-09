@@ -38,6 +38,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class GatewayManager {
     public static final int LIFETIME = 15 * 20;
+    /** Doorway sizes as {width, height} in blocks, largest first: it opens the first that fits. 1 x 2 is for tunnels. */
+    private static final int[][] SIZES = {{3, 3}, {2, 3}, {1, 2}};
     /** Blocks ahead of the player its middle column may stand, nearest first. */
     private static final int[] AHEAD = {2, 3};
     /** Shaves the clearance box so blocks only touching the doorway's edges don't count as in the way. */
@@ -100,7 +102,7 @@ public final class GatewayManager {
             close(old);
         }
         Vec3 at = door.at();
-        gate.open(id, door.yaw(), door.width(), LIFETIME);
+        gate.open(id, door.yaw(), door.width(), door.height(), LIFETIME);
         gate.moveTo(at.x, at.y, at.z, door.yaw(), 0.0F);
         if (!level.addFreshEntity(gate)) {
             return PhantomCharmItem.FAILED;
@@ -112,13 +114,13 @@ public final class GatewayManager {
         return PhantomCharmItem.COOLDOWN_TICKS;
     }
 
-    private record Doorway(Vec3 at, float yaw, int width) {}
+    private record Doorway(Vec3 at, float yaw, int width, int height) {}
 
     /**
      * Where it opens: square to the block grid across the way the player faces, its bottom at their feet,
-     * its middle column 2 blocks ahead (else 3), and as wide as fits there: 3 blocks, else 2 (leaning
-     * toward the player's side of the middle column first). Every block of the doorway must be clear;
-     * nothing in front of or behind it matters. Null if neither width fits anywhere.
+     * its middle column 2 blocks ahead (else 3), and the largest of {@link #SIZES} that fits there. An
+     * even width leans toward the player's side of the middle column first. Every block of the doorway
+     * must be clear; nothing in front of or behind it matters. Null if none fits anywhere.
      */
     @Nullable
     private static Doorway doorway(ServerPlayer player) {
@@ -129,15 +131,17 @@ public final class GatewayManager {
         double offset = (player.getX() - Math.floor(player.getX()) - 0.5) * across.getStepX()
                 + (player.getZ() - Math.floor(player.getZ()) - 0.5) * across.getStepZ();
         double lean = offset >= 0.0 ? 0.5 : -0.5;
-        for (int width = PhantomGatewayEntity.MAX_WIDTH; width >= PhantomGatewayEntity.MIN_WIDTH; width--) {
+        for (int[] size : SIZES) {
+            int width = size[0];
+            int height = size[1];
             double[] shifts = width % 2 == 1 ? new double[] {0.0} : new double[] {lean, -lean};
             for (int ahead : AHEAD) {
                 Vec3 middle = Vec3.atBottomCenterOf(player.blockPosition().relative(facing, ahead));
                 for (double shift : shifts) {
                     Vec3 at = new Vec3(middle.x + across.getStepX() * shift, player.getY(), middle.z + across.getStepZ() * shift);
-                    AABB box = PhantomGatewayEntity.box(at, yaw, width);
+                    AABB box = PhantomGatewayEntity.box(at, yaw, width, height);
                     if (player.level().noCollision(box.deflate(CLEARANCE_SLACK)) && player.level().getWorldBorder().isWithinBounds(box)) {
-                        return new Doorway(at, yaw, width);
+                        return new Doorway(at, yaw, width, height);
                     }
                 }
             }

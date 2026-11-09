@@ -36,7 +36,7 @@ Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the al
 | `summon/CollectorWork` | What the collector takes and where it goes |
 | `summon/PhantomSaddle`, `GatewayManager`, `PhantomBell` | The non-pet modes |
 | `entity/PhantomPetEntity` | Base pet: flight, never saved, only `/kill` hurts it; riding (look + WASD, collides only while ridden) |
-| `entity/PhantomGatewayEntity` | The gateway doorway: 3 × 3 or 2 × 3 (synced width), square to the grid, its box the doorway itself a block deep (`box`, rebuilt when rotation or width changes); travel and the fit search are in `GatewayManager` |
+| `entity/PhantomGatewayEntity` | The gateway doorway: 3 × 3, 2 × 3 or 1 × 2 (synced width and height), square to the grid, its box the doorway itself a block deep (`box`, rebuilt when rotation or size changes); travel and the fit search (`GatewayManager.SIZES`, first that fits) are in `GatewayManager` |
 | `registry/ModRegistries` | Items, entities, menus, the charm-mode component, player attachments (storage, tanks, anchor and collector spots, collector settings) |
 | `client/` | Renderers (`GhostQuads` shared wings/eyes/quads; `PhantomRenderTypes` ghost passes; `PhantomVoid` the End portal starfield of the anchor, collector and gateway), screens on `PhantomTheme`, client config |
 | `client/PhantomVoid`, `VoidLayers` | The starfield as the End portal shader draws it, but in ordinary entity passes: a near-black backing in the ghost pass, then 15 star layers added in the eyes pass, each vertex's texture spot taken from its screen position. It fades with opacity and shader packs draw it; `RenderType.endPortal()` did neither (Iris has no program for it on entities). `VoidLayers` is the game-free math, tested against the shader's matrices |
