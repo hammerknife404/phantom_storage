@@ -6,8 +6,9 @@ NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, wi
 
 - **Network:** cloud sessions need the `phantom_storage` environment, which allows `maven.neoforged.net`, the Mojang hosts and the JEI/REI/Architectury mavens. On the Default environment Gradle can't resolve NeoForge.
 - **Build:** `./gradlew build` compiles and runs the unit tests (243, game-free: panel layouts, stack compacting and the void's starfield math). CI (`build.yml`) runs the same on every PR and push to `main`.
-- **PRs:** squash-merged into `main`, titled like `3.0.0: summary (#21)`. Bump `mod_version` in `gradle.properties` with user-visible changes. Keep `docs/wiki/`, `docs/modrinth.md` and the release notes body in `.github/workflows/release.yml` in step with behavior changes.
-- **Release:** pushing tag `v<mod_version>` runs `release.yml`. Sessions here can't push tags (the push is cut off), so run the Release workflow manually on `main` instead (GitHub MCP `actions_run_trigger`, `release.yml`, ref `main`). It creates the tag on that commit and publishes the jar. It refuses to overwrite an existing release.
+- **PRs:** squash-merged into `main`, titled like `3.0.0: summary (#21)`. Bump `mod_version` in `gradle.properties` with user-visible changes; merging the bump releases it. Keep `docs/wiki/`, `docs/modrinth.md` and the release notes (`.github/release-notes.md`) in step with behavior changes.
+- **Release:** every push to `main` runs `release.yml`. If `v<mod_version>` isn't released yet, it builds with `RELEASE=true`, creates the tag on that commit and publishes the jar, with `.github/release-notes.md` above GitHub's notes from the merged PRs; otherwise it stops after the check. To retry a failed release, run it by hand on `main` (GitHub MCP `actions_run_trigger`, `release.yml`, ref `main`). It never replaces an existing release. Sessions here can't push tags (the push is cut off).
+- **Shared CI:** `.github/workflows/` (`build.yml`, `release.yml`, `wiki.yml` where there's a wiki), `.github/dependabot.yml` and `.gitattributes` are identical in all the owner's mod repos (phantom_storage, golemarmor, friendlybeacons, catspells-nosumagro, gvs-noatk-players), and each repo's `CLAUDE.md` describes them the same way. Change them in every repo at once, and keep repo-specific text out of them (release notes go in `.github/release-notes.md`).
 - **Modrinth:** the project description is `docs/modrinth.md`, pasted by hand. No Modrinth token is configured. The owner's rules: never publish anything to Modrinth (a version, the description, gallery images) without their consent, and no emoji anywhere in Modrinth text (description, summary, changelogs).
 - **Wiki:** edit `docs/wiki/*.md` (page = file name, `_Sidebar.md` is the sidebar); `wiki.yml` mirrors it to the wiki on push to `main`. Never edit the wiki on github.com: the next sync overwrites it. Images live in `docs/wiki/images/` (synced with the pages), linked relatively (`images/x.png` from a page, `docs/wiki/images/x.png` from the README). To retake the screenshots after a visual change: run the harness with `PHANTOM_HARNESS=docs`, then `python3 tools/docs/compose_images.py`.
 - **Force pushes are refused here.** After a squash merge, restart the work branch from `main` and, if the remote branch still holds the merged commits, merge that tip in (its content equals `main`) so the push is a fast-forward.
@@ -52,7 +53,7 @@ Pets hold no contents; everything lives on the player as attachments. That's why
 2. A handler returning a cooldown in ticks or `PhantomCharmItem.FAILED`; wire it into `PhantomCharmItem.use` and the tooltip switch.
 3. Lang: `pet.phantomstorage.<mode>` (short name), `charm.phantomstorage.<mode>` (full name), tooltip and message keys.
 4. Item model `phantom_charm_<mode>.json` and an override in `phantom_charm.json` at the new ordinal; a sprite (below).
-5. `/phantomstorage unlock` picks it up on its own. Update `docs/wiki`, `docs/modrinth.md` and the release notes body.
+5. `/phantomstorage unlock` picks it up on its own. Update `docs/wiki`, `docs/modrinth.md` and `.github/release-notes.md`.
 
 ## Charm sprites
 
