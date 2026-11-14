@@ -157,5 +157,15 @@
   "phantomstorage.configuration.anchor": "Phantom Anchor",
   "phantomstorage.configuration.collector": "Phantom Collector",
   "phantomstorage.configuration.glow": "Glow",
-  "phantomstorage.configuration.glow.tooltip": "Never render darker than light level 7"
+  "phantomstorage.configuration.glow.tooltip": "Never render darker than light level 7",
+  "phantomstorage.configuration.section.phantomstorage.server.toml": "World settings",
+  "phantomstorage.configuration.section.phantomstorage.server.toml.title": "World settings",
+  "phantomstorage.configuration.saddle": "Phantom Saddle",
+  "phantomstorage.configuration.saddle.tooltip": "Riding the Phantom Chest",
+  "phantomstorage.configuration.speed": "Flight speed",
+  "phantomstorage.configuration.speed.tooltip": "Blocks a second (a player walks at 4.3)",
+  "phantomstorage.configuration.sprint": "Allow sprinting",
+  "phantomstorage.configuration.sprint.tooltip": "Sprinting while riding flies at the sprint speed",
+  "phantomstorage.configuration.sprintSpeed": "Sprint speed",
+  "phantomstorage.configuration.sprintSpeed.tooltip": "Blocks a second, if sprinting is allowed (a player sprints at 5.6)"
 }

@@ -1,4 +1,6 @@
-# Client Config
+# Config
+
+## Client config
 
 Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → Phantom Storage → Config**. Changes show at once.
 
@@ -15,3 +17,13 @@ Per player, in `config/phantomstorage-client.toml` or in-game under **Mods → P
 *All-pets opacity at 100% (left) and 40% (right), the per-pet values at their default 80%.*
 
 Light cast onto surroundings comes from [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights) and is toggled in its own settings.
+
+## World config
+
+Per world, in `serverconfig/phantomstorage-server.toml` inside the world folder, or in-game under **Mods → Phantom Storage → Config → World settings** (in single player, or as an operator on a server). The server sends it to every player, so everyone rides at the server's speed.
+
+| Option | Default | Does |
+|---|---|---|
+| Phantom Saddle: Flight speed | 4 blocks/s | How fast the ridden chest flies (1–20; a player walks at 4.3) |
+| Phantom Saddle: Allow sprinting | off | Sprinting while riding flies at the sprint speed |
+| Phantom Saddle: Sprint speed | 5.4 blocks/s | Used only with sprinting allowed (1–30; a player sprints at 5.6) |
