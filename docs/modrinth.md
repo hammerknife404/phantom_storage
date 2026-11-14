@@ -40,7 +40,7 @@
 ## Phantom Saddle
 
 - A charm mode, no new entity: **ride your Phantom Chest** and fly it, a saddle on its lid
-- **Fly where you look**: W/S along your view, A/D to strafe, Space to rise, sprint to go a little faster; let go and it hovers
+- **Fly where you look**: W/S along your view, A/D to strafe, Space to rise; let go and it hovers
 - Ridden, it **collides like any mount**, keeping your head out of walls and ceilings
 - No fall damage for it or you; sneak or use the charm again to get off
 
