@@ -384,11 +384,10 @@ public abstract class PhantomPetEntity extends TamableAnimal {
     // ---- riding: the owner steers ------------------------------------------------------------
 
     /**
-     * Ridden: blocks per tick while cruising, and sprinting. Each a little under a player's own walk (0.216)
-     * and sprint (0.281): the chest is for getting round rough ground and building on cliff faces, not racing.
+     * Ridden: blocks per tick, a little under a player's own walk (0.216). No sprint: the chest is for getting
+     * round rough ground and building on cliff faces, not long trips or racing.
      */
     private static final double RIDE_SPEED = 0.2;
-    private static final double RIDE_SPRINT_SPEED = 0.27;
     /** Backing up goes at this fraction of the speed. */
     private static final double RIDE_BACK = 0.5;
     /** How quickly it takes up a new heading, and how quickly it stops with no keys held. */
@@ -432,12 +431,6 @@ public abstract class PhantomPetEntity extends TamableAnimal {
         return false;
     }
 
-    /** Lets the rider sprint, for {@link #RIDE_SPRINT_SPEED}. */
-    @Override
-    public boolean canSprint() {
-        return this.isVehicle();
-    }
-
     /** (strafe, rise, forward) as the rider asks: WASD and jump, a held key as 1. */
     @Override
     protected Vec3 getRiddenInput(Player rider, Vec3 travelVector) {
@@ -468,9 +461,8 @@ public abstract class PhantomPetEntity extends TamableAnimal {
             wish = wish.normalize();
         }
         boolean steering = wish.lengthSqr() > 1.0E-4;
-        double speed = rider.isSprinting() ? RIDE_SPRINT_SPEED : RIDE_SPEED;
         Vec3 motion = this.getDeltaMovement().scale(1.0 / CLIENT_SLOWING)
-                .lerp(wish.scale(speed), steering ? RIDE_ACCEL : RIDE_BRAKE);
+                .lerp(wish.scale(RIDE_SPEED), steering ? RIDE_ACCEL : RIDE_BRAKE);
         if (!steering && motion.lengthSqr() < 1.0E-5) {
             motion = Vec3.ZERO;
         }

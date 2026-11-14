@@ -7,7 +7,7 @@
   "item.phantomstorage.phantom_charm.tooltip.swap": "Look at it + Right-click: Swap places",
   "item.phantomstorage.phantom_charm.tooltip.dismiss": "Sneak + Right-click: Dismiss",
   "item.phantomstorage.phantom_charm.tooltip.saddle": "Right-click: Ride your Phantom Chest / get off",
-  "item.phantomstorage.phantom_charm.tooltip.saddle.fly": "Riding: fly where you look with WASD, Space to rise, sprint for speed; sneak to get off",
+  "item.phantomstorage.phantom_charm.tooltip.saddle.fly": "Riding: fly where you look with WASD, Space to rise; sneak to get off",
   "item.phantomstorage.phantom_charm.tooltip.dismiss.chest": "Sneak + Right-click: Dismiss the Phantom Chest",
   "item.phantomstorage.phantom_charm.tooltip.gateway": "Right-click: Open a gateway to your anchored Phantom Anchor",
   "item.phantomstorage.phantom_charm.tooltip.gateway.close": "Sneak + Right-click: Close it",

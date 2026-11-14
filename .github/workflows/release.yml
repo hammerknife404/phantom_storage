@@ -75,7 +75,7 @@ jobs:
             | Sneak + scroll with the Phantom Charm | Switch mode: Chest, Tank, Anchor, Collector, Saddle, Gateway, Bell |
             | Right-click Phantom Charm | Summon that pet, or recall it to your side if it's out (5 s cooldown). Anchor: teleport to it; looking at it, swap places |
             | Sneak + right-click Phantom Charm | Dismiss that pet (same cooldown) |
-            | Right-click, Saddle mode | Ride the Phantom Chest: fly where you look (WASD, Space rises, sprint is faster); again or sneak to get off |
+            | Right-click, Saddle mode | Ride the Phantom Chest: fly where you look (WASD, Space rises); again or sneak to get off |
             | Right-click, Gateway mode | Open a 15 s gateway to your anchored anchor that anyone can walk through (3×3 down to 1×2 to fit; look steeply down or up to lay it flat, to catch a fall or fly into); sneak + right-click closes it |
             | Right-click, Bell mode | Summon every unlocked pet; sneak + right-click dismisses every following pet (anchored ones stay) |
             | Right-click a pet | Open its panel (tank: a bucket or bottle pours in / fills from the active tank) |
