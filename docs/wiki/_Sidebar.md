@@ -16,5 +16,5 @@
 - [Phantom Bell](Phantom-Bell)
 
 **More**
-- [Client Config](Client-Config)
+- [Config](Client-Config)
 - [Compatibility](Compatibility)

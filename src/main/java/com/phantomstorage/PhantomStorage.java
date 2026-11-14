@@ -10,7 +10,9 @@ import com.phantomstorage.summon.PhantomPetEvents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
@@ -21,7 +23,8 @@ public final class PhantomStorage {
     public static final String MODID = "phantomstorage";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public PhantomStorage(IEventBus modBus) {
+    public PhantomStorage(IEventBus modBus, ModContainer container) {
+        container.registerConfig(ModConfig.Type.SERVER, PhantomServerConfig.SPEC);
         ModRegistries.register(modBus);
         modBus.addListener(PhantomStorage::onEntityAttributes);
         modBus.addListener(PhantomStorage::onCreativeTabs);
