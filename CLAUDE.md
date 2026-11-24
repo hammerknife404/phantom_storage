@@ -1,6 +1,6 @@
 # Phantom Storage: notes for the next agent
 
-NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.1.0** (tag `v3.1.0`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
+NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.1.1** (tag `v3.1.1`; on Modrinth as a beta, like 3.1.0). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
 
 ## Working here
 
@@ -18,7 +18,7 @@ Unit tests can't touch Minecraft, so behavior was checked in the dev client unde
 
 1. `cp tools/devharness/Harness.java src/main/java/com/phantomstorage/devharness/` (that folder is gitignored)
 2. `mkdir -p run && printf 'onboardAccessibility:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\n' > run/options.txt` (else the first-launch screen blocks it)
-3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`, `docs`; see the class comment)
+3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`, `docs`, `gallery`; see the class comment). `gallery` makes Modrinth gallery frames in a normal world (`PHANTOM_SEED` picks it) at 1920x1080: run it on a `-screen 0 1920x1200x24` Xvfb screen with `timeout 1800`, and delete `run/saves/gallery` first or it reuses the old world
 4. Read `[HARNESS]` lines in the output (or `run/harness.log`) and `run/screenshots/*.png`
 5. **Delete the harness folder before any release build**; it compiles into the jar.
 
