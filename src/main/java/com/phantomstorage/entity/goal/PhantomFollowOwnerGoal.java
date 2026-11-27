@@ -1,11 +1,13 @@
 package com.phantomstorage.entity.goal;
 
 import com.phantomstorage.entity.HoverBounds;
+import com.phantomstorage.entity.PhantomMoveControl;
 import com.phantomstorage.entity.PhantomPetEntity;
 import java.util.EnumSet;
 import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -14,13 +16,15 @@ import net.minecraft.world.phys.Vec3;
  * Allay-style following, as a small set of phases:
  * <pre>
  * owner moving  -> TRAVEL : trail 6-9 blocks behind, swaying and bobbing aimlessly
+ * owner fast    -> TRAVEL, keeping pace: the target leads by the owner's velocity (elytra, horses, carts)
  * owner stops   -> WANDER : drift 2-5 blocks out, 2-5 blocks above the owner's feet
  * still ~15 s   -> SETTLE : hover ~2 blocks beside the owner at their foot level, facing them
  * any idle time -> CALL   : owner looks at it ~0.5 s -> comes within reach, lingers
  * charm recall  -> placed beside the owner at foot level, straight into SETTLE
  * menu open     -> hold still
  * </pre>
- * Every target passes through {@link HoverBounds}, so the ground rules always win. When lagging, it
+ * Every target passes through {@link HoverBounds}, so the ground rules always win, except while the
+ * owner glides: they may be far above the ground, and the pet goes with them. When lagging, it
  * flies faster the further behind it is; beyond 12 blocks it blinks back ({@link PhantomPetEntity#teleportNear}),
  * waiting until a plain fall ends so it doesn't stutter down beside a falling owner.
  * Per-tick work is O(1); ground scans and look checks run at most every {@link #RETARGET_TICKS} ticks.
@@ -74,6 +78,14 @@ public class PhantomFollowOwnerGoal extends Goal {
     private static final int SAMPLE_TICKS = 10;
     private static final int RETARGET_TICKS = 5;
 
+    // Keeping pace with a fast owner
+    /** Owner speed (blocks/tick) above which the pet matches it; a sprint-jump is ~0.35, an elytra 1.5-3. */
+    private static final double FAST_SPEED = 0.5;
+    /** A step this long in one tick is a teleport, not movement. */
+    private static final double TELEPORT_STEP_SQR = 8.0 * 8.0;
+    /** How far it may outrun a fast owner to close the gap, in blocks/tick. */
+    private static final double PACE_MARGIN = 0.4;
+
     private final PhantomPetEntity pet;
     @Nullable
     private Player owner;
@@ -97,6 +109,12 @@ public class PhantomFollowOwnerGoal extends Goal {
     private int idleTargetTimer;
     private int swayTimer;
     private int lookTicks;
+    private Vec3 ownerPrev = Vec3.ZERO;
+    /** The owner's movement per tick, smoothed: the server can't trust a player's own velocity. */
+    private Vec3 ownerVel = Vec3.ZERO;
+    /** The travel target relative to the owner, so a fast owner's target moves with them every tick. */
+    @Nullable
+    private Vec3 travelOffset;
 
     public PhantomFollowOwnerGoal(PhantomPetEntity pet) {
         this.pet = pet;
@@ -133,6 +151,9 @@ public class PhantomFollowOwnerGoal extends Goal {
     @Override
     public void start() {
         this.lastOwnerPos = this.owner.position();
+        this.ownerPrev = this.lastOwnerPos;
+        this.ownerVel = Vec3.ZERO;
+        this.travelOffset = null;
         this.ownerTravelling = false;
         this.target = null;
         this.resetIdle();
@@ -147,6 +168,7 @@ public class PhantomFollowOwnerGoal extends Goal {
         this.owner = null;
         this.target = null;
         this.idleTarget = null;
+        this.travelOffset = null;
     }
 
     private void resetIdle() {
@@ -162,6 +184,16 @@ public class PhantomFollowOwnerGoal extends Goal {
         // Told to stay this tick: the goal stops on the next update; don't teleport after the owner meanwhile.
         if (player == null || this.pet.isOrderedToSit()) {
             return;
+        }
+        Vec3 here = player.position();
+        Vec3 step = here.subtract(this.ownerPrev);
+        this.ownerPrev = here;
+        this.ownerVel = step.lengthSqr() > TELEPORT_STEP_SQR ? Vec3.ZERO : this.ownerVel.lerp(step, 0.5);
+        boolean fast = this.ownerVel.lengthSqr() > FAST_SPEED * FAST_SPEED;
+        if (fast && !this.ownerTravelling) {
+            this.ownerTravelling = true;
+            this.resetIdle();
+            this.retargetTimer = 0;
         }
         if (++this.sampleTimer >= SAMPLE_TICKS) {
             this.sampleTimer = 0;
@@ -191,6 +223,10 @@ public class PhantomFollowOwnerGoal extends Goal {
         if (--this.teleportTimer <= 0 && this.pet.isTooFarFrom(player) && !isFalling(player)) {
             this.teleportTimer = this.adjustedTickDelay(10);
             this.pet.teleportNear(player);
+            if (fast) {
+                // Already moving with the owner, or it falls straight behind again.
+                this.pet.setDeltaMovement(this.ownerVel);
+            }
             this.idleTarget = null;
             this.settled = false;
             this.retargetTimer = 0;
@@ -200,12 +236,21 @@ public class PhantomFollowOwnerGoal extends Goal {
             this.retargetTimer = RETARGET_TICKS;
             this.retarget(player);
         }
+        if (fast && this.travelOffset != null) {
+            // Keep pace: the target moves with the owner every tick and leads by their velocity, which
+            // cancels the move control's trailing lag, so the pet holds its place behind them.
+            double ownerSpeed = this.ownerVel.length();
+            this.target = here.add(this.travelOffset).add(this.ownerVel.scale(1.0 / PhantomMoveControl.ARRIVAL));
+            this.targetSpeed = Math.max(this.targetSpeed,
+                    (ownerSpeed + PACE_MARGIN) / this.pet.getAttributeValue(Attributes.FLYING_SPEED));
+        }
         if (this.target != null) {
             this.pet.getMoveControl().setWantedPosition(this.target.x, this.target.y, this.target.z, this.targetSpeed);
         }
     }
 
     private void retarget(Player player) {
+        this.travelOffset = null;
         if (this.pet.isBeingViewed()) {
             // Don't drift away from an open GUI; re-settle from wherever it is once closed.
             this.target = null;
@@ -282,6 +327,7 @@ public class PhantomFollowOwnerGoal extends Goal {
                 ownerPos.x + d.x * along - d.z * this.sway,
                 ownerPos.y + HOVER_OFFSET + this.bob,
                 ownerPos.z + d.z * along + d.x * this.sway);
+        this.travelOffset = this.target.subtract(ownerPos);
     }
 
     /** Next drift point: a gentle arc (at most +-90 degrees) around the owner, 2-5 blocks above their feet. */
@@ -332,6 +378,9 @@ public class PhantomFollowOwnerGoal extends Goal {
     }
 
     private Vec3 hoverPoint(double x, double y, double z) {
+        if (this.owner != null && this.owner.isFallFlying()) {
+            return new Vec3(x, y, z);
+        }
         return new Vec3(x, HoverBounds.clampY(this.pet.level(), x, y, z), z);
     }
 

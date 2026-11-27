@@ -68,10 +68,22 @@ public final class PetManager {
         return pet.isStranded() ? replace(kind, player, pet) : pet;
     }
 
+    /** The owner's pets following them right now (not anchored): the ones a dimension change would leave behind. */
+    public static Map<PetKind, PhantomPetEntity> followers(ServerPlayer owner) {
+        Map<PetKind, PhantomPetEntity> followers = new EnumMap<>(PetKind.class);
+        for (PetKind kind : PetKind.values()) {
+            PhantomPetEntity pet = getActive(kind, owner.getUUID());
+            if (pet != null && !pet.isAnchored()) {
+                followers.put(kind, pet);
+            }
+        }
+        return followers;
+    }
+
     /**
-     * After the owner went to another dimension through their gateway: the pets that were following
-     * them there (and were dismissed by the dimension change) come along, re-summoned beside them with
-     * their names and looks, as pets hold no contents.
+     * After the owner went to another dimension: the pets that were following them (and were dismissed
+     * by the dimension change) come along, re-summoned beside them with their names and looks, as pets
+     * hold no contents.
      */
     public static void bringAlong(ServerPlayer player, Map<PetKind, PhantomPetEntity> followers) {
         followers.forEach((kind, old) -> {

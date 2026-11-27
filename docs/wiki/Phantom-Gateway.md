@@ -18,7 +18,7 @@ A short-lived doorway to your [Phantom Anchor](Phantom-Anchor) that anyone can w
 
 - Whatever steps into the doorway goes through: you, other players, mobs, items. Everyone lands on a safe spot within 3 blocks of the anchor, in whatever dimension it is (the same rules as anchor teleports), at rest: a fall or a flight ends there, with no fall damage.
 - A flat gateway takes whatever stands on it, falls onto it or flies up into it, however fast: open one under a friend who's falling (or under the whole group), or above you while flying an elytra out of trouble.
-- Pets don't go through themselves. Following pets catch up as usual; if you crossed to another dimension, they're summoned again beside you.
+- Pets don't go through themselves. Following pets catch up as usual; if you crossed to another dimension, they're summoned again beside you (even with the world config's cross-dimension following off).
 - Bosses, spectators, and anything riding something else (except you on your chest) stay out.
 
 ## Closing

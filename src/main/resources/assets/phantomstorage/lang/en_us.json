@@ -167,5 +167,9 @@
   "phantomstorage.configuration.sprint": "Allow sprinting",
   "phantomstorage.configuration.sprint.tooltip": "Sprinting while riding flies at the sprint speed",
   "phantomstorage.configuration.sprintSpeed": "Sprint speed",
-  "phantomstorage.configuration.sprintSpeed.tooltip": "Blocks a second, if sprinting is allowed (a player sprints at 5.6)"
+  "phantomstorage.configuration.sprintSpeed.tooltip": "Blocks a second, if sprinting is allowed (a player sprints at 5.6)",
+  "phantomstorage.configuration.pets": "Pets",
+  "phantomstorage.configuration.pets.tooltip": "Every pet",
+  "phantomstorage.configuration.followAcrossDimensions": "Follow across dimensions",
+  "phantomstorage.configuration.followAcrossDimensions.tooltip": "Following pets come along through portals and other dimension travel. Off, they're dismissed and summoned again with the charm"
 }

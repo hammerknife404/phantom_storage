@@ -53,7 +53,19 @@ public final class PhantomSaddle {
         } else {
             chest = PetManager.live(PetKind.CHEST, player, chest);
         }
-        if (chest == null || !chest.carry(player, feet)) {
+        if (chest == null) {
+            return summoned ? PhantomCharmItem.COOLDOWN_TICKS : PhantomCharmItem.FAILED;
+        }
+        // Vanilla ends a glide a tick after mounting; end it first, so no client (or camera mod) ever sees a
+        // rider who is still gliding.
+        boolean gliding = player.isFallFlying();
+        if (gliding) {
+            player.stopFallFlying();
+        }
+        if (!chest.carry(player, feet)) {
+            if (gliding) {
+                player.startFallFlying();
+            }
             return summoned ? PhantomCharmItem.COOLDOWN_TICKS : PhantomCharmItem.FAILED;
         }
         player.serverLevel().playSound(null, feet.x, feet.y, feet.z, SoundEvents.HORSE_SADDLE, SoundSource.PLAYERS, 0.6F, 1.2F);

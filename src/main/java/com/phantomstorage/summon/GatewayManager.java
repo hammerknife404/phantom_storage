@@ -4,7 +4,6 @@ import com.phantomstorage.entity.PhantomGatewayEntity;
 import com.phantomstorage.entity.PhantomPetEntity;
 import com.phantomstorage.item.PhantomCharmItem;
 import com.phantomstorage.registry.ModRegistries;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -339,7 +338,7 @@ public final class GatewayManager {
         }
         Vec3 start = entity.position();
         if (entity instanceof ServerPlayer player) {
-            Map<PetKind, PhantomPetEntity> followers = crossing && player == owner ? followers(owner) : Map.of();
+            Map<PetKind, PhantomPetEntity> followers = crossing && player == owner ? PetManager.followers(owner) : Map.of();
             player.teleportTo(to, landing.x, landing.y, landing.z, Set.of(), player.getYRot(), player.getXRot());
             player.resetFallDistance();
             player.setPortalCooldown();
@@ -361,18 +360,6 @@ public final class GatewayManager {
         } else {
             to.sendParticles(ParticleTypes.REVERSE_PORTAL, landing.x, landing.y + 0.25, landing.z, 6, 0.1, 0.1, 0.1, 0.02);
         }
-    }
-
-    /** The owner's pets following them right now: the ones a crossing would leave behind. */
-    private static Map<PetKind, PhantomPetEntity> followers(ServerPlayer owner) {
-        Map<PetKind, PhantomPetEntity> followers = new EnumMap<>(PetKind.class);
-        for (PetKind kind : PetKind.values()) {
-            PhantomPetEntity pet = PetManager.getActive(kind, owner.getUUID());
-            if (pet != null && pet.level() == owner.level() && !pet.isAnchored()) {
-                followers.put(kind, pet);
-            }
-        }
-        return followers;
     }
 
     public static void forget(PhantomGatewayEntity gate) {

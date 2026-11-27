@@ -60,6 +60,7 @@
 ## All pets
 
 - Float like an Allay: trail you while you travel, drift around when you stop, settle at your side
+- Keep pace with an elytra flight, and come with you to other dimensions
 - Look at one for half a second and it comes within reach
 - Stay / follow toggle, recall to your side, name them with a name tag
 - Owner-only: nobody else can open, move or lead them
@@ -68,7 +69,7 @@
 - Never darker than light level 7; light up their surroundings with [LambDynamicLights](https://modrinth.com/mod/lambdynamiclights)
 - **One look across every panel**: night violet with gold trim, the pet's charm art by the title, cyan for what's active
 - **Client config** (in-game from the Mods list): opacity for all pets or each one, and glow on/off per pet
-- **World config**: the ridden chest's flight speed, and whether sprinting speeds it up (off by default)
+- **World config**: the ridden chest's flight speed, whether sprinting speeds it up (off by default), and whether pets follow you across dimensions (on by default)
 
 ---
 

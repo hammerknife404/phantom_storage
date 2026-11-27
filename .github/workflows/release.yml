@@ -94,5 +94,5 @@ jobs:
 
             **Recipe:** Phantom Membrane ×3 around an Ender Chest, Soul Campfire below, Gold Block in each corner.
             **Unlocks:** Tank: *Local Brewery*. Anchor: *Remote Getaway*. Collector: *You've Got a Friend in Me*. Saddle: *Great View From Up Here*. Gateway: *The End... Again...*. Bell: *Hot Tourist Destinations*.
-            **Client config** (Mods → Phantom Storage → Config): opacity for all pets or each one, and glow on/off per pet. **World config**: the ridden chest's flight speed, and whether sprinting speeds it up (off by default).
+            **Client config** (Mods → Phantom Storage → Config): opacity for all pets or each one, and glow on/off per pet. **World config**: the ridden chest's flight speed, whether sprinting speeds it up (off by default), and whether following pets come along to other dimensions (on by default).
           generate_release_notes: true

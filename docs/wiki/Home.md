@@ -14,4 +14,4 @@ Summonable, ghostly flying pets that carry your stuff, all called up with one it
 | <img src="images/charm-gateway.png" width="32" alt=""> [Gateway](Phantom-Gateway) | A 15-second doorway to your anchor that anyone can walk through | *The End... Again...* |
 | <img src="images/charm-bell.png" width="32" alt=""> [Bell](Phantom-Bell) | Summons or dismisses every pet at once | *Hot Tourist Destinations* |
 
-Start with the [Phantom Charm](Phantom-Charm): the recipe, how to switch modes, and the unlocks. Things every pet shares (following, ownership, dimensions, light) are on [Pet Behavior](Pet-Behavior). Per-player look settings and per-world riding speed are under [Config](Client-Config); mod interplay and upgrading are under [Compatibility](Compatibility).
+Start with the [Phantom Charm](Phantom-Charm): the recipe, how to switch modes, and the unlocks. Things every pet shares (following, ownership, dimensions, light) are on [Pet Behavior](Pet-Behavior). Per-player look settings and per-world riding speed and cross-dimension following are under [Config](Client-Config); mod interplay and upgrading are under [Compatibility](Compatibility).

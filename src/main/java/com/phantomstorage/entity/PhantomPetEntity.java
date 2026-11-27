@@ -326,7 +326,9 @@ public abstract class PhantomPetEntity extends TamableAnimal {
             double angle = behind + ((i + 1) / 2) * (i % 2 == 0 ? -1 : 1) * (Math.PI / 4.0);
             double x = owner.getX() + Math.cos(angle) * TELEPORT_RING;
             double z = owner.getZ() + Math.sin(angle) * TELEPORT_RING;
-            double y = HoverBounds.clampY(this.level(), x, owner.getY() + heightAboveFeet, z);
+            // A gliding owner may be far above the ground; the hover limits would hold the pet down there.
+            double y = owner.isFallFlying() ? owner.getY() + heightAboveFeet
+                    : HoverBounds.clampY(this.level(), x, owner.getY() + heightAboveFeet, z);
             if (this.level().noCollision(this, this.getBoundingBox().move(x - this.getX(), y - this.getY(), z - this.getZ()))) {
                 this.blinkTo(x, y, z);
                 return;
