@@ -6,6 +6,7 @@ What every pet (chest, tank, anchor, collector) shares.
 
 - Pets float like an Allay: they trail and bob while you travel, drift 2-5 blocks around and above you when you stop, then settle beside you at your foot level.
 - Look at a pet for about half a second while it's idle and it comes within reach.
+- They keep pace with an elytra flight or a fast mount, holding their place a few blocks behind you, at your height rather than near the ground.
 - Beyond 12 blocks a pet blinks back to you. Same-dimension teleports (waystones, `/tp`, modded warps) are fine: a pet left behind reappears beside you within a second.
 
 ## Controls on a pet
@@ -20,7 +21,8 @@ What every pet (chest, tank, anchor, collector) shares.
 
 - One of each pet per player. Only the owner can open, move or lead it.
 - Only `/kill` can kill a pet. Its contents are never at risk: storage and tanks live on you, not on the pet, so they survive death, logout and dimension changes.
-- Pets are never saved with the world. They're dismissed on logout or dimension change and summoned again with the charm, except an anchored anchor or collector, which keeps its spot (see [Phantom Anchor](Phantom-Anchor)).
+- Following pets come along when you change dimension (portals, commands, modded travel); a world config option turns that off, and then they're dismissed and summoned again with the charm. An anchored anchor or collector keeps its spot either way (see [Phantom Anchor](Phantom-Anchor)).
+- Pets are never saved with the world. They're dismissed on logout and summoned again with the charm, except an anchored anchor or collector, which comes back to its spot.
 
 ## Panels
 

@@ -22,7 +22,7 @@ One charm calls up every pet and mode. Its art changes to show the current mode:
 | Use | Pet modes: summon that pet, or recall it to your side if it's out. Other modes: see their pages |
 | Sneak + use | Pet modes: dismiss that pet. Other modes: see their pages |
 
-Summoning, recalling and dismissing share a 5-second cooldown; getting on or off the saddled chest uses a short one. A pet never comes across dimensions with the charm: it's dismissed when you change dimension (unless anchored) and you summon it again.
+Summoning, recalling and dismissing share a 5-second cooldown; getting on or off the saddled chest uses a short one. Following pets come with you when you change dimension (a world config option); anchored ones stay where they are.
 
 ## Unlocks
 

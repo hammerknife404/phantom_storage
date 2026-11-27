@@ -63,6 +63,8 @@ public final class Harness {
     private static int failures;
     private static int debugTicks;
     private static boolean waited;
+    /** Runs every client tick while set (after the keys are applied). */
+    private static Runnable everyTick;
 
     private static void step(int ticksAfter, Runnable r) {
         STEPS.add(r);
@@ -171,6 +173,8 @@ public final class Harness {
                 docsScript();
             } else if ("gallery".equals(System.getenv("PHANTOM_HARNESS"))) {
                 galleryScript();
+            } else if ("elytra".equals(System.getenv("PHANTOM_HARNESS"))) {
+                elytraScript();
             } else {
                 script();
             }
@@ -2088,6 +2092,167 @@ public final class Harness {
         step(20, () -> mc().stop());
     }
 
+    /**
+     * Elytra: the saddle used mid-glide (summoning the chest, and with it out), steering and getting off
+     * afterwards; pets keeping pace with a fast glide; pets coming along to another dimension.
+     */
+    private static void elytraScript() {
+        until(() -> p() != null && mc().level != null && mc().screen == null);
+        step(60, () -> {
+            mc().options.pauseOnLostFocus = false;
+            cmd("gamerule doDaylightCycle false");
+            cmd("time set 6000");
+            cmd("gamerule doMobSpawning false");
+            cmd("weather clear");
+            cmd("phantomstorage unlock all");
+            cmd("gamemode survival");
+            cmd("item replace entity @s armor.chest with minecraft:elytra");
+            cmd("item replace entity @s hotbar.0 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"saddle\"]");
+            cmd("item replace entity @s hotbar.1 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"chest\"]");
+            cmd("item replace entity @s hotbar.2 with phantomstorage:phantom_charm[phantomstorage:charm_mode=\"tank\"]");
+            p().getInventory().selected = 0;
+            server(() -> sp().getInventory().selected = 0);
+        });
+        for (String when : new String[] {"summoning", "chest out"}) {
+            step(20, () -> {
+                tp(0.5, 0, 0.5, 0, 10);
+            });
+            step(8, () -> glide(true));
+            step(15, () -> {
+                log(when + ": gliding c=" + p().isFallFlying() + " s=" + sp().isFallFlying() + " speed " + p().getDeltaMovement().length());
+                check(when + ": gliding before the saddle", p().isFallFlying());
+                use();
+                debugTicks = 0;
+                everyTick = () -> {
+                    Entity v = p().getVehicle();
+                    Entity sv = sp().getVehicle();
+                    log(String.format(java.util.Locale.ROOT, "tick c.veh=%s s.veh=%s c.glide=%s s.glide=%s c.pose=%s s.pose=%s c.yaw=%.1f c.pos=%s chestC=%s chestS=%s",
+                            v == null ? null : v.getId(), sv == null ? null : sv.getId(), p().isFallFlying(), sp().isFallFlying(),
+                            p().getPose(), sp().getPose(), p().getYRot(), p().position(),
+                            v == null ? null : v.position(), sv == null ? null : sv.position()));
+                };
+            });
+            step(10, () -> {
+                everyTick = null;
+                check(when + ": rides the chest (client)", vehicle() instanceof PhantomPetEntity);
+                check(when + ": rides the chest (server)", sp().getVehicle() instanceof PhantomPetEntity);
+                check(when + ": no longer gliding (client)", !p().isFallFlying());
+                check(when + ": no longer gliding (server)", !sp().isFallFlying());
+                check(when + ": standing pose", p().getPose() == net.minecraft.world.entity.Pose.STANDING);
+                shot("e_" + when.replace(' ', '_') + "_mounted");
+                mark = vehicle() == null ? p().position() : vehicle().position();
+                look(90, 0);
+                keys(true, false, false, false);
+            });
+            step(30, () -> {
+                Vec3 now = vehicle() == null ? p().position() : vehicle().position();
+                log(when + ": W facing -x moved " + now.subtract(mark) + " c.yaw " + p().getYRot());
+                check(when + ": steers where it looks (-x)", now.x < mark.x - 3 && Math.abs(now.z - mark.z) < 1.0);
+                keys(false, false, false, false);
+                look(180, 0);
+            });
+            step(5, () -> {
+                check(when + ": can still turn (yaw 180)", Math.abs(net.minecraft.util.Mth.wrapDegrees(p().getYRot() - 180)) < 1);
+                keys(false, false, true, false);
+            });
+            step(10, () -> {
+                keys(false, false, false, false);
+                check(when + ": sneak gets off (client)", vehicle() == null);
+                check(when + ": sneak gets off (server)", sp().getVehicle() == null);
+                cmd("gamemode creative");
+            });
+        }
+
+        // ---- following a fast glide ----
+        step(20, () -> {
+            cmd("gamemode creative");
+            tp(0.5, -60, 0.5, 0, 0);
+        });
+        step(20, () -> {
+            p().getInventory().selected = 1;
+            server(() -> sp().getInventory().selected = 1);
+            use();
+        });
+        step(20, () -> {
+            p().getInventory().selected = 2;
+            server(() -> sp().getInventory().selected = 2);
+            use();
+        });
+        step(40, () -> {
+            check("chest and tank are out", PetManager.getActive(PetKind.CHEST, p().getUUID()) != null
+                    && PetManager.getActive(PetKind.TANK, p().getUUID()) != null);
+            tp(0.5, 0, 0.5, 0, 0);
+        });
+        step(5, () -> glide(true));
+        for (double speed : new double[] {1.6, 3.0}) {
+            double[] stats = new double[3];
+            step(5, () -> {
+                stats[0] = 0;
+                stats[1] = 0;
+                stats[2] = 0;
+                everyTick = () -> {
+                    // A steady, level elytra flight at this speed along +z.
+                    p().setDeltaMovement(0, 0.0, speed);
+                    if (!p().isFallFlying()) {
+                        glide(true);
+                    }
+                    PhantomPetEntity c = PetManager.getActive(PetKind.CHEST, p().getUUID());
+                    PhantomPetEntity tk = PetManager.getActive(PetKind.TANK, p().getUUID());
+                    if (c == null || tk == null) {
+                        return;
+                    }
+                    double d = sp().position().distanceTo(c.position());
+                    double t = sp().position().distanceTo(tk.position());
+                    stats[0] = Math.max(stats[0], Math.max(d, t));
+                    stats[1] += (d + t) / 2;
+                    stats[2]++;
+                };
+            });
+            step(160, () -> {
+                everyTick = null;
+                PhantomPetEntity chest = PetManager.getActive(PetKind.CHEST, p().getUUID());
+                log(String.format(java.util.Locale.ROOT, "glide %.1f b/t: max dist %.1f avg %.1f, player y %.1f chest y %.1f",
+                        speed, stats[0], stats[1] / stats[2], sp().getY(), chest.getY()));
+                check("glide " + speed + ": pets keep within 12 blocks on average", stats[1] / stats[2] < 12);
+                check("glide " + speed + ": chest at the player's height, not the ground's", Math.abs(chest.getY() - sp().getY()) < 4);
+            });
+            step(1, () -> shot("e_glide_" + speed));
+        }
+        step(5, () -> {
+            everyTick = null;
+            glide(false);
+            tp(0.5, -60, 0.5, 0, 0);
+        });
+
+        // ---- another dimension ----
+        step(40, () -> cmd("execute in minecraft:the_nether run tp @s 0.5 100 0.5"));
+        step(60, () -> {
+            for (PetKind kind : new PetKind[] {PetKind.CHEST, PetKind.TANK}) {
+                PhantomPetEntity pet = PetManager.getActive(kind, p().getUUID());
+                check(kind + " came along to the nether", pet != null && pet.level() == sp().level());
+            }
+            cmd("execute in minecraft:overworld run tp @s 0.5 -60 0.5");
+        });
+        step(60, () -> {
+            PhantomPetEntity pet = PetManager.getActive(PetKind.CHEST, p().getUUID());
+            check("chest came back to the overworld", pet != null && pet.level() == sp().level());
+        });
+        step(5, () -> log("DONE failures=" + failures));
+        step(20, () -> mc().stop());
+    }
+
+    /** Starts (or ends) an elytra glide on both sides, as the jump key in mid-air would. */
+    private static void glide(boolean on) {
+        if (on) {
+            p().startFallFlying();
+            p().connection.send(new net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket(p(),
+                    net.minecraft.network.protocol.game.ServerboundPlayerCommandPacket.Action.START_FALL_FLYING));
+        } else {
+            p().stopFallFlying();
+            server(() -> sp().stopFallFlying());
+        }
+    }
+
     @SubscribeEvent
     static void onTick(ClientTickEvent.Post event) {
         if (!ON) {
@@ -2115,6 +2280,9 @@ public final class Harness {
         }
         if (mc.player != null) {
             applyKeys();
+            if (everyTick != null) {
+                everyTick.run();
+            }
             if (debugTicks > 0 && mc.player.getVehicle() != null) {
                 debugTicks--;
                 Entity v = mc.player.getVehicle();

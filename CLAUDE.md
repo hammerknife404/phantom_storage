@@ -18,11 +18,11 @@ Unit tests can't touch Minecraft, so behavior was checked in the dev client unde
 
 1. `cp tools/devharness/Harness.java src/main/java/com/phantomstorage/devharness/` (that folder is gitignored)
 2. `mkdir -p run && printf 'onboardAccessibility:false\npauseOnLostFocus:false\nsoundCategory_master:0.0\n' > run/options.txt` (else the first-launch screen blocks it)
-3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`, `docs`; see the class comment)
+3. `PHANTOM_HARNESS=collector timeout 700 xvfb-run -a -s "-screen 0 1280x800x24" ./gradlew runClient` (scripts: `1`, `gateway`, `collector`, `void`, `filters`, `gatesize`, `gateflat`, `docs`, `elytra`; see the class comment)
 4. Read `[HARNESS]` lines in the output (or `run/harness.log`) and `run/screenshots/*.png`
 5. **Delete the harness folder before any release build**; it compiles into the jar.
 
-Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the all-pets opacity; `place(kind, x, y, z)` holds a pet still at a spot for screenshots. The charm's cooldown is shared, so `use()` clears it first. The server only knows the selected slot if you set it on the server player too. Server-side checks go through `server(...)` (blocks on the server thread).
+Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the all-pets opacity; `place(kind, x, y, z)` holds a pet still at a spot for screenshots. The charm's cooldown is shared, so `use()` clears it first. `everyTick` runs a lambda each client tick (per-tick logging, scripted flight); `glide(true)` starts an elytra glide. Dismounting high up in survival kills the player and stalls the script: switch to creative first. The server only knows the selected slot if you set it on the server player too. Server-side checks go through `server(...)` (blocks on the server thread).
 
 ## Code map (`src/main/java/com/phantomstorage`)
 
@@ -31,7 +31,7 @@ Harness notes: `step(n, r)` waits n ticks, then runs r. `opacity(n)` sets the al
 | `summon/CharmMode` | The charm's modes: unlock advancements, display names. Saved by name, sent by ordinal; new modes go **at the end** (the item model picks art by ordinal) |
 | `summon/PetKind` | The four pets: entity type, menu, whether it can anchor |
 | `item/PhantomCharmItem` | Use / sneak-use dispatch per mode, tooltip, mode cycling, shared cooldown |
-| `summon/PetManager` | One pet of each kind per player; summon, recall, dismiss, stranded-pet rescue, `bringAlong` after a gateway crossing |
+| `summon/PetManager` | One pet of each kind per player; summon, recall, dismiss, stranded-pet rescue, `bringAlong` after a dimension change (world config `pets.followAcrossDimensions`, default on; the gateway brings them regardless) |
 | `summon/AnchorManager`, `AnchorTravel` | Anchored pets: spot on the player (`AnchorSpot`), chunk tickets per kind, re-created after login; safe-landing search |
 | `summon/CollectorWork` | What the collector takes and where it goes |
 | `summon/PhantomSaddle`, `GatewayManager`, `PhantomBell` | The non-pet modes |
@@ -65,3 +65,4 @@ Every mode's art is a 64×64 pre-render "as the game draws it": a 2:1 isometric 
 - The void under Iris (3.0.1): the owner confirmed it looks right in their pack. Running downloaded mod jars (Iris, ImmediatelyFast) in the dev client is refused by this sandbox's permission check, so agents check such compat by reading the mod's code and the owner confirms in-game.
 - The owner plays "The Living World" (NeoForge 21.1.265, ~200 mods): Iris 1.8.14-beta.1 + Sodium 0.8.13 with Complementary r5.8.1, ImmediatelyFast 1.6.15 with screen batching on, Mouse Tweaks, JEI, Inventory Essentials. Worth reading a mod's code (not running it) when a report only happens there.
 - The bell's sneak-use leaves anchored pets alone; the owner accepted that "for now".
+- 3.2.0: the owner reported the saddle used mid-glide (elytra) in their pack summoned the chest but left the camera turning only up and down, with no way off. The dev client can't reproduce it (`elytra` harness: mounts, steers, turns, sneak gets off), so another client mod is suspected; the saddle now ends the glide before mounting. Unconfirmed in their pack.

@@ -27,3 +27,4 @@ Per world, in `serverconfig/phantomstorage-server.toml` inside the world folder,
 | Phantom Saddle: Flight speed | 4 blocks/s | How fast the ridden chest flies (1–20; a player walks at 4.3) |
 | Phantom Saddle: Allow sprinting | off | Sprinting while riding flies at the sprint speed |
 | Phantom Saddle: Sprint speed | 5.4 blocks/s | Used only with sprinting allowed (1–30; a player sprints at 5.6) |
+| Pets: Follow across dimensions | on | Following pets come along when you change dimension. Off, they're dismissed and summoned again with the charm |

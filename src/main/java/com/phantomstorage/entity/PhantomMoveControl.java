@@ -13,7 +13,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public class PhantomMoveControl extends MoveControl {
     private static final double STEERING = 0.18;
-    private static final double ARRIVAL = 0.12;
+    /** Speed per block of distance to the wanted point: a target moving at v is trailed by v / ARRIVAL. */
+    public static final double ARRIVAL = 0.12;
     private static final double DRIFT_DAMPING = 0.85;
 
     public PhantomMoveControl(Mob mob) {

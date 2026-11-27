@@ -1,6 +1,8 @@
 package com.phantomstorage.summon;
 
+import com.phantomstorage.PhantomServerConfig;
 import com.phantomstorage.entity.PhantomPetEntity;
+import java.util.Map;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,9 +81,16 @@ public final class PhantomPetEvents {
         }
     }
 
+    /**
+     * Fires once the owner is in the new dimension. Following pets come along (world config
+     * {@code pets.followAcrossDimensions}); anchored ones stay where they are.
+     */
     private static void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            Map<PetKind, PhantomPetEntity> followers = PhantomServerConfig.followAcrossDimensions() && player.isAlive()
+                    ? PetManager.followers(player) : Map.of();
             PetManager.dismissAll(player, false);
+            PetManager.bringAlong(player, followers);
         }
     }
 
