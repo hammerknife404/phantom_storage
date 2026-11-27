@@ -1,6 +1,6 @@
 # Phantom Storage: notes for the next agent
 
-NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.1.0** (tag `v3.1.0`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
+NeoForge 1.21.1 mod (Java 21, ModDevGradle). One item, the **Phantom Charm**, with seven modes: four pets (chest, tank, anchor, collector) and three modes that use them (saddle, gateway, bell). Released as **3.2.0** (tag `v3.2.0`). Player docs are in `docs/wiki/`, synced to the GitHub wiki; read [Home](docs/wiki/Home.md) for what each mode does.
 
 ## Working here
 
@@ -65,4 +65,4 @@ Every mode's art is a 64×64 pre-render "as the game draws it": a 2:1 isometric 
 - The void under Iris (3.0.1): the owner confirmed it looks right in their pack. Running downloaded mod jars (Iris, ImmediatelyFast) in the dev client is refused by this sandbox's permission check, so agents check such compat by reading the mod's code and the owner confirms in-game.
 - The owner plays "The Living World" (NeoForge 21.1.265, ~200 mods): Iris 1.8.14-beta.1 + Sodium 0.8.13 with Complementary r5.8.1, ImmediatelyFast 1.6.15 with screen batching on, Mouse Tweaks, JEI, Inventory Essentials. Worth reading a mod's code (not running it) when a report only happens there.
 - The bell's sneak-use leaves anchored pets alone; the owner accepted that "for now".
-- 3.2.0: the owner reported the saddle used mid-glide (elytra) in their pack summoned the chest but left the camera turning only up and down, with no way off. The dev client can't reproduce it (`elytra` harness: mounts, steers, turns, sneak gets off), so another client mod is suspected; the saddle now ends the glide before mounting. Unconfirmed in their pack.
+- 3.2.0: the saddle used mid-glide (elytra) in the owner's pack left the camera turning only up and down, with no way off. The dev client never reproduced it (`elytra` harness), so some client mod reacted to a rider who was still gliding for a tick; the saddle now ends the glide before mounting, and the owner confirmed that fixed it (not Do a Barrel Roll, which they don't run).
